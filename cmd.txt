@@ -1,0 +1,11 @@
+pbreak 0x107ac4
+pbreak 0x107bae
+pbreak 0x107824
+pbreak 0x107884
+c
+#trace on
+trace-mem on
+c
+c
+c
+quit
