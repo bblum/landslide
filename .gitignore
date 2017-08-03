@@ -50,3 +50,12 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Bochs build output
+src/bochs-2.6.8/bochs
+src/bochs-2.6.8/bximage
+src/bochs-2.6.8/config.log
+install/
+
+# Etc
+todo.txt
