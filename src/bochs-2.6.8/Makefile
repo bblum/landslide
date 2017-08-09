@@ -118,7 +118,7 @@ CFLAGS_CONSOLE = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -pthread $(MCH_CFL
 CXXFLAGS_CONSOLE = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES $(MCH_CFLAGS) $(FLA_FLAGS)
 BXIMAGE_LINK_OPTS = 
 
-BX_INCDIRS = -I. -I$(srcdir)/. -Iinstrument/stubs -I$(srcdir)/instrument/stubs
+BX_INCDIRS = -I. -I$(srcdir)/. -Iinstrument/landslide -I$(srcdir)/instrument/landslide
 
 #SUBDIRS = iodev bx_debug
 
@@ -153,7 +153,7 @@ EXTERN_ENVIRONMENT_OBJS = \
 
 DEBUGGER_LIB   = bx_debug/libdebug.a
 DISASM_LIB     = disasm/libdisasm.a
-INSTRUMENT_LIB = instrument/stubs/libinstrument.a
+INSTRUMENT_LIB = instrument/landslide/libinstrument.a
 FPU_LIB        = cpu/fpu/libfpu.a
 AVX_LIB        = cpu/avx/libavx.a
 READLINE_LIB   = -lreadline
@@ -178,13 +178,13 @@ all: bochs bochs_plugins bximage
 
 bochs: iodev/libiodev.a      \
 		$(DEBUGGER_LIB) cpu/libcpu.a  cpu/cpudb/libcpudb.a memory/libmemory.a \
-		gui/libgui.a $(DISASM_LIB)  $(BX_OBJS) \
+		gui/libgui.a $(DISASM_LIB) $(INSTRUMENT_LIB) $(BX_OBJS) \
 		$(SIMX86_OBJS) $(FPU_LIB)  
 	$(LIBTOOL) --mode=link --tag CXX $(CXX) -o $@ $(CXXFLAGS) $(LDFLAGS) -export-dynamic $(BX_OBJS) $(SIMX86_OBJS) \
 		iodev/libiodev.a      \
 		$(DEBUGGER_LIB) cpu/libcpu.a  cpu/cpudb/libcpudb.a \
 		 memory/libmemory.a gui/libgui.a \
-		$(DISASM_LIB)  -lltdl \
+		$(DISASM_LIB) $(INSTRUMENT_LIB) -lltdl \
 		 $(FPU_LIB) \
 		 \
 		$(DEVICE_LINK_OPTS) \
@@ -199,13 +199,13 @@ bochs: iodev/libiodev.a      \
 # and then links bochs.exe with the exports file.
 .win32_dll_plugin_target: iodev/libiodev.a     \
 		 $(DEBUGGER_LIB) cpu/libcpu.a  cpu/cpudb/libcpudb.a \
-		memory/libmemory.a gui/libgui.a $(DISASM_LIB)  \
+		memory/libmemory.a gui/libgui.a $(DISASM_LIB) $(INSTRUMENT_LIB) \
 		$(BX_OBJS) $(SIMX86_OBJS) $(FPU_LIB)  
 	$(DLLTOOL) --export-all-symbols --output-def bochs.def \
 		$(BX_OBJS) $(SIMX86_OBJS) \
 		iodev/libiodev.a      \
 		cpu/libcpu.a  cpu/cpudb/libcpudb.a memory/libmemory.a gui/libgui.a \
-		$(DEBUGGER_LIB) $(DISASM_LIB)   \
+		$(DEBUGGER_LIB) $(DISASM_LIB) $(INSTRUMENT_LIB)  \
 		 $(FPU_LIB)
 	$(DLLTOOL) --dllname bochs.exe --def bochs.def --output-lib dllexports.a
 	$(DLLTOOL) --dllname bochs.exe --output-exp bochs.exp --def bochs.def
@@ -213,7 +213,7 @@ bochs: iodev/libiodev.a      \
 	    $(BX_OBJS) bochs.exp $(SIMX86_OBJS) \
 		iodev/libiodev.a      \
 		cpu/libcpu.a  cpu/cpudb/libcpudb.a memory/libmemory.a gui/libgui.a \
-		$(DEBUGGER_LIB) $(DISASM_LIB)  -lltdl \
+		$(DEBUGGER_LIB) $(DISASM_LIB) $(INSTRUMENT_LIB) -lltdl \
 		 $(FPU_LIB) \
 		$(GUI_LINK_OPTS) \
 		$(DEVICE_LINK_OPTS) \
@@ -355,8 +355,8 @@ disasm/libdisasm.a::
 	$(MAKE) $(MDEFINES) libdisasm.a
 	echo done
 
-instrument/stubs/libinstrument.a::
-	cd instrument/stubs && \
+instrument/landslide/libinstrument.a::
+	cd instrument/landslide && \
 	$(MAKE) $(MDEFINES) libinstrument.a
 	echo done
 
@@ -591,7 +591,7 @@ all-clean: clean
 	cd disasm && \
 	$(MAKE) clean
 	echo done
-	cd instrument/stubs && \
+	cd instrument/landslide && \
 	$(MAKE) clean
 	echo done
 	cd misc && \
@@ -644,7 +644,7 @@ dist-clean: local-dist-clean
 	cd disasm && \
 	$(MAKE) dist-clean
 	echo done
-	cd instrument/stubs && \
+	cd instrument/landslide && \
 	$(MAKE) dist-clean
 	echo done
 	cd misc && \

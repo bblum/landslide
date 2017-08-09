@@ -49,7 +49,7 @@ PLUGIN_PATH=${exec_prefix}/lib
 top_builddir    = ..
 LIBTOOL=$(SHELL) $(top_builddir)/libtool
 WIN32_DLL_IMPORT_LIBRARY=../
-BX_INCDIRS = -I.. -I$(srcdir)/.. -I../iodev -I$(srcdir)/../iodev -I../instrument/stubs -I$(srcdir)/../instrument/stubs
+BX_INCDIRS = -I.. -I$(srcdir)/.. -I../iodev -I$(srcdir)/../iodev -I../instrument/landslide -I$(srcdir)/../instrument/landslide
 
 GUI_OBJS_X11  = x.o
 GUI_OBJS_SDL = sdl.o

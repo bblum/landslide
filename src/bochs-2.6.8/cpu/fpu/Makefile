@@ -41,7 +41,7 @@ RANLIB     = ranlib
 L_TARGET = libfpu.a
 
 
-BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/stubs -I$(srcdir)/../../instrument/stubs
+BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/landslide -I$(srcdir)/../../instrument/landslide
 
 OBJS = ferr.o fpu.o fpu_arith.o fpu_compare.o fpu_const.o fpu_cmov.o \
                fpu_load_store.o fpu_misc.o fpu_trans.o \

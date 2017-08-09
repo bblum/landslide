@@ -33,7 +33,7 @@ LDFLAGS =
 LIBS =  -ldl -lgtk-x11-2.0 -lgdk-x11-2.0 -lpangocairo-1.0 -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgio-2.0 -lpangoft2-1.0 -lpango-1.0 -lgobject-2.0 -lglib-2.0 -lfontconfig -lfreetype
 RANLIB = ranlib
 
-BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/stubs -I$(srcdir)/../../instrument/stubs
+BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/landslide -I$(srcdir)/../../instrument/landslide
 
 CPUDB_OBJS = pentium.o \
              pentium_mmx.o \

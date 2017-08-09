@@ -55,7 +55,7 @@ HDIMAGE_EXTRA_OBJS = vmware3.o vmware4.o vbox.o vpc-img.o vvfat.o
 HDIMAGE_LINK_OPTS =
 HDIMAGE_LINK_OPTS_VCPP = user32.lib
 
-BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/stubs -I$(srcdir)/../../instrument/stubs
+BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/landslide -I$(srcdir)/../../instrument/landslide
 LOCAL_CXXFLAGS = $(MCH_CFLAGS)
 
 OBJS_THAT_CAN_BE_PLUGINS = \

@@ -76,7 +76,7 @@ SLIRP_OBJS = \
 	slirp/tftp.o \
 	slirp/udp.o
 
-BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/stubs -I$(srcdir)/../../instrument/stubs
+BX_INCDIRS = -I.. -I../.. -I$(srcdir)/.. -I$(srcdir)/../.. -I../../instrument/landslide -I$(srcdir)/../../instrument/landslide
 LOCAL_CXXFLAGS = $(MCH_CFLAGS)
 
 OBJS_THAT_CAN_BE_PLUGINS = \

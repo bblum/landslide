@@ -35,7 +35,7 @@ X_LIBS = -lX11 -lXpm -lXrandr
 X_PRE_LIBS = 
 RANLIB = ranlib
 
-BX_INCDIRS = -I.. -I$(srcdir)/.. -I../instrument/stubs -I$(srcdir)/../instrument/stubs
+BX_INCDIRS = -I.. -I$(srcdir)/.. -I../instrument/landslide -I$(srcdir)/../instrument/landslide
 
 # Objects which are synced between the cpu and cpu64 code and
 # are used for either compile.

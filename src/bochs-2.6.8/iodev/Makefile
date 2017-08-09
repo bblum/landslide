@@ -49,7 +49,7 @@ top_builddir    = ..
 LIBTOOL=$(SHELL) $(top_builddir)/libtool
 WIN32_DLL_IMPORT_LIBRARY=../
 
-BX_INCDIRS = -I.. -I$(srcdir)/.. -I../instrument/stubs -I$(srcdir)/../instrument/stubs
+BX_INCDIRS = -I.. -I$(srcdir)/.. -I../instrument/landslide -I$(srcdir)/../instrument/landslide
 LOCAL_CXXFLAGS = $(MCH_CFLAGS)
 
 GAME_LINK_OPTS = -lwinmm

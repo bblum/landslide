@@ -650,7 +650,7 @@ typedef
   #error Dissembler is required for BX_DEBUGGER !
 #endif
 
-#define BX_INSTRUMENTATION 0
+#define BX_INSTRUMENTATION 1
 
 // enable BX_DEBUG/BX_ERROR/BX_INFO messages
 #define BX_NO_LOGGING 0

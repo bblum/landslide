@@ -36,7 +36,7 @@ X_PRE_LIBS =
 RANLIB = ranlib
 
 
-BX_INCDIRS = -I.. -I$(srcdir)/.. -I../instrument/stubs -I$(srcdir)/../instrument/stubs
+BX_INCDIRS = -I.. -I$(srcdir)/.. -I../instrument/landslide -I$(srcdir)/../instrument/landslide
 
 BX_OBJS = \
 	memory.o misc_mem.o
