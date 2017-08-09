@@ -76,6 +76,7 @@ void BX_CPU_C::cpu_loop(void)
 
 #if BX_SUPPORT_HANDLERS_CHAINING_SPEEDUPS
     for(;;) {
+      assert(0 && "landslide not supported in this mode");
       // want to allow changing of the instruction inside instrumentation callback
       BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);
       RIP += i->ilen();
@@ -99,12 +100,25 @@ void BX_CPU_C::cpu_loop(void)
         debug_disasm_instruction(BX_CPU_THIS_PTR prev_rip);
 #endif
 
+      bx_address pre_landslide_rip = RIP;
       // want to allow changing of the instruction inside instrumentation callback
       BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);
+      // allow landslide to jump us around by changing rip
+      if (RIP != pre_landslide_rip) {
+        entry = getICacheEntry();
+        i = entry->i;
+        last = i + (entry->tlen);
+      }
       RIP += i->ilen();
       BX_CPU_CALL_METHOD(i->execute1, (i)); // might iterate repeat instruction
       BX_CPU_THIS_PTR prev_rip = RIP; // commit new RIP
+      pre_landslide_rip = RIP;
       BX_INSTR_AFTER_EXECUTION(BX_CPU_ID, i);
+      if (RIP != pre_landslide_rip) {
+        entry = getICacheEntry();
+        i = entry->i;
+        last = i + (entry->tlen);
+      }
       BX_CPU_THIS_PTR icount++;
 
       BX_SYNC_TIME_IF_SINGLE_PROCESSOR(0);
@@ -116,7 +130,7 @@ void BX_CPU_C::cpu_loop(void)
 
       if (BX_CPU_THIS_PTR async_event) break;
 
-      if (++i == last) {
+      if (RIP == pre_landslide_rip && ++i == last) {
         entry = getICacheEntry();
         i = entry->i;
         last = i + (entry->tlen);
@@ -152,6 +166,7 @@ void BX_CPU_C::cpu_run_trace(void)
   bxICacheEntry_c *entry = getICacheEntry();
   bxInstruction_c *i = entry->i;
 
+  assert(0 && "landslide not supported with this feature");
 #if BX_SUPPORT_HANDLERS_CHAINING_SPEEDUPS
   // want to allow changing of the instruction inside instrumentation callback
   BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);

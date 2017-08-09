@@ -11,8 +11,11 @@
 #include "iodev/iodev.h"
 
 #include "instrument.h"
+#include "x86.h"
 
 #if BX_INSTRUMENTATION
+
+#define MODULE "\033[01;31m[baby landslide]\033[00m "
 
 void bx_instr_initialize(unsigned cpu)
 {
@@ -20,8 +23,42 @@ void bx_instr_initialize(unsigned cpu)
 	assert(cpu == 0 && "smp landslide not supported");
 }
 
+static unsigned int timer_ret_eip = 0;
+static bool entering_timer = false;
+
+#define DEVWRAP_TIMER_START 0x10181e
+#define DEVWRAP_TIMER_END   0x101866
+
 void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 {
+	unsigned int eip = GET_REG(EIP);
+	if (eip < 0x100000) {
+		return;
+	} else if (timer_ret_eip != 0) {
+		assert(eip == timer_ret_eip && "failed suppress bochs's timer");
+		timer_ret_eip = 0;
+	} else if (entering_timer) {
+		assert(eip == DEVWRAP_TIMER_START && "bochs failed to take our timer");
+		entering_timer = false;
+	} else if (eip == DEVWRAP_TIMER_START) {
+		// TODO: future optmz - hack bochs to tick less frequently
+		printf(MODULE "entering devwrap timer... squelching it\n");
+		BX_OUTP(0x20, 0x20, 1);
+		DEV_pic_lower_irq(0);
+		timer_ret_eip = READ_WORD(GET_REG(ESP));
+		SET_REG(EIP, DEVWRAP_TIMER_END);
+	} else if (eip == 0x107824 /* sys_exec, just for testimg */) {
+		printf(MODULE "testing timer injection on sys_exec()\n");
+		DEV_pic_raise_irq(0);
+		assert(BX_CPU(0)->async_event);
+		entering_timer = true;
+	} else if (false) {
+		// TODO: cause timer interrupce immediately
+		// obv need to set-reg eip, but,
+		// how to set the pic's state w/o triggering cpu async event?
+	} else if (false) {
+		// TODO: cause kbd interrupce
+	}
 }
 
 void bx_instr_after_execution(unsigned cpu, bxInstruction_c *i)
