@@ -15,6 +15,39 @@
 
 #if BX_INSTRUMENTATION
 
+/* stuff to go in x86.c eventually */
+
+#define DEVWRAP_TIMER_START 0x10181e
+#define DEVWRAP_TIMER_END   0x101866
+
+void cause_timer_interrupt()
+{
+	DEV_pic_lower_irq(0);
+	DEV_pic_raise_irq(0);
+	assert(BX_CPU(0)->async_event);
+}
+
+void cause_timer_interrupt_immediately()
+{
+	DEV_pic_lower_irq(0);
+	DEV_pic_raise_irq(0);
+	assert(BX_CPU(0)->async_event);
+	assert(!BX_CPU(0)->interrupts_inhibited(BX_INHIBIT_INTERRUPTS));
+	assert(BX_CPU(0)->is_unmasked_event_pending(BX_EVENT_PENDING_INTR));
+	bool rv = BX_CPU(0)->handleAsyncEvent(); /* modifies eip */
+	assert(!rv); /* not need break out of cpu loop */
+	assert(!BX_CPU(0)->async_event);
+	assert(GET_REG(EIP) == DEVWRAP_TIMER_START);
+}
+
+void avoid_timer_interrupt_immediately()
+{
+	BX_OUTP(0x20, 0x20, 1);
+	SET_REG(EIP, DEVWRAP_TIMER_END);
+}
+
+/******************************** useful hooks ********************************/
+
 #define MODULE "\033[01;31m[baby landslide]\033[00m "
 
 void bx_instr_initialize(unsigned cpu)
@@ -25,9 +58,7 @@ void bx_instr_initialize(unsigned cpu)
 
 static unsigned int timer_ret_eip = 0;
 static bool entering_timer = false;
-
-#define DEVWRAP_TIMER_START 0x10181e
-#define DEVWRAP_TIMER_END   0x101866
+static bool allow_readline = false;
 
 void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 {
@@ -38,24 +69,26 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 		assert(eip == timer_ret_eip && "failed suppress bochs's timer");
 		timer_ret_eip = 0;
 	} else if (entering_timer) {
-		assert(eip == DEVWRAP_TIMER_START && "bochs failed to take our timer");
+		assert(eip == DEVWRAP_TIMER_START && "bochs missed our timer");
 		entering_timer = false;
 	} else if (eip == DEVWRAP_TIMER_START) {
 		// TODO: future optmz - hack bochs to tick less frequently
 		printf(MODULE "entering devwrap timer... squelching it\n");
-		BX_OUTP(0x20, 0x20, 1);
-		DEV_pic_lower_irq(0);
 		timer_ret_eip = READ_WORD(GET_REG(ESP));
-		SET_REG(EIP, DEVWRAP_TIMER_END);
+		avoid_timer_interrupt_immediately();
 	} else if (eip == 0x107824 /* sys_exec, just for testimg */) {
 		printf(MODULE "testing timer injection on sys_exec()\n");
-		DEV_pic_raise_irq(0);
-		assert(BX_CPU(0)->async_event);
+		cause_timer_interrupt();
 		entering_timer = true;
-	} else if (false) {
-		// TODO: cause timer interrupce immediately
-		// obv need to set-reg eip, but,
-		// how to set the pic's state w/o triggering cpu async event?
+	} else if (eip == 0x01001f00 /* shell readline wrapper */) {
+		if (allow_readline) {
+			allow_readline = false;
+			printf(MODULE "immediate timer: allowing readline proceed\n");
+		} else {
+			allow_readline = true;
+			printf(MODULE "immediate timer injection on readline()\n");
+			cause_timer_interrupt_immediately();
+		}
 	} else if (false) {
 		// TODO: cause kbd interrupce
 	}
