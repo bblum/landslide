@@ -21,7 +21,7 @@
 #ifndef _PCKEY_H
 #define _PCKEY_H
 
-#define BX_KBD_ELEMENTS 16
+#define BX_KBD_ELEMENTS 256 // bblum wuz here
 
 // these keywords should only be used in keyboard.cc
 #if BX_USE_KEY_SMF

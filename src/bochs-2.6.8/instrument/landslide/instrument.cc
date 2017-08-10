@@ -46,6 +46,68 @@ void avoid_timer_interrupt_immediately()
 	SET_REG(EIP, DEVWRAP_TIMER_END);
 }
 
+static void do_scan(int key_event, bool shift)
+{
+	if (shift) DEV_kbd_gen_scancode(BX_KEY_SHIFT_L);
+	DEV_kbd_gen_scancode(key_event);
+	DEV_kbd_gen_scancode(key_event | BX_KEY_RELEASED);
+	if (shift) DEV_kbd_gen_scancode(BX_KEY_SHIFT_L | BX_KEY_RELEASED);
+}
+
+void cause_keypress(char key)
+{
+	switch (key) {
+		case '\n': do_scan(BX_KEY_KP_ENTER, 0); break;
+		case '_': do_scan(BX_KEY_MINUS, 1); break;
+		case ' ': do_scan(BX_KEY_SPACE, 0); break;
+		case 'a': do_scan(BX_KEY_A, 0); break;
+		case 'b': do_scan(BX_KEY_B, 0); break;
+		case 'c': do_scan(BX_KEY_C, 0); break;
+		case 'd': do_scan(BX_KEY_D, 0); break;
+		case 'e': do_scan(BX_KEY_E, 0); break;
+		case 'f': do_scan(BX_KEY_F, 0); break;
+		case 'g': do_scan(BX_KEY_G, 0); break;
+		case 'h': do_scan(BX_KEY_H, 0); break;
+		case 'i': do_scan(BX_KEY_I, 0); break;
+		case 'j': do_scan(BX_KEY_J, 0); break;
+		case 'k': do_scan(BX_KEY_K, 0); break;
+		case 'l': do_scan(BX_KEY_L, 0); break;
+		case 'm': do_scan(BX_KEY_M, 0); break;
+		case 'n': do_scan(BX_KEY_N, 0); break;
+		case 'o': do_scan(BX_KEY_O, 0); break;
+		case 'p': do_scan(BX_KEY_P, 0); break;
+		case 'q': do_scan(BX_KEY_Q, 0); break;
+		case 'r': do_scan(BX_KEY_R, 0); break;
+		case 's': do_scan(BX_KEY_S, 0); break;
+		case 't': do_scan(BX_KEY_T, 0); break;
+		case 'u': do_scan(BX_KEY_U, 0); break;
+		case 'v': do_scan(BX_KEY_V, 0); break;
+		case 'w': do_scan(BX_KEY_W, 0); break;
+		case 'x': do_scan(BX_KEY_X, 0); break;
+		case 'y': do_scan(BX_KEY_Y, 0); break;
+		case 'z': do_scan(BX_KEY_Z, 0); break;
+		case '0': do_scan(BX_KEY_0, 0); break;
+		case '1': do_scan(BX_KEY_1, 0); break;
+		case '2': do_scan(BX_KEY_2, 0); break;
+		case '3': do_scan(BX_KEY_3, 0); break;
+		case '4': do_scan(BX_KEY_4, 0); break;
+		case '5': do_scan(BX_KEY_5, 0); break;
+		case '6': do_scan(BX_KEY_6, 0); break;
+		case '7': do_scan(BX_KEY_7, 0); break;
+		case '8': do_scan(BX_KEY_8, 0); break;
+		case '9': do_scan(BX_KEY_9, 0); break;
+		default: assert(0 && "keypress not implemented");
+	}
+}
+
+void cause_test(const char *test_name)
+{
+	for (const char *c = &test_name[0]; *c != '\0'; c++) {
+		cause_keypress(*c);
+	}
+	cause_keypress('\n');
+}
+
 /******************************** useful hooks ********************************/
 
 #define MODULE "\033[01;31m[baby landslide]\033[00m "
@@ -89,8 +151,11 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 			printf(MODULE "immediate timer injection on readline()\n");
 			cause_timer_interrupt_immediately();
 		}
-	} else if (false) {
-		// TODO: cause kbd interrupce
+	} else if (eip == 0x0010687e /* sys_readline */) {
+		printf(MODULE "typing the test name atm\n");
+		cause_test("vanish_vanish");
+	} else if (eip == 0x00101867) {
+		printf(MODULE "a wild keyboard interrupt appears\n");
 	}
 }
 
