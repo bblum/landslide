@@ -42,6 +42,7 @@ RANLIB = ranlib
 
 BX_OBJS = \
   messaging.o \
+  rand.o \
   rbtree.o \
   vector_clock.o \
   x86.o \
@@ -54,6 +55,7 @@ BX_INCLUDES = \
   compiler.h \
   estimate.h \
   messaging.h \
+  rand.h \
   rbtree.h \
   simulator.h \
   stack.h \
