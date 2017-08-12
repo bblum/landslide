@@ -26,9 +26,9 @@ SHELL = /bin/sh
 
 
 CC = gcc
-CFLAGS = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -pthread
+CFLAGS = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DBOCHS -pthread
 CXX = g++
-CXXFLAGS = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -pthread
+CXXFLAGS = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DBOCHS -pthread
 
 LDFLAGS =
 LIBS =  -ldl -lgtk-x11-2.0 -lgdk-x11-2.0 -lpangocairo-1.0 -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgio-2.0 -lpangoft2-1.0 -lpango-1.0 -lgobject-2.0 -lglib-2.0 -lfontconfig -lfreetype
@@ -41,9 +41,14 @@ RANLIB = ranlib
 
 
 BX_OBJS = \
+  x86.o \
   instrument.o
 
-BX_INCLUDES =
+BX_INCLUDES = \
+  instrument.h \
+  simulator.h \
+  x86-bochs.h \
+  x86.h
 
 BX_INCDIRS = -I../.. -I$(srcdir)/../.. -I. -I$(srcdir)/.
 
