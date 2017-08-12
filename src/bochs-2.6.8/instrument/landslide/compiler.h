@@ -36,7 +36,7 @@
 
 /* MIN()/MAX() implementations that avoid the MAX(x++,y++) problem and provide
  * strict typechecking. */
-#if 0 // XXX: simics's headers need this not to be defined here
+#ifdef BOCHS // XXX: simics's headers need this not to be defined here
 #define MIN(x, y) ({			\
 	typeof(x) _min1 = (x);		\
 	typeof(y) _min2 = (y);		\

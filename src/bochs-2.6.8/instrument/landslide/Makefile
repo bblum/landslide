@@ -25,7 +25,7 @@ SHELL = /bin/sh
 
 
 
-CC = gcc
+CC = g++
 CFLAGS = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DBOCHS -pthread
 CXX = g++
 CXXFLAGS = -g -O2 -D_FILE_OFFSET_BITS=64 -D_LARGE_FILES -DBOCHS -pthread
@@ -41,12 +41,19 @@ RANLIB = ranlib
 
 
 BX_OBJS = \
+  rbtree.o \
+  vector_clock.o \
   x86.o \
   instrument.o
 
 BX_INCLUDES = \
   instrument.h \
+  array_list.h \
+  common.h \
+  compiler.h \
+  rbtree.h \
   simulator.h \
+  vector_clock.h \
   x86-bochs.h \
   x86.h
 
