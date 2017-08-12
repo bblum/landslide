@@ -41,6 +41,9 @@ RANLIB = ranlib
 
 
 BX_OBJS = \
+  estimate.o \
+  explore.o \
+  lockset.o \
   messaging.o \
   rand.o \
   rbtree.o \
@@ -48,19 +51,25 @@ BX_OBJS = \
   x86.o \
   instrument.o
 
-BX_INCLUDES = \
-  instrument.h \
+BX_INCLUDES = instrument.h \
   array_list.h \
   common.h \
   compiler.h \
   estimate.h \
+  explore.h \
+  landslide.h \
+  lockset.h \
   messaging.h \
   rand.h \
   rbtree.h \
+  save.h \
+  schedule.h \
   simulator.h \
   stack.h \
+  tree.h \
+  user_sync.h \
+  variable_queue.h \
   vector_clock.h \
-  x86-bochs.h \
   x86.h
 
 BX_INCDIRS = -I../.. -I$(srcdir)/../.. -I. -I$(srcdir)/.

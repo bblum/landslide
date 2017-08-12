@@ -7,7 +7,7 @@
 #ifndef __LS_X86_SIMICS_H
 #define __LS_X86_SIMICS_H
 
-#ifndef __LS_X86_h
+#ifndef __LS_X86_H
 #error "include x86.h, do not include this directly"
 #endif
 

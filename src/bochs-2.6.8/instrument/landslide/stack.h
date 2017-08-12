@@ -48,7 +48,7 @@ bool within_function_st(struct stack_trace *st, unsigned int func, unsigned int 
 bool within_function(struct ls_state *ls, unsigned int func, unsigned int func_end);
 
 /* convenience */
-static void dump_stack();
+void dump_stack();
 #define LS_ABORT() do { dump_stack(); assert(0); } while (0)
 
 #endif

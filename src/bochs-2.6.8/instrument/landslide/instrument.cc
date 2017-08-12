@@ -9,12 +9,22 @@
 
 #include "bochs.h"
 
+#define MODULE_NAME "baby landslide"
+#define MODULE_COLOUR COLOUR_BOLD COLOUR_WHITE
+
+#include "common.h"
+#include "landslide.h"
 #include "instrument.h"
 #include "x86.h"
 
 #if BX_INSTRUMENTATION
 
 /* stuff to go in x86.c eventually */
+
+void landslide_assert_fail(char const*, char const*, unsigned int, char const*)
+{
+	assert(0);
+}
 
 void cause_test(const char *test_name)
 {
@@ -25,8 +35,6 @@ void cause_test(const char *test_name)
 }
 
 /******************************** useful hooks ********************************/
-
-#define MODULE "\033[01;31m[baby landslide]\033[00m "
 
 void bx_instr_initialize(unsigned cpu)
 {
@@ -53,30 +61,30 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 		entering_timer = false;
 	} else if (eip == DEVWRAP_TIMER_START) {
 		// TODO: future optmz - hack bochs to tick less frequently
-		printf(MODULE "entering devwrap timer... squelching it\n");
+		lsprintf(ALWAYS, "entering devwrap timer... squelching it\n");
 		timer_ret_eip = READ_PHYS_MEMORY(BX_CPU(0),
 						 GET_CPU_ATTR(BX_CPU(0), esp), 4);
 		avoid_timer_interrupt_immediately(BX_CPU(0));
 	} else if (eip == 0x107824 /* sys_exec, just for testimg */) {
-		printf(MODULE "testing timer injection on sys_exec()\n");
+		lsprintf(ALWAYS, "testing timer injection on sys_exec()\n");
 		cause_timer_interrupt(BX_CPU(0), NULL, NULL);
 		entering_timer = true;
 	} else if (eip == 0x01001f00 /* shell readline wrapper */) {
 		if (allow_readline) {
 			allow_readline = false;
-			printf(MODULE "immediate timer: allowing readline proceed\n");
+			lsprintf(ALWAYS, "immediate timer: allowing readline proceed\n");
 		} else {
 			allow_readline = true;
-			printf(MODULE "immediate timer injection on readline()\n");
+			lsprintf(ALWAYS, "immediate timer injection on readline()\n");
 			cause_timer_interrupt_immediately(BX_CPU(0));
 		}
 	} else if (eip == 0x0010687e /* sys_readline */) {
-		printf(MODULE "typing the test name atm\n");
+		lsprintf(ALWAYS, "typing the test name atm\n");
 		cause_test("vanish_vanish");
 	} else if (eip == 0x00101867) {
-		printf(MODULE "a wild keyboard interrupt appears\n");
+		lsprintf(ALWAYS, "a wild keyboard interrupt appears\n");
 	} else if (eip == 0x105930) {
-		printf(MODULE "switched threads -> %d\n",
+		lsprintf(ALWAYS, "switched threads -> %d\n",
 		       READ_MEMORY(BX_CPU(0), GET_CPU_ATTR(BX_CPU(0), esp)));
 	}
 }

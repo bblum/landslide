@@ -8,7 +8,6 @@
 #define __LS_SIMULATOR_H
 
 #ifdef BOCHS
-/*********************************** bochs  ***********************************/
 
 #include <stdlib.h>
 
@@ -16,40 +15,28 @@
 
 typedef BX_CPU_C cpu_t;
 typedef void symtable_t; // XXX
-typedef void keyboard_t; // TODO
-typedef void apic_t; // TODO
-typedef void pic_t; // TODO
+typedef void keyboard_t;
+typedef void apic_t;
+typedef void pic_t;
 
-#define __LS_MALLOC(x,t) ((t *)malloc((x) * sizeof(t)))
-#define __LS_STRDUP(s)   strdup(s)
+typedef struct { } simulator_state_t;
+typedef void simulator_object_t;
 
-#define MM_FREE(p) free(p)
+#define MM_MALLOC(x,t) ((t *)malloc((x) * sizeof(t)))
+#define MM_STRDUP(s)   strdup(s)
+#define MM_FREE(p)     free(p)
 
-/******************************************************************************/
 #else
-/*********************************** simics ***********************************/
-
-#include <simics/api.h>
-
-typedef conf_object_t cpu_t;
-typedef conf_object_t symtable_t;
-typedef conf_object_t keyboard_t;
-typedef conf_object_t apic_t;
-typedef conf_object_t pic_t;
-
-#define __LS_MALLOC(x,t) MM_MALLOC(x,t)
-#define __LS_STRDUP(s)   MM_STRDUP(s)
-
-/******************************************************************************/
+#include "simulator-simics.h"
 #endif
 
 #define MM_XMALLOC(x,t) ({					\
-	typeof(t) *__xmalloc_ptr = __LS_MALLOC(x,t);		\
+	typeof(t) *__xmalloc_ptr = MM_MALLOC(x,t);		\
 	assert(__xmalloc_ptr != NULL && "malloc failed");	\
 	__xmalloc_ptr; })
 
 #define MM_XSTRDUP(s) ({					\
-	char *__xstrdup_ptr = __LS_STRDUP(s);			\
+	char *__xstrdup_ptr = MM_STRDUP(s);			\
 	assert(__xstrdup_ptr != NULL && "strdup failed");	\
 	__xstrdup_ptr; })
 

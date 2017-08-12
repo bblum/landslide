@@ -19,7 +19,11 @@
  * (of value 0 and type size_t), so it can be used e.g. in a structure
  * initializer (or whereever else comma expressions aren't permitted). */
 /* Linux calls these BUILD_BUG_ON_ZERO/_NULL, which is rather misleading. */
+#ifdef BOCHS
+#define STATIC_ZERO_ASSERT(condition) 0 /* below trick doesn't work in c++ :( */
+#else
 #define STATIC_ZERO_ASSERT(condition) (sizeof(struct { int:-!(condition); }))
+#endif
 #define STATIC_NULL_ASSERT(condition) ((void *)STATIC_ZERO_ASSERT(condition))
 
 /* Force a compilation error if condition is false */
@@ -30,7 +34,11 @@
 	STATIC_ASSERT(!((n) == 0 || (((n) & ((n) - 1)) != 0)))
 
 /* Type and array checking */
+#ifdef BOCHS
+#define SAME_TYPE(a, b) true /* no typeof in c++ :( */
+#else
 #define SAME_TYPE(a, b) __builtin_types_compatible_p(typeof(a), typeof(b))
+#endif
 #define MUST_BE_ARRAY(a) STATIC_ZERO_ASSERT(!SAME_TYPE((a), &(a)[0]))
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + MUST_BE_ARRAY(arr))
 
