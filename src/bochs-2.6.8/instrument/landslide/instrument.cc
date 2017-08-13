@@ -27,7 +27,7 @@ void landslide_assert_fail(char const*, char const*, unsigned int, char const*)
 	assert(0);
 }
 
-void cause_test(const char *test_name)
+void baby_cause_test(const char *test_name)
 {
 	for (const char *c = &test_name[0]; *c != '\0'; c++) {
 		cause_keypress(NULL, *c);
@@ -79,7 +79,7 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 		}
 	} else if (eip == GUEST_READLINE_WINDOW_ENTER) {
 		lsprintf(ALWAYS, "typing the test name atm\n");
-		cause_test("vanish_vanish");
+		baby_cause_test("vanish_vanish");
 	} else if (eip == TELL_LANDSLIDE_THREAD_SWITCH) {
 		lsprintf(ALWAYS, "switched threads -> %d\n",
 		       	 READ_STACK(BX_CPU(0), 1));

@@ -41,24 +41,32 @@ RANLIB = ranlib
 
 
 BX_OBJS = instrument.o \
+  arbiter.o \
   estimate.o \
   explore.o \
   lockset.o \
   messaging.o \
   rand.o \
   rbtree.o \
+  stack.o \
+  student.o \
+  test.o \
   vector_clock.o \
   x86.o
 
 BX_INCLUDES = instrument.h \
+  arbiter.h \
   array_list.h \
   common.h \
   compiler.h \
   estimate.h \
   explore.h \
+  found_a_bug.h \
+  kernel_specifics.h \
   landslide.h \
   lockset.h \
   messaging.h \
+  pp.h \
   rand.h \
   rbtree.h \
   save.h \
@@ -66,7 +74,9 @@ BX_INCLUDES = instrument.h \
   simulator.h \
   stack.h \
   student_specifics.h \
+  test.h \
   tree.h \
+  user_specifics.h \
   user_sync.h \
   variable_queue.h \
   vector_clock.h \

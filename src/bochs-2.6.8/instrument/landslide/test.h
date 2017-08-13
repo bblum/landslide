@@ -1,0 +1,32 @@
+/**
+ * @file test.h
+ * @brief routine for managing test case running / kernel execution lifetime
+ * @author Ben Blum <bblum@andrew.cmu.edu>
+ */
+
+#ifndef __LS_TEST_H
+#define __LS_TEST_H
+
+#include "simulator.h"
+
+struct sched_state;
+struct ls_state;
+
+struct test_state {
+	bool test_is_running; /* used for pebbles */
+	bool test_ended; /* used for pintos */
+	bool test_ever_caused;
+	char *current_test;
+	int start_population; /* valid iff test_ever_caused */
+	int start_kern_heap_size;
+	int start_user_heap_size;
+};
+
+void test_init(struct test_state *);
+bool test_update_state(struct ls_state *ls);
+bool cause_test(keyboard_t *kbd, struct test_state *, struct ls_state *,
+		const char *test_string);
+
+bool anybody_alive(cpu_t *cpu, struct test_state *t,
+		   struct sched_state *s, bool chatty);
+#endif
