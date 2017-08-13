@@ -40,7 +40,7 @@ RANLIB = ranlib
 # ===========================================================
 
 
-BX_OBJS = \
+BX_OBJS = instrument.o \
   estimate.o \
   explore.o \
   lockset.o \
@@ -48,8 +48,7 @@ BX_OBJS = \
   rand.o \
   rbtree.o \
   vector_clock.o \
-  x86.o \
-  instrument.o
+  x86.o
 
 BX_INCLUDES = instrument.h \
   array_list.h \
@@ -66,6 +65,7 @@ BX_INCLUDES = instrument.h \
   schedule.h \
   simulator.h \
   stack.h \
+  student_specifics.h \
   tree.h \
   user_sync.h \
   variable_queue.h \

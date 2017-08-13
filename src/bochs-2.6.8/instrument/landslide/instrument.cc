@@ -15,6 +15,7 @@
 #include "common.h"
 #include "landslide.h"
 #include "instrument.h"
+#include "student_specifics.h"
 #include "x86.h"
 
 #if BX_INSTRUMENTATION
@@ -46,8 +47,6 @@ static unsigned int timer_ret_eip = 0;
 static bool entering_timer = false;
 static bool allow_readline = false;
 
-#define DEVWRAP_TIMER_START 0x10181e
-
 void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 {
 	unsigned int eip = GET_CPU_ATTR(BX_CPU(0), eip);
@@ -57,15 +56,15 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 		assert(eip == timer_ret_eip && "failed suppress bochs's timer");
 		timer_ret_eip = 0;
 	} else if (entering_timer) {
-		assert(eip == DEVWRAP_TIMER_START && "bochs missed our timer");
+		assert(eip == GUEST_TIMER_WRAP_ENTER && "bochs missed our timer");
 		entering_timer = false;
-	} else if (eip == DEVWRAP_TIMER_START) {
+	} else if (eip == GUEST_TIMER_WRAP_ENTER) {
 		// TODO: future optmz - hack bochs to tick less frequently
 		lsprintf(ALWAYS, "entering devwrap timer... squelching it\n");
 		timer_ret_eip = READ_PHYS_MEMORY(BX_CPU(0),
 						 GET_CPU_ATTR(BX_CPU(0), esp), 4);
 		avoid_timer_interrupt_immediately(BX_CPU(0));
-	} else if (eip == 0x107824 /* sys_exec, just for testimg */) {
+	} else if (eip == GUEST_EXEC_ENTER) {
 		lsprintf(ALWAYS, "testing timer injection on sys_exec()\n");
 		cause_timer_interrupt(BX_CPU(0), NULL, NULL);
 		entering_timer = true;
@@ -78,14 +77,12 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 			lsprintf(ALWAYS, "immediate timer injection on readline()\n");
 			cause_timer_interrupt_immediately(BX_CPU(0));
 		}
-	} else if (eip == 0x0010687e /* sys_readline */) {
+	} else if (eip == GUEST_READLINE_WINDOW_ENTER) {
 		lsprintf(ALWAYS, "typing the test name atm\n");
 		cause_test("vanish_vanish");
-	} else if (eip == 0x00101867) {
-		lsprintf(ALWAYS, "a wild keyboard interrupt appears\n");
-	} else if (eip == 0x105930) {
+	} else if (eip == TELL_LANDSLIDE_THREAD_SWITCH) {
 		lsprintf(ALWAYS, "switched threads -> %d\n",
-		       READ_MEMORY(BX_CPU(0), GET_CPU_ATTR(BX_CPU(0), esp)));
+		       	 READ_STACK(BX_CPU(0), 1));
 	}
 }
 

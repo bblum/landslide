@@ -19,8 +19,6 @@
 
 unsigned int cause_timer_interrupt_immediately(cpu_t *cpu)
 {
-	// TODO: replace with kern get timer wrpa begin
-	unsigned int handler = 0x10181e;
 	DEV_pic_lower_irq(0);
 	DEV_pic_raise_irq(0);
 	assert(cpu->async_event);
@@ -29,8 +27,8 @@ unsigned int cause_timer_interrupt_immediately(cpu_t *cpu)
 	bool rv = cpu->handleAsyncEvent(); /* modifies eip */
 	assert(!rv); /* not need break out of cpu loop */
 	assert(!cpu->async_event);
-	assert(GET_CPU_ATTR(cpu, eip) == handler);
-	return handler;
+	assert(GET_CPU_ATTR(cpu, eip) == GUEST_TIMER_WRAP_ENTER);
+	return GUEST_TIMER_WRAP_ENTER;
 }
 
 void cause_timer_interrupt(cpu_t *cpu, apic_t *apic, pic_t *pic)
@@ -45,8 +43,7 @@ void cause_timer_interrupt(cpu_t *cpu, apic_t *apic, pic_t *pic)
 unsigned int avoid_timer_interrupt_immediately(cpu_t *cpu)
 {
 	BX_OUTP(0x20, 0x20, 1);
-	// TODO: replace with kerne get timer wrap end
-	SET_CPU_ATTR(cpu, eip, 0x101866);
+	SET_CPU_ATTR(cpu, eip, GUEST_TIMER_WRAP_EXIT);
 }
 
 static void do_scan(int key_event, bool shift)

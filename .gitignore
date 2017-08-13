@@ -59,3 +59,4 @@ install/
 
 # Etc
 todo.txt
+src/bochs-2.6.8/instrument/landslide/student_specifics.h
