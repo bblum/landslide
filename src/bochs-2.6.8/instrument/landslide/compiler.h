@@ -31,12 +31,14 @@
 
 /* Type and array checking */
 #ifdef BOCHS
-#define SAME_TYPE(a, b) true /* no typeof in c++ :( */
+/* doesn't work in c++ :( */
+#define SAME_TYPE(a, b) true
+#define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 #else
 #define SAME_TYPE(a, b) __builtin_types_compatible_p(typeof(a), typeof(b))
-#endif
 #define MUST_BE_ARRAY(a) STATIC_ZERO_ASSERT(!SAME_TYPE((a), &(a)[0]))
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + MUST_BE_ARRAY(arr))
+#endif
 
 /* MIN()/MAX() implementations that avoid the MAX(x++,y++) problem and provide
  * strict typechecking. */

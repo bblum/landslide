@@ -44,13 +44,17 @@ BX_OBJS = instrument.o \
   arbiter.o \
   estimate.o \
   explore.o \
+  kernel_specifics.o \
   lockset.o \
   messaging.o \
+  pp.o \
   rand.o \
   rbtree.o \
   stack.o \
   student.o \
   test.o \
+  user_specifics.o \
+  user_sync.o \
   vector_clock.o \
   x86.o
 
