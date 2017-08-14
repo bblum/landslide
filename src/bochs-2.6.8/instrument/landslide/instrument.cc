@@ -22,9 +22,10 @@
 
 /* stuff to go in x86.c eventually */
 
-void landslide_assert_fail(char const*, char const*, unsigned int, char const*)
+void landslide_assert_fail(char const *msg, char const*file, unsigned int line, char const*func)
 {
-	assert(0);
+	fprintf(stderr, COLOUR_BOLD COLOUR_RED "Assert failed at %s:%d: '%s'\n", file, line, msg);
+	abort();
 }
 
 void baby_cause_test(const char *test_name)
@@ -53,7 +54,12 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 	if (eip < 0x100000) {
 		return;
 	} else if (timer_ret_eip != 0) {
-		assert(eip == timer_ret_eip && "failed suppress bochs's timer");
+		/* it's possible for the iret to execute, but get immediately
+		 * interrupted again (e.g., racing with the keyboard). if so,
+		 * we must be in devwrap_kbd with target eip on the stack. */
+		assert((eip == timer_ret_eip ||
+		        READ_STACK(BX_CPU(0), 0) == timer_ret_eip) &&
+		       "failed suppress bochs's timer");
 		timer_ret_eip = 0;
 	} else if (entering_timer) {
 		assert(eip == GUEST_TIMER_WRAP_ENTER && "bochs missed our timer");
@@ -61,8 +67,7 @@ void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 	} else if (eip == GUEST_TIMER_WRAP_ENTER) {
 		// TODO: future optmz - hack bochs to tick less frequently
 		lsprintf(ALWAYS, "entering devwrap timer... squelching it\n");
-		timer_ret_eip = READ_PHYS_MEMORY(BX_CPU(0),
-						 GET_CPU_ATTR(BX_CPU(0), esp), 4);
+		timer_ret_eip = READ_STACK(BX_CPU(0), 0);
 		avoid_timer_interrupt_immediately(BX_CPU(0));
 	} else if (eip == GUEST_EXEC_ENTER) {
 		lsprintf(ALWAYS, "testing timer injection on sys_exec()\n");
