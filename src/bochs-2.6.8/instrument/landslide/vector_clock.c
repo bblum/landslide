@@ -25,7 +25,7 @@
 void vc_init(struct vector_clock *vc)
 {
 	ARRAY_LIST_INIT(&vc->v, VC_INIT_SIZE);
-	for (int i = 0; i < VC_INIT_SIZE; i++) {
+	for (unsigned int i = 0; i < VC_INIT_SIZE; i++) {
 		struct epoch bottom = { .tid = i, .timestamp = 0 };
 		ARRAY_LIST_APPEND(&vc->v, bottom);
 	}

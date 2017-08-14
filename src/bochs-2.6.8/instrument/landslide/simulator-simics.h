@@ -22,4 +22,7 @@ typedef conf_object_t pic_t;
 typedef log_object_t simulator_state_t;
 typedef conf_object_t simulator_object_t;
 
+#define BREAK_SIMULATION() SIM_break_simulation(NULL)
+#define QUIT_SIMULATION(v) SIM_quit(v)
+
 #endif /* __LS_SIMULATOR_SIMICS_H */

@@ -40,10 +40,11 @@ struct ls_state;
 struct fab_html_env {
 	int html_fd;
 };
-typedef void (*fab_cb_t)(struct fab_html_env *env);
+typedef void (*fab_cb_t)(void *env, struct fab_html_env *html_env);
 
 void _found_a_bug(struct ls_state *, bool bug_found, bool verbose,
-		  const char *reason, unsigned int reason_len, fab_cb_t callback);
+		  const char *reason, unsigned int reason_len,
+		  void *callback_env, fab_cb_t callback);
 
 #define DUMP_DECISION_INFO(ls) \
 	_found_a_bug(ls, false, true,  NULL, 0, NULL) // Verbose
@@ -54,7 +55,7 @@ void _found_a_bug(struct ls_state *, bool bug_found, bool verbose,
 #define FOUND_A_BUG(ls, ...) do { 						\
 		char __fab_buf[1024];						\
 		int __fab_len = scnprintf(__fab_buf, 1024, __VA_ARGS__);	\
-		_found_a_bug(ls, true, false, __fab_buf, __fab_len, NULL);	\
+		_found_a_bug(ls, true, false, __fab_buf, __fab_len, NULL, NULL);\
 	} while (0)
 
 // FIXME: Find a clean way to move this stuff to html.h
@@ -75,12 +76,8 @@ void _found_a_bug(struct ls_state *, bool bug_found, bool verbose,
 		assert(__ret > 0 && "failed write");				\
 	} while (0)
 
-/* 3rd-order-style function for getting extra info into html trace output.
- * Binds 'env_var_name' as the opaque environment packet. */
-#define FOUND_A_BUG_HTML_INFO(ls, reason, reason_len, env_var_name, code)	\
-	do {									\
-		void __cb(struct fab_html_env *env_var_name) { code }		\
-		_found_a_bug(ls, true, false, reason, reason_len, __cb);	\
-	} while (0)
+/* 3rd-order-style function for getting extra info into html trace output. */
+#define FOUND_A_BUG_HTML_INFO(ls, reason, reason_len, env, cb) \
+	_found_a_bug(ls, true, false, reason, reason_len, env, cb)
 
 #endif

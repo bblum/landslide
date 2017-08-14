@@ -44,12 +44,15 @@ BX_OBJS = instrument.o \
   arbiter.o \
   estimate.o \
   explore.o \
+  found_a_bug.o \
   kernel_specifics.o \
   lockset.o \
+  memory.o \
   messaging.o \
   pp.o \
   rand.o \
   rbtree.o \
+  schedule.o \
   stack.o \
   student.o \
   test.o \
