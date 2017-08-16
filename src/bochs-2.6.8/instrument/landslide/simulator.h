@@ -18,6 +18,7 @@ typedef void symtable_t; // XXX
 typedef void keyboard_t;
 typedef void apic_t;
 typedef void pic_t;
+typedef void symtable_t;
 
 typedef struct { } simulator_state_t;
 typedef void simulator_object_t;

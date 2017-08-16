@@ -55,6 +55,7 @@ BX_OBJS = instrument.o \
   schedule.o \
   stack.o \
   student.o \
+  symtable.o \
   test.o \
   user_specifics.o \
   user_sync.o \
