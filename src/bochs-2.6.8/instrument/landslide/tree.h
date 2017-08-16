@@ -11,6 +11,7 @@
 
 #include "array_list.h"
 #include "simulator.h"
+#include "timetravel.h"
 #include "variable_queue.h"
 
 struct ls_state;
@@ -45,6 +46,8 @@ struct hax {
 	 *  - save_state (duh)
 	 *  - data_races
 	 */
+
+	struct timetravel_hax time_machine;
 
 	/**** Tree link data. ****/
 

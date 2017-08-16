@@ -52,11 +52,13 @@ BX_OBJS = instrument.o \
   pp.o \
   rand.o \
   rbtree.o \
+  save.o \
   schedule.o \
   stack.o \
   student.o \
   symtable.o \
   test.o \
+  timetravel.o \
   user_specifics.o \
   user_sync.o \
   vector_clock.o \
@@ -83,6 +85,7 @@ BX_INCLUDES = instrument.h \
   stack.h \
   student_specifics.h \
   test.h \
+  timetravel.h \
   tree.h \
   user_specifics.h \
   user_sync.h \

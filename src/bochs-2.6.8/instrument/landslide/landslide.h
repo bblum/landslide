@@ -19,6 +19,7 @@
 #include "schedule.h"
 #include "simulator.h"
 #include "test.h"
+#include "timetravel.h"
 #include "user_sync.h"
 
 struct ls_state {
@@ -46,12 +47,12 @@ struct ls_state {
 	struct rand_state rand;
 	struct messaging_state mess;
 	struct pp_config pps;
+	struct timetravel_state timetravel;
 
 	/* used iff ICB is set */
 	unsigned int icb_bound;
 	bool icb_need_increment_bound;
 
-	char *cmd_file;
 	char *html_file;
 
 	bool just_jumped;
