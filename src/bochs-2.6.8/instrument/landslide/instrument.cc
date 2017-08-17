@@ -5,97 +5,69 @@
  * @brief hooks into bochs for landslide
  */
 
-#include <assert.h>
-
-#include "bochs.h"
-
-#define MODULE_NAME "baby landslide"
+#define MODULE_NAME "bochs glue"
 #define MODULE_COLOUR COLOUR_BOLD COLOUR_WHITE
 
 #include "common.h"
 #include "landslide.h"
 #include "instrument.h"
-#include "student_specifics.h"
-#include "x86.h"
+#include "simulator.h"
 
-#if BX_INSTRUMENTATION
+#include "cpu/instr.h"
 
-/* stuff to go in x86.c eventually */
-
-void landslide_assert_fail(char const *msg, char const*file, unsigned int line, char const*func)
-{
-	fprintf(stderr, COLOUR_BOLD COLOUR_RED "Assert failed at %s:%d: '%s'\n", file, line, msg);
-	abort();
-}
-
-void baby_cause_test(const char *test_name)
-{
-	for (const char *c = &test_name[0]; *c != '\0'; c++) {
-		cause_keypress(NULL, *c);
-	}
-	cause_keypress(NULL, '\n');
-}
+#ifndef BX_INSTRUMENTATION
+#error "what even?"
+#endif
 
 /******************************** useful hooks ********************************/
 
 void bx_instr_initialize(unsigned cpu)
 {
-	// TODO: initialize landslide struct and all
 	assert(cpu == 0 && "smp landslide not supported");
-}
+	struct ls_state *ls = new_landslide();
+	assert(ls == GET_LANDSLIDE());
 
-static unsigned int timer_ret_eip = 0;
-static bool entering_timer = false;
-static bool allow_readline = false;
+	// TODO: make this configurable
+	ls->html_file = (char *)"baby-landslide-trace.html";
+	// TODO: load dynamic pps aswell
+	// TODO: cause the tesp with a thr_exit_join
+}
 
 void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
 {
-	unsigned int eip = GET_CPU_ATTR(BX_CPU(0), eip);
-	if (eip < 0x100000) {
-		return;
-	} else if (timer_ret_eip != 0) {
-		/* it's possible for the iret to execute, but get immediately
-		 * interrupted again (e.g., racing with the keyboard). if so,
-		 * we must be in devwrap_kbd with target eip on the stack. */
-		assert((eip == timer_ret_eip ||
-		        READ_STACK(BX_CPU(0), 0) == timer_ret_eip) &&
-		       "failed suppress bochs's timer");
-		timer_ret_eip = 0;
-	} else if (entering_timer) {
-		assert(eip == GUEST_TIMER_WRAP_ENTER && "bochs missed our timer");
-		entering_timer = false;
-	} else if (eip == GUEST_TIMER_WRAP_ENTER) {
-		// TODO: future optmz - hack bochs to tick less frequently
-		lsprintf(ALWAYS, "entering devwrap timer... squelching it\n");
-		timer_ret_eip = READ_STACK(BX_CPU(0), 0);
-		avoid_timer_interrupt_immediately(BX_CPU(0));
-	} else if (eip == GUEST_EXEC_ENTER) {
-		lsprintf(ALWAYS, "testing timer injection on sys_exec()\n");
-		cause_timer_interrupt(BX_CPU(0), NULL, NULL);
-		entering_timer = true;
-	} else if (eip == 0x01001f00 /* shell readline wrapper */) {
-		if (allow_readline) {
-			allow_readline = false;
-			lsprintf(ALWAYS, "immediate timer: allowing readline proceed\n");
-		} else {
-			allow_readline = true;
-			lsprintf(ALWAYS, "immediate timer injection on readline()\n");
-			cause_timer_interrupt_immediately(BX_CPU(0));
-		}
-	} else if (eip == GUEST_READLINE_WINDOW_ENTER) {
-		lsprintf(ALWAYS, "typing the test name atm\n");
-		baby_cause_test("vanish_vanish");
-	} else if (eip == TELL_LANDSLIDE_THREAD_SWITCH) {
-		lsprintf(ALWAYS, "switched threads -> %d\n",
-		       	 READ_STACK(BX_CPU(0), 1));
-	}
+	struct trace_entry entry;
+	entry.type = TRACE_INSTRUCTION;
+	entry.instruction_text = i->opcode_bytes;
+	landslide_entrypoint(GET_LANDSLIDE(), &entry);
 }
 
-void bx_instr_after_execution(unsigned cpu, bxInstruction_c *i)
+void bx_instr_lin_access(unsigned cpu, bx_address lin, bx_address phy, unsigned len, unsigned memtype, unsigned rw)
 {
+	struct trace_entry entry;
+	entry.type = TRACE_MEMORY;
+	entry.va = lin;
+	entry.pa = phy;
+	entry.write = rw == BX_WRITE || rw == BX_RW;
+	landslide_entrypoint(GET_LANDSLIDE(), &entry);
 }
 
-void bx_instr_lin_access(unsigned cpu, bx_address lin, bx_address phy, unsigned len, unsigned memtype, unsigned rw) {}
+void bx_instr_interrupt(unsigned cpu, unsigned vector)
+{
+	struct trace_entry entry;
+	entry.type = TRACE_EXCEPTION;
+	entry.exn_number = (int)vector;
+	landslide_entrypoint(GET_LANDSLIDE(), &entry);
+}
+
+void bx_instr_exception(unsigned cpu, unsigned vector, unsigned error_code)
+{
+	bx_instr_interrupt(cpu, vector);
+}
+
+void bx_instr_hwinterrupt(unsigned cpu, unsigned vector, Bit16u cs, bx_address eip)
+{
+	bx_instr_interrupt(cpu, vector);
+}
 
 /******************************** unused hooks ********************************/
 
@@ -117,17 +89,13 @@ void bx_instr_far_branch(unsigned cpu, unsigned what, Bit16u prev_cs, bx_address
 
 void bx_instr_opcode(unsigned cpu, bxInstruction_c *i, const Bit8u *opcode, unsigned len, bx_bool is32, bx_bool is64) {}
 
-// TODO: which interrupce do i care aboub
-void bx_instr_interrupt(unsigned cpu, unsigned vector) {}
-void bx_instr_exception(unsigned cpu, unsigned vector, unsigned error_code) {}
-void bx_instr_hwinterrupt(unsigned cpu, unsigned vector, Bit16u cs, bx_address eip) {}
-
 void bx_instr_tlb_cntrl(unsigned cpu, unsigned what, bx_phy_address new_cr3) {}
 void bx_instr_clflush(unsigned cpu, bx_address laddr, bx_phy_address paddr) {}
 void bx_instr_cache_cntrl(unsigned cpu, unsigned what) {}
 void bx_instr_prefetch_hint(unsigned cpu, unsigned what, unsigned seg, bx_address offset) {}
 
 void bx_instr_repeat_iteration(unsigned cpu, bxInstruction_c *i) {}
+void bx_instr_after_execution(unsigned cpu, bxInstruction_c *i) {}
 
 void bx_instr_inp(Bit16u addr, unsigned len) {}
 void bx_instr_inp2(Bit16u addr, unsigned len, unsigned val) {}
@@ -138,5 +106,3 @@ void bx_instr_phy_access(unsigned cpu, bx_address phy, unsigned len, unsigned me
 void bx_instr_wrmsr(unsigned cpu, unsigned addr, Bit64u value) {}
 
 void bx_instr_vmexit(unsigned cpu, Bit32u reason, Bit64u qualification) {}
-
-#endif
