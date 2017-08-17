@@ -54,4 +54,16 @@ static inline unsigned int get_cpu_attr(conf_object_t *cpu, const char *name) {
 		       "failed write during VM translation -- kernel VM bug?"); \
 	} while (0)
 
+/* Horribly, simics's attributes for the segsels are lists instead of ints. */
+#define GET_SEGSEL(cpu, name) \
+	SIM_attr_integer(SIM_attr_list_item(SIM_get_attribute(cpu, #name), 0))
+
+#define CPL_USER(cpu) (GET_SEGSEL(cpu, cs) == SEGSEL_USER_CS)
+
+void flush_instruction_cache(lang_void *x);
+#define SET_EIP_FLUSH_ICACHE(cpu, buf) do {			\
+		SET_CPU_ATTR((cpu), eip, (buf));		\
+		SIM_run_alone(flush_instruction_cache, NULL);	\
+	} while (0)
+
 #endif

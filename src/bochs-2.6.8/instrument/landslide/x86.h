@@ -39,6 +39,8 @@
 #define GET_CR2(cpu) ((unsigned int)((cpu)->cr2))
 #define GET_CR3(cpu) ((unsigned int)((cpu)->cr3))
 
+#define CPL_USER(cpu) ((cpu)->user_pl)
+
 #define READ_PHYS_MEMORY(cpu, addr, width) ({				\
 	unsigned int __data;						\
 	unsigned int __w = (width);					\
@@ -113,5 +115,9 @@ unsigned int cause_transaction_failure(cpu_t *cpu, unsigned int status);
  * return address. */
 #define READ_STACK(cpu, offset) \
 	READ_MEMORY(cpu, GET_CPU_ATTR(cpu, esp) + ((offset) * WORD_SIZE))
+
+/* in simics we need a special call to flush the icache;
+ * whereas we hacked bochs to do it on its own in cpu/cpu.cc */
+#define SET_EIP_FLUSH_ICACHE(cpu, buf) SET_CPU_ATTR((cpu), eip, (buf))
 
 #endif /* __LS_X86_h */

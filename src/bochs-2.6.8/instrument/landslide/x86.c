@@ -104,13 +104,7 @@ void cause_keypress(keyboard_t *kbd, char key)
 
 bool interrupts_enabled(cpu_t *cpu)
 {
-	assert(0 && "unimplemented");
-	return false;
-}
-
-unsigned int delay_instruction(cpu_t *cpu)
-{
-	assert(0 && "unimplemented");
+	return !cpu->is_masked_event(BX_EVENT_PENDING_INTR);
 }
 
 #else
@@ -234,6 +228,56 @@ bool instruction_is_atomic_swap(cpu_t *cpu, unsigned int eip) {
 	opcodes[1] = READ_BYTE(cpu, eip + 1);
 	opcodes[2] = READ_BYTE(cpu, eip + 2);
 	return opcodes_are_atomic_swap(opcodes);
+}
+
+/* a similar trick to avoid timer interrupt, but delays by just 1 instruction. */
+unsigned int delay_instruction(cpu_t *cpu)
+{
+	/* Insert a relative jump, "e9 XXXXXXXX"; 5 bytes. Try to put it just
+	 * after _end, but if _end is page-aligned, use some space just below
+	 * the stack pointer as a fallback (XXX: this has issue #201). */
+	unsigned int buf =
+#ifdef PINTOS_KERNEL
+		PAGE_SIZE - 1 ; /* dummy value to trigger backup plan */
+#else
+		CPL_USER(cpu) ?
+			USER_IMG_END : /* use spare .bss in user image */
+			PAGE_SIZE - 1 /* FIXME #201 */;
+#endif
+
+	bool need_backup_location = buf % PAGE_SIZE > PAGE_SIZE - 8;
+
+	/* Translate buf's virtual location to physical address. */
+	unsigned int phys_buf;
+	if (!need_backup_location) {
+		if (!mem_translate(cpu, buf, &phys_buf)) {
+			need_backup_location = true;
+		}
+	}
+	if (need_backup_location) {
+		// XXX: See issue #201. This is only safe 99% of the time.
+		// To properly fix, need hack the reference kernel.
+		buf = GET_CPU_ATTR(cpu, esp);
+		assert(buf % PAGE_SIZE >= 8 &&
+		       "no spare room under stack; can't delay instruction");
+		buf -= 8;
+		lsprintf(CHOICE, "WARNING: Need to delay instruction, but no "
+			 "spare .bss. Using stack instead -- 0x%x.\n", buf);
+		bool mapping_present = mem_translate(cpu, buf, &phys_buf);
+		assert(mapping_present && "stack unmapped; can't delay ");
+	}
+
+	/* Compute relative offset. Note "e9 00000000" would jump to buf+5. */
+	unsigned int offset = GET_CPU_ATTR(cpu, eip) - (buf + 5);
+
+	lsprintf(INFO, "Be back in a jiffy...\n");
+
+	WRITE_PHYS_MEMORY(cpu, phys_buf, 0xe9, 1);
+	WRITE_PHYS_MEMORY(cpu, phys_buf + 1, offset, 4);
+
+	SET_EIP_FLUSH_ICACHE(cpu, buf);
+
+	return buf;
 }
 
 unsigned int cause_transaction_failure(cpu_t *cpu, unsigned int status)

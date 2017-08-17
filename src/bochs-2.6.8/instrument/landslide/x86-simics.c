@@ -8,10 +8,6 @@
 #error "this file cannot be compiled directly; see x86.c"
 #endif
 
-/* Horribly, simics's attributes for the segsels are lists instead of ints. */
-#define GET_SEGSEL(cpu, name) \
-	SIM_attr_integer(SIM_attr_list_item(SIM_get_attribute(cpu, #name), 0))
-
 #define INT SIM_make_attr_integer
 
 /* two possible methods for causing a timer interrupt - the "immediately"
@@ -242,61 +238,9 @@ bool interrupts_enabled(conf_object_t *cpu)
 /* I figured this out between 3 and 5 AM on a sunday morning. Could have been
  * playing Netrunner instead. Even just writing the PLDI paper would have been
  * more pleasurable. It was a real "twilight zone" bug. Aaaargh. */
-static void flush_instruction_cache(lang_void *x)
+void flush_instruction_cache(lang_void *x)
 {
 	/* I tried using SIM_flush_I_STC_logical here, and even the supposedly
 	 * universal SIM_STC_flush_cache, but the make sucked. h8rs gon h8. */
 	SIM_flush_all_caches();
-}
-
-/* a similar trick to avoid timer interrupt, but delays by just 1 instruction. */
-unsigned int delay_instruction(conf_object_t *cpu)
-{
-	/* Insert a relative jump, "e9 XXXXXXXX"; 5 bytes. Try to put it just
-	 * after _end, but if _end is page-aligned, use some space just below
-	 * the stack pointer as a fallback (XXX: this has issue #201). */
-	unsigned int buf =
-#ifdef PINTOS_KERNEL
-		PAGE_SIZE - 1 ; /* dummy value to trigger backup plan */
-#else
-		GET_SEGSEL(cpu, cs) == SEGSEL_USER_CS ?
-			USER_IMG_END : /* use spare .bss in user image */
-			PAGE_SIZE - 1 /* FIXME #201 */;
-#endif
-
-	bool need_backup_location = buf % PAGE_SIZE > PAGE_SIZE - 8;
-
-	/* Translate buf's virtual location to physical address. */
-	unsigned int phys_buf;
-	if (!need_backup_location) {
-		if (!mem_translate(cpu, buf, &phys_buf)) {
-			need_backup_location = true;
-		}
-	}
-	if (need_backup_location) {
-		// XXX: See issue #201. This is only safe 99% of the time.
-		// To properly fix, need hack the reference kernel.
-		buf = GET_CPU_ATTR(cpu, esp);
-		assert(buf % PAGE_SIZE >= 8 &&
-		       "no spare room under stack; can't delay instruction");
-		buf -= 8;
-		lsprintf(CHOICE, "WARNING: Need to delay instruction, but no "
-			 "spare .bss. Using stack instead -- 0x%x.\n", buf);
-		bool mapping_present = mem_translate(cpu, buf, &phys_buf);
-		assert(mapping_present && "stack unmapped; can't delay ");
-	}
-
-	/* Compute relative offset. Note "e9 00000000" would jump to buf+5. */
-	unsigned int offset = GET_CPU_ATTR(cpu, eip) - (buf + 5);
-
-	lsprintf(INFO, "Be back in a jiffy...\n");
-
-	SIM_write_phys_memory(cpu, phys_buf, 0xe9, 1);
-	SIM_write_phys_memory(cpu, phys_buf + 1, offset, 4);
-
-	SET_CPU_ATTR(cpu, eip, buf);
-
-	SIM_run_alone(flush_instruction_cache, NULL);
-
-	return buf;
 }
