@@ -17,10 +17,13 @@ struct timetravel_hax {
 	// TODO: implememp
 };
 
+#define timetravel_init(t) do { } while (0)
+
 #else /* SIMICS */
 
 struct timetravel_state { const char *cmd_file; };
 struct timetravel_hax { };
+#define timetravel_init(t) do { (t)->cmd_file = NULL; } while (0)
 
 #endif
 

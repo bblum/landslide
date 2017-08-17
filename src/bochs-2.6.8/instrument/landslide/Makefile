@@ -46,6 +46,7 @@ BX_OBJS = instrument.o \
   explore.o \
   found_a_bug.o \
   kernel_specifics.o \
+  landslide.o \
   lockset.o \
   memory.o \
   messaging.o \
@@ -72,9 +73,12 @@ BX_INCLUDES = instrument.h \
   estimate.h \
   explore.h \
   found_a_bug.h \
+  html.h \
   kernel_specifics.h \
+  kspec.h \
   landslide.h \
   lockset.h \
+  memory.h \
   messaging.h \
   pp.h \
   rand.h \
@@ -84,6 +88,7 @@ BX_INCLUDES = instrument.h \
   simulator.h \
   stack.h \
   student_specifics.h \
+  symtable.h \
   test.h \
   timetravel.h \
   tree.h \

@@ -39,6 +39,7 @@ static inline unsigned int get_cpu_attr(conf_object_t *cpu, const char *name) {
 #define SET_CPU_ATTR(cpu, name, val) SET_ATTR(cpu, name, integer, val)
 
 #define GET_CR0(cpu) GET_CPU_ATTR((cpu), cr0)
+#define GET_CR2(cpu) GET_CPU_ATTR((cpu), cr2)
 #define GET_CR3(cpu) GET_CPU_ATTR((cpu), cr3)
 
 #define READ_PHYS_MEMORY(cpu, addr, width) ({				\

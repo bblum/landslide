@@ -27,7 +27,7 @@ typedef void simulator_object_t;
 #define MM_STRDUP(s)   strdup(s)
 #define MM_FREE(p)     free(p)
 
-#define BREAK_SIMULATION() BX_EXIT(0)
+#define BREAK_SIMULATION() do { } while (0)
 #define QUIT_SIMULATION(v) BX_EXIT(v)
 
 #else

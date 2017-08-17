@@ -47,9 +47,9 @@ void _found_a_bug(struct ls_state *, bool bug_found, bool verbose,
 		  void *callback_env, fab_cb_t callback);
 
 #define DUMP_DECISION_INFO(ls) \
-	_found_a_bug(ls, false, true,  NULL, 0, NULL) // Verbose
+	_found_a_bug(ls, false, true,  NULL, 0, NULL, NULL) // Verbose
 #define DUMP_DECISION_INFO_QUIET(ls) \
-	_found_a_bug(ls, false, false, NULL, 0, NULL) // Not
+	_found_a_bug(ls, false, false, NULL, 0, NULL, NULL) // Not
 
 /* Simple common interface. */
 #define FOUND_A_BUG(ls, ...) do { 						\

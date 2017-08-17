@@ -22,6 +22,8 @@
 #include "timetravel.h"
 #include "user_sync.h"
 
+#define TRACE_OPCODES_LEN 16
+
 struct ls_state {
 	/* simulator_state_t must be the first thing in the device struct */
 	simulator_state_t log;
@@ -35,7 +37,7 @@ struct ls_state {
 	apic_t     *apic0;
 	pic_t      *pic0;
 	unsigned int eip;
-	uint8_t instruction_text[16];
+	uint8_t instruction_text[TRACE_OPCODES_LEN];
 
 	struct sched_state sched;
 	struct arbiter_state arbiter;
@@ -59,14 +61,27 @@ struct ls_state {
 	bool end_branch_early;
 };
 
+enum trace_type { TRACE_MEMORY, TRACE_EXCEPTION, TRACE_INSTRUCTION, TRACE_OTHER };
+
+/* simulator-agnostic definition comprising only what we need */
+struct trace_entry {
+	enum trace_type type;
+	/* if TRACE_MEMORY */
+	unsigned int pa, va; /* phys/virt memory access address */
+	bool write;
+	/* if TRACE_EXCEPTION */
+	int exn_number;
+	/* if TRACE_INSTRUCTION */
+	unsigned char *instruction_text; /* [TRACE_OPCODES_LEN] */
+};
+
 /* process exit codes */
 #define LS_NO_KNOWN_BUG 0
 #define LS_BUG_FOUND 1
 #define LS_ASSERTION_FAILED 2
 
-/* for simics glue */
 struct ls_state *new_landslide();
-void landslide_entrypoint(simulator_object_t *obj, void *entry);
+void landslide_entrypoint(struct ls_state *ls, struct trace_entry *entry);
 
 #ifdef BOCHS
 extern struct ls_state landslide;

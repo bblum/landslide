@@ -36,6 +36,7 @@
 	} while (0)
 
 #define GET_CR0(cpu) ((unsigned int)((cpu)->read_CR0()))
+#define GET_CR2(cpu) ((unsigned int)((cpu)->cr2))
 #define GET_CR3(cpu) ((unsigned int)((cpu)->cr3))
 
 #define READ_PHYS_MEMORY(cpu, addr, width) ({				\

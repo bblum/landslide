@@ -14,4 +14,6 @@
 #define LANDSLIDE_OBJECT_NAME "landslide0"
 #define GET_LANDSLIDE() ((struct ls_state *)SIM_get_object(LANDSLIDE_OBJECT_NAME))
 
+struct ls_state *ls_alloc_init();
+
 #endif
