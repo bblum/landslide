@@ -5,6 +5,8 @@
  * @brief hooks into bochs for landslide
  */
 
+#include <sys/time.h>
+
 #define MODULE_NAME "bochs glue"
 #define MODULE_COLOUR COLOUR_BOLD COLOUR_WHITE
 
@@ -27,10 +29,12 @@ void bx_instr_initialize(unsigned cpu)
 	struct ls_state *ls = new_landslide();
 	assert(ls == GET_LANDSLIDE());
 
-	// TODO: make this configurable
-	ls->html_file = (char *)"baby-landslide-trace.html";
 	// TODO: load dynamic pps aswell
-	// TODO: cause the tesp with a thr_exit_join
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	char buf[BUF_SIZE];
+	scnprintf(buf, BUF_SIZE, "landslide-trace-%lu.%lu.html", tv.tv_sec, tv.tv_usec);
+	ls->html_file = MM_XSTRDUP(buf);
 }
 
 void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
