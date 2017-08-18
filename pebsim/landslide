@@ -1,0 +1,27 @@
+#!/bin/sh
+
+if [ "`pwd | sed 's/.*\///'`" != "pebsim" ]; then
+	echo -e "\033[01;31m$0 must be run from the pebsim directory.\033[00m"
+	exit 1
+fi
+
+export QUICKSAND_CONFIG_STATIC="$1"
+if [ ! -z "$2" ]; then
+	export QUICKSAND_CONFIG_DYNAMIC="$2"
+	# must be an absolute path for c code to see it
+	# it will be removed by c code after the attribute is set
+	export QUICKSAND_CONFIG_TEMP=`mktemp /dev/shm/landslide-dynamic-pps.XXXXXXXX`
+else
+	export QUICKSAND_CONFIG_DYNAMIC=
+fi
+
+export LANDSLIDE_CONFIG=config.landslide
+
+# FIXME: Gross hack
+if ! grep "PINTOS_KERNEL=1" "$LANDSLIDE_CONFIG" >/dev/null; then
+	# Pebbles.
+	export KERNEL_SOURCE_DIR="`grep KERNEL_SOURCE_DIR $LANDSLIDE_CONFIG | cut -d= -f2-`"
+fi
+
+export DISPLAY=
+./build.sh && time echo c | ../install/bin/bochs -q

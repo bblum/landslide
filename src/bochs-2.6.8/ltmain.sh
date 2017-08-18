@@ -5678,9 +5678,9 @@ relink_command=\"$relink_command\""
       IFS="$save_ifs"
     done
 
-    if test -n "$future_libdirs"; then
-      $echo "$modename: warning: remember to run \`$progname --finish$future_libdirs'" 1>&2
-    fi
+    #if test -n "$future_libdirs"; then
+    #  $echo "$modename: warning: remember to run \`$progname --finish$future_libdirs'" 1>&2
+    #fi
 
     if test -n "$current_libdirs"; then
       # Maybe just do a dry run.
