@@ -25,10 +25,10 @@ SHELL = @SHELL@
 
 @SET_MAKE@
 
-CC = @CC@
-CFLAGS = @CFLAGS@
+CC = g++
+CFLAGS = @CFLAGS@ -DBOCHS
 CXX = @CXX@
-CXXFLAGS = @CXXFLAGS@
+CXXFLAGS = @CXXFLAGS@ -DBOCHS
 
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
@@ -40,10 +40,63 @@ RANLIB = @RANLIB@
 # ===========================================================
 
 
-BX_OBJS = \
-  instrument.o
+BX_OBJS = instrument.o \
+  arbiter.o \
+  estimate.o \
+  explore.o \
+  found_a_bug.o \
+  kernel_specifics.o \
+  landslide.o \
+  lockset.o \
+  memory.o \
+  messaging.o \
+  pp.o \
+  rand.o \
+  rbtree.o \
+  save.o \
+  schedule.o \
+  stack.o \
+  student.o \
+  symtable.o \
+  test.o \
+  timetravel.o \
+  user_specifics.o \
+  user_sync.o \
+  vector_clock.o \
+  x86.o
 
-BX_INCLUDES =
+BX_INCLUDES = instrument.h \
+  arbiter.h \
+  array_list.h \
+  common.h \
+  compiler.h \
+  estimate.h \
+  explore.h \
+  found_a_bug.h \
+  html.h \
+  kernel_specifics.h \
+  kspec.h \
+  landslide.h \
+  lockset.h \
+  memory.h \
+  messaging.h \
+  pp.h \
+  rand.h \
+  rbtree.h \
+  save.h \
+  schedule.h \
+  simulator.h \
+  stack.h \
+  student_specifics.h \
+  symtable.h \
+  test.h \
+  timetravel.h \
+  tree.h \
+  user_specifics.h \
+  user_sync.h \
+  variable_queue.h \
+  vector_clock.h \
+  x86.h
 
 BX_INCDIRS = -I../.. -I$(srcdir)/../.. -I. -I$(srcdir)/.
 
