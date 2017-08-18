@@ -578,8 +578,12 @@ static void check_test_state(struct ls_state *ls)
 				}
 			}
 		} else {
+#ifdef BOCHS
+			cause_test(ls->kbd0, &ls->test, ls, TEST_CASE);
+#else
 			lsprintf(DEV, "ready to roll!\n");
 			BREAK_SIMULATION();
+#endif
 		}
 	} else {
 		ensure_progress(ls);

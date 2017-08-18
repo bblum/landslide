@@ -640,6 +640,9 @@ echo -e "$EXTRA_SYMS"
 #### Misc config options ####
 #############################
 
+echo -e "#define TEST_CASE \"$TEST_CASE\""
+echo -e "#define SOURCE_PATH \"$SOURCE_PATH\""
+
 # supports statically defined pps in config.landslide for standalone use;
 # if called from quicksand, these will be prepended to any dynamic pps.
 echo -e "#define KERN_WITHIN_FUNCTIONS { $WITHIN_KERN_FUNCTIONS }"
