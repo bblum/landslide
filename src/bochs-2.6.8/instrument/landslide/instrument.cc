@@ -5,6 +5,7 @@
  * @brief hooks into bochs for landslide
  */
 
+#include <stdlib.h>
 #include <sys/time.h>
 
 #define MODULE_NAME "bochs glue"
@@ -29,12 +30,17 @@ void bx_instr_initialize(unsigned cpu)
 	struct ls_state *ls = new_landslide();
 	assert(ls == GET_LANDSLIDE());
 
-	// TODO: load dynamic pps aswell
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	char buf[BUF_SIZE];
 	scnprintf(buf, BUF_SIZE, "landslide-trace-%lu.%lu.html", tv.tv_sec, tv.tv_usec);
 	ls->html_file = MM_XSTRDUP(buf);
+
+	char *quicksand_pps = getenv("QUICKSAND_CONFIG_TEMP");
+	if (quicksand_pps != NULL) {
+		bool pps_loaded = load_dynamic_pps(ls, quicksand_pps);
+		assert(pps_loaded && "somehow failed to grok quicksands pps");
+	}
 }
 
 void bx_instr_before_execution(unsigned cpu, bxInstruction_c *i)
