@@ -1112,7 +1112,7 @@ static void sched_update_user_state_machine(struct ls_state *ls)
 	 * Also treat busy make-runnable loop same as xchg loop, in case of a
 	 * misbehave mode that makes m_r NOT yield (if it does yield, NBD; the
 	 * PP that arises will cause this spurious increment to get cleared. */
-	if (opcodes_are_atomic_swap(ls->instruction_text) ||
+	if (opcodes_are_atomic_swap(ls->instruction_text, NULL) ||
 	     user_make_runnable_entering(ls->eip)) {
 		check_user_xchg(&ls->user_sync, s->cur_agent);
 	}

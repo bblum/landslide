@@ -197,8 +197,12 @@ char *read_string(cpu_t *cpu, unsigned int addr)
 	return buf;
 }
 
-/* will read at most 3 opcodes */
-bool opcodes_are_atomic_swap(uint8_t *ops) {
+/* will read at most 4 opcodes
+ * source register operand is encoded in these bytes: ..OOO... (big-endian repr)
+ * if result is true, those 3 bytes (alone) will be put in src_reg.
+ * 0 = eax, 1 = ecx, 2 = edx, 3 = ebx, 4 = esp, 5 = ebp, 6 = esi, 7 = edi */
+#define OPERAND_SRC_REG(op) (((op) >> 3) & 0x7)
+bool opcodes_are_atomic_swap(uint8_t *ops, unsigned int *src_reg) {
 	unsigned int offset = 0;
 	if (ops[offset] == 0xf0) {
 		/* lock prefix */
@@ -207,11 +211,17 @@ bool opcodes_are_atomic_swap(uint8_t *ops) {
 
 	if (ops[offset] == 0x86 || ops[offset] == 0x87) {
 		/* xchg */
+		if (src_reg != NULL) {
+			*src_reg = OPERAND_SRC_REG(ops[offset + 1]);
+		}
 		return true;
 	} else if (ops[offset] == 0x0f) {
 		offset++;
 		if (ops[offset] == 0xb0 || ops[offset] == 0xb1) {
 			/* cmpxchg */
+			if (src_reg != NULL) {
+				*src_reg = OPERAND_SRC_REG(ops[offset + 1]);
+			}
 			return true;
 		} else {
 			// FIXME: Shouldn't 0F C0 and 0F C1 (xadd) be here?
@@ -227,7 +237,7 @@ bool instruction_is_atomic_swap(cpu_t *cpu, unsigned int eip) {
 	opcodes[0] = READ_BYTE(cpu, eip);
 	opcodes[1] = READ_BYTE(cpu, eip + 1);
 	opcodes[2] = READ_BYTE(cpu, eip + 2);
-	return opcodes_are_atomic_swap(opcodes);
+	return opcodes_are_atomic_swap(opcodes, NULL);
 }
 
 /* a similar trick to avoid timer interrupt, but delays by just 1 instruction. */

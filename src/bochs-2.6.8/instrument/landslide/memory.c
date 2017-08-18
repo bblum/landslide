@@ -872,17 +872,25 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 	/* Check for an xchg of a same value, to avoid too-liberally unblocking
 	 * another xchg-blocked thread when this thread is blocked too. */
 	bool xchg_wont_modify_the_data = false;
-	if (opcodes_are_atomic_swap(ls->instruction_text)) {
+	unsigned int src_reg;
+	if (opcodes_are_atomic_swap(ls->instruction_text, &src_reg)) {
 		unsigned int val = READ_MEMORY(ls->cpu0, virt_addr);
+#ifdef BOCHS
+		/* bochs implementation - calls once as RW; need to decode. */
+		xchg_wont_modify_the_data = GET_CPU_GPR(ls->cpu0, src_reg) == val;
+#else
+		/* simics implementation - calls us twice for each xchg. */
 		if (write) {
 			/* all atomix ought read something before writing */
 			assert(ls->user_mem.during_xchg);
+			ls->user_mem.during_xchg = false;
 			xchg_wont_modify_the_data =
 				ls->user_mem.last_xchg_read == val;
 		} else {
 			ls->user_mem.during_xchg = true;
 			ls->user_mem.last_xchg_read = val;
 		}
+#endif
 	}
 
 	/* Determine which heap - kernel or user - to reason about.

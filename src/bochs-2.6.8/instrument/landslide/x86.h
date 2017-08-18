@@ -35,6 +35,18 @@
 		(cpu)->gen_reg[BX_32BIT_REG_##name].dword.erx = (val);	\
 	} while (0)
 
+/* can index directly by gpr number (e.g. as decoded from asm operands) */
+#define GET_CPU_GPR(cpu, gprno) ({					\
+	STATIC_ASSERT(BX_32BIT_REG_EAX == 0);				\
+	STATIC_ASSERT(BX_32BIT_REG_ECX == 1);				\
+	STATIC_ASSERT(BX_32BIT_REG_EDX == 2);				\
+	STATIC_ASSERT(BX_32BIT_REG_EBX == 3);				\
+	STATIC_ASSERT(BX_32BIT_REG_ESP == 4);				\
+	STATIC_ASSERT(BX_32BIT_REG_EBP == 5);				\
+	STATIC_ASSERT(BX_32BIT_REG_ESI == 6);				\
+	STATIC_ASSERT(BX_32BIT_REG_EDI == 7);				\
+	(cpu)->gen_reg[(gprno)].dword.erx; })
+
 #define GET_CR0(cpu) ((unsigned int)((cpu)->read_CR0()))
 #define GET_CR2(cpu) ((unsigned int)((cpu)->cr2))
 #define GET_CR3(cpu) ((unsigned int)((cpu)->cr3))
@@ -101,7 +113,7 @@ unsigned int read_memory(cpu_t *cpu, unsigned int addr, unsigned int width);
 bool write_memory(cpu_t *cpu, unsigned int addr, unsigned int val, unsigned int width);
 char *read_string(cpu_t *cpu, unsigned int eip);
 bool instruction_is_atomic_swap(cpu_t *cpu, unsigned int eip); /* slower; uses READ_MEMORY */
-bool opcodes_are_atomic_swap(uint8_t *opcodes); /* faster; ok to use every instruction */
+bool opcodes_are_atomic_swap(uint8_t *opcodes, unsigned int *src_reg); /* faster; ok to use every instruction */
 unsigned int delay_instruction(cpu_t *cpu);
 unsigned int cause_transaction_failure(cpu_t *cpu, unsigned int status);
 
