@@ -653,7 +653,7 @@ typedef
 #define BX_INSTRUMENTATION 1
 
 // enable BX_DEBUG/BX_ERROR/BX_INFO messages
-#define BX_NO_LOGGING 0
+#define BX_NO_LOGGING 1
 
 // enable BX_ASSERT checks
 #define BX_ASSERT_ENABLE 1
