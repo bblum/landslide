@@ -13,6 +13,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef BOCHS
+#include "bochs.h" // XXX: need to include this before undefining "assert" below.
+#endif
+
 #include "student_specifics.h" // for verbosity
 
 #ifndef MODULE_NAME

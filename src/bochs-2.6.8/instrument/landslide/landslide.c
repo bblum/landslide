@@ -509,7 +509,7 @@ void landslide_assert_fail(const char *message, const char *file,
 {
 	struct ls_state *ls = GET_LANDSLIDE();
 	message_assert_fail(&ls->mess, message, file, line, function);
-#ifdef ID_WRAPPER_MAGIC
+#if defined(ID_WRAPPER_MAGIC) || defined(BOCHS)
 	lsprintf(ALWAYS, COLOUR_BOLD COLOUR_RED "%s:%u: %s: "
 		 "Assertion '%s' failed.\n", file, line, function, message);
 	QUIT_SIMULATION(LS_ASSERTION_FAILED);
@@ -543,7 +543,7 @@ static bool time_travel(struct ls_state *ls)
 	if (h != NULL) {
 		assert(!h->all_explored);
 		arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code);
-		save_longjmp(&ls->save, ls, h);
+		save_longjmp(&ls->save, ls, h, tid, txn, xabort_code);
 		return true;
 	} else if (ls->icb_need_increment_bound) {
 		lsprintf(ALWAYS, COLOUR_BOLD COLOUR_YELLOW "ICB bound %u "

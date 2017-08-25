@@ -810,6 +810,8 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			add_xabort_code(h, _XABORT_RETRY);
 		}
 
+		timetravel_hax_init(&h->time_machine);
+
 		if (voluntary) {
 #ifndef PINTOS_KERNEL
 			assert(h->chosen_thread == -1 || h->chosen_thread ==
@@ -918,11 +920,12 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			 COLOUR_DEFAULT, h->depth, h->chosen_thread);
 	}
 
-	timetravel_set(&ls->timetravel, &h->time_machine);
+	timetravel_set(&ls->timetravel, h);
 	ss->total_choices++;
 }
 
-void save_longjmp(struct save_state *ss, struct ls_state *ls, struct hax *h)
+void save_longjmp(struct save_state *ss, struct ls_state *ls, struct hax *h,
+		  unsigned int tid, bool txn, unsigned int xabort_code)
 {
 	struct hax *rabbit = ss->current;
 
@@ -940,7 +943,7 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, struct hax *h)
 	while (ss->current != h) {
 		/* This nobe will soon be in the future. Reclaim memory. */
 		free_hax(ss->current);
-		timetravel_delete(&ls->timetravel, &h->time_machine);
+		timetravel_delete(&ls->timetravel, &ss->current->time_machine);
 
 		ss->current = ss->current->parent;
 		assert(Q_GET_SIZE(&ss->current->children) > 0);
@@ -959,7 +962,7 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, struct hax *h)
 
 	restore_ls(ls, h);
 
-	timetravel_jump(&ls->timetravel, &h->time_machine);
+	timetravel_jump(&ls->timetravel, &h->time_machine, tid, txn, xabort_code);
 	ss->total_jumps++;
 }
 

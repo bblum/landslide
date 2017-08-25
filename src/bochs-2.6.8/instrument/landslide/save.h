@@ -51,7 +51,8 @@ void save_setjmp(struct save_state *, struct ls_state *,
 
 /* If hax is NULL, then longjmps to the root. Otherwise, hax must be between
  * the current choice point and the root (inclusive). */
-void save_longjmp(struct save_state *, struct ls_state *, struct hax *);
+void save_longjmp(struct save_state *, struct ls_state *, struct hax *,
+		  unsigned int tid, bool txn, unsigned int xabort_code);
 
 void save_reset_tree(struct save_state *ss, struct ls_state *ls);
 

@@ -83,7 +83,8 @@ void timetravel_set(struct timetravel_state *ts, struct timetravel_hax *th)
 	run_command(ts->file, CMD_BOOKMARK, th);
 }
 
-void timetravel_jump(struct timetravel_state *ts, struct timetravel_hax *th)
+void timetravel_jump(struct timetravel_state *ts, struct timetravel_hax *th,
+		     unsigned int tid, bool txn, unsigned int xabort_code)
 {
 	run_command(ts->file, CMD_SKIPTO, th);
 }

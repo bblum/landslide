@@ -7,28 +7,38 @@
 #ifndef __LS_TIMETRAVEL_H
 #define __LS_TIMETRAVEL_H
 
+#include <stdbool.h>
+
 #ifdef BOCHS
 
 struct timetravel_state {
-	// TODO: nothing?
+	int pipefd; /* used to communicate exit status */
 };
 
 struct timetravel_hax {
-	// TODO: implememp
+	bool active;
+	bool parent;
+	int pipefd;
 };
 
-#define timetravel_init(t) do { } while (0)
+void timetravel_init(struct timetravel_state *ts);
+#define timetravel_hax_init(th) do { (th)->active = false; } while (0)
 
 #else /* SIMICS */
 
-struct timetravel_state { const char *cmd_file; };
+struct timetravel_state { char *cmd_file; };
 struct timetravel_hax { };
-#define timetravel_init(t) do { (t)->cmd_file = NULL; } while (0)
+
+#define timetravel_init(ts)     do { (ts)->cmd_file = NULL; } while (0)
+#define timetravel_hax_init(th) do { } while (0)
 
 #endif
 
-void timetravel_set(struct timetravel_state *ts, struct timetravel_hax *tm);
-void timetravel_jump(struct timetravel_state *ts, struct timetravel_hax *tm);
-void timetravel_delete(struct timetravel_state *ts, struct timetravel_hax *tm);
+struct hax;
+
+void timetravel_set(struct timetravel_state *ts, struct hax *h);
+void timetravel_jump(struct timetravel_state *ts, struct timetravel_hax *tt,
+		     unsigned int tid, bool txn, unsigned int xabort_code);
+void timetravel_delete(struct timetravel_state *ts, struct timetravel_hax *tt);
 
 #endif /* __LS_TIMETRAVEL_H */

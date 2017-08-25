@@ -27,8 +27,9 @@ typedef void simulator_object_t;
 #define MM_STRDUP(s)   strdup(s)
 #define MM_FREE(p)     free(p)
 
+void quit_landslide(unsigned int code); /* defined in timetravel.c */
 #define BREAK_SIMULATION() do { } while (0)
-#define QUIT_SIMULATION(v) BX_EXIT(v)
+#define QUIT_SIMULATION(v) quit_landslide(v)
 
 #else
 #include "simulator-simics.h"
