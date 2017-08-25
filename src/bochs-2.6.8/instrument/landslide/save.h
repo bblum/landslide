@@ -17,9 +17,9 @@ struct hax;
 struct save_state {
 	/* The root of the decision tree, or NULL if save_setjmp() was never
 	 * called. */
-	struct hax *root;
+	const struct hax *root;
 	/* If root is set, this points to the "current" node in the tree */
-	struct hax *current;
+	const struct hax *current;
 	int next_tid;
 	/* Statistics */
 	uint64_t total_choice_poince;
@@ -36,7 +36,7 @@ struct save_state {
 	uint64_t total_usecs;
 };
 
-void abort_transaction(unsigned int tid, struct hax *h2, unsigned int code);
+void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code);
 
 void save_init(struct save_state *);
 
@@ -51,7 +51,7 @@ void save_setjmp(struct save_state *, struct ls_state *,
 
 /* If hax is NULL, then longjmps to the root. Otherwise, hax must be between
  * the current choice point and the root (inclusive). */
-void save_longjmp(struct save_state *, struct ls_state *, struct hax *,
+void save_longjmp(struct save_state *, struct ls_state *, const struct hax *,
 		  unsigned int tid, bool txn, unsigned int xabort_code);
 
 void save_reset_tree(struct save_state *ss, struct ls_state *ls);

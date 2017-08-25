@@ -22,7 +22,6 @@ enum timetravel_message_tag {
 	TIMETRAVEL_TAG_ANCESTOR,
 	// TODO: something about estimace?
 	TIMETRAVEL_RUN,
-	TIMETRAVEL_EXIT,
 };
 
 #define TIMETRAVEL_MAGIC 0x44664499
@@ -47,10 +46,12 @@ struct timetravel_message {
 
 #define QUIT_BOCHS(v) do { BX_EXIT(v); assert(0 && "noreturn"); } while (0)
 
+static bool timetravel_inited = false;
+bool active_world_line = true;
+
 /* because setting up timetravel at each PP involves creating a new process,
  * to manage exit code and wait()ing by any parent process (whether shell or
  * quicksand) we first dedicate the original process to collect said code... */
-static bool timetravel_inited = false;
 void timetravel_init(struct timetravel_state *ts)
 {
 	int pipefd[2];
@@ -65,6 +66,7 @@ void timetravel_init(struct timetravel_state *ts)
 	if (child_tid != 0) {
 		/* parent process for collecting the exit code */
 		assert(child_tid > 0 && "failed fork");
+		active_world_line = false;
 		struct timetravel_global_message gm;
 		int ret = read(pipefd[0], &gm, sizeof(gm));
 		assert(ret == sizeof(gm) && "failed to collect exit status");
@@ -98,6 +100,7 @@ void timetravel_set(struct timetravel_state *unused, struct hax *h)
 	int pipefd[2];
 
 	assert(!th->active);
+	assert(active_world_line && "not to be called from a timetravel child!");
 	th->active = true;
 
 	int ret = pipe(pipefd);
@@ -117,11 +120,13 @@ void timetravel_set(struct timetravel_state *unused, struct hax *h)
 	th->parent = false;
 	th->pipefd = pipefd[0];
 	close(pipefd[1]);
+	active_world_line = false;
 
 	struct timetravel_message tm;
 	while ((ret = read(th->pipefd, &tm, sizeof(tm))) == sizeof(tm)) {
 		assert(tm.magic == TIMETRAVEL_MAGIC && "bad magic");
 		if (tm.tag == TIMETRAVEL_RUN) {
+			active_world_line = true;
 			// TODO - this will need a bunch of refactoring
 			assert(0 && "unimplemepted");
 
@@ -129,19 +134,15 @@ void timetravel_set(struct timetravel_state *unused, struct hax *h)
 			th->active = false;
 			close(th->pipefd);
 			// TODO - will need a call to timetravel_set here
-		} else if (tm.tag == TIMETRAVEL_EXIT) {
-			/* expect pipe close */
-			assert(read(th->pipefd, &tm, sizeof(tm)) == 0);
-			QUIT_BOCHS(LS_NO_KNOWN_BUG);
 		} else {
 			assert(0 && "bad message tag");
 		}
 	}
 
-	/* got here? pipe closed before protocol completed */
+	/* got here? expect pipe closed; delete this timetravel nobe */
 	assert(ret == 0 && "child process failed to read from pipe");
 	/* parence process must have crashed; not our business; quit silently */
-	QUIT_BOCHS(LS_ASSERTION_FAILED);
+	QUIT_BOCHS(LS_NO_KNOWN_BUG);
 }
 
 void timetravel_jump(struct timetravel_state *unused, struct timetravel_hax *th,
@@ -149,6 +150,7 @@ void timetravel_jump(struct timetravel_state *unused, struct timetravel_hax *th,
 {
 	assert(th->active);
 	assert(th->parent);
+	assert(active_world_line && "not to be called from a timetravel child!");
 	lsprintf(CHOICE, "tt'ing to tid %d txn %d code %d\n", tid, txn, xabort_code);
 
 	struct timetravel_message tm;
@@ -166,11 +168,7 @@ void timetravel_delete(struct timetravel_state *unused, struct timetravel_hax *t
 {
 	assert(th->active);
 	assert(th->parent);
-	struct timetravel_message tm;
-	tm.tag   = TIMETRAVEL_EXIT;
-	tm.magic = TIMETRAVEL_MAGIC;
-	int ret = write(th->pipefd, &tm, sizeof(tm));
-	assert(ret == sizeof(tm) && "write failed");
+	assert(active_world_line && "not to be called from a timetravel child!");
 	close(th->pipefd);
 }
 

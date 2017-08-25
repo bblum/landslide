@@ -57,7 +57,7 @@ static void init_table_column_map(table_column_map_t *m, struct save_state *ss,
 
 	/* current tid may not show up in history. add as a special case. */
 	ARRAY_LIST_APPEND(m, current_tid);
-	for (struct hax *h = ss->current; h != NULL; h = h->parent) {
+	for (const struct hax *h = ss->current; h != NULL; h = h->parent) {
 		/* add it if it's not already present */
 		bool present = false;
 		int i;
@@ -108,7 +108,7 @@ static void end_html_output(struct fab_html_env *env) {
 
 static void html_print_stack_trace_in_table(struct fab_html_env *env,
 					    table_column_map_t *m,
-					    struct stack_trace *st)
+					    const struct stack_trace *st)
 {
 	bool found = false;
 	HTML_PRINTF(env, "<tr>");
@@ -133,9 +133,9 @@ static void html_print_stack_trace_in_table(struct fab_html_env *env,
 
 /* As print_stack in stack.c, but prints directly to console, on multiple lines
  * with tabs for alignment, rather than on one line with comma separators. */
-void print_stack_to_console(struct stack_trace *st, bool bug_found, const char *prefix)
+void print_stack_to_console(const struct stack_trace *st, bool bug_found, const char *prefix)
 {
-	struct stack_frame *f;
+	const struct stack_frame *f;
 	bool first_frame = true;
 
 	/* print TID prefix before first frame */
@@ -155,7 +155,7 @@ void print_stack_to_console(struct stack_trace *st, bool bug_found, const char *
 }
 
 /* env and map are valid iff tabular is true */
-static unsigned int print_tree_from(struct hax *h, unsigned int choose_thread,
+static unsigned int print_tree_from(const struct hax *h, unsigned int choose_thread,
 				    bool bug_found, bool tabular,
 				    struct fab_html_env *env,
 				    table_column_map_t *map,

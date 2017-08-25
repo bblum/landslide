@@ -177,10 +177,11 @@ static struct rb_node **find_insert_location(struct rb_root *root, unsigned int 
 
 /* finds the chunk with the nearest start address lower than this address.
  * if the address is lower than anything currently in the heap, returns null. */
-static struct chunk *find_containing_chunk(struct rb_root *root, unsigned int addr)
+static const struct chunk *find_containing_chunk(const struct rb_root *root, unsigned int addr)
 {
 	struct chunk *target = NULL;
-	struct rb_node **p = find_insert_location(root, addr, &target);
+	/* ugh the c type system is so bad sorry */
+	struct rb_node **p = find_insert_location((struct rb_root *)root, addr, &target);
 
 	if (p == NULL) {
 		return target;
@@ -190,9 +191,9 @@ static struct chunk *find_containing_chunk(struct rb_root *root, unsigned int ad
 }
 
 /* As above, but searches both the malloc and palloc heap (if it exists). */
-static struct chunk *find_alloced_chunk(struct mem_state *m, unsigned int addr)
+static const struct chunk *find_alloced_chunk(const struct mem_state *m, unsigned int addr)
 {
-	struct chunk *c = find_containing_chunk(&m->malloc_heap, addr);
+	const struct chunk *c = find_containing_chunk(&m->malloc_heap, addr);
 	if (c == NULL) {
 		c = find_containing_chunk(&m->palloc_heap, addr);
 		/* Pages used to back malloc are still illegal. */
@@ -258,17 +259,17 @@ static void print_heap(verbosity v, struct rb_node *nobe, bool rightmost)
 }
 
 /* Attempt to find a freed chunk among all transitions */
-static struct chunk *find_freed_chunk(struct ls_state *ls, unsigned int addr,
-				      bool in_kernel,
-				      struct hax **before, struct hax **after)
+static const struct chunk *find_freed_chunk(
+	struct ls_state *ls, unsigned int addr, bool in_kernel,
+	const struct hax **before, const struct hax **after)
 {
-	struct mem_state *m = in_kernel ? &ls->kern_mem : &ls->user_mem;
+	const struct mem_state *m = in_kernel ? &ls->kern_mem : &ls->user_mem;
 
 	*before = NULL;
 	*after = ls->save.current;
 
 	do {
-		struct chunk *c = find_containing_chunk(&m->freed, addr);
+		const struct chunk *c = find_containing_chunk(&m->freed, addr);
 		if (c != NULL) {
 			assert(c->malloc_trace != NULL);
 			assert(c->free_trace != NULL);
@@ -287,7 +288,7 @@ static struct chunk *find_freed_chunk(struct ls_state *ls, unsigned int addr,
 	return NULL;
 }
 
-struct freed_chunk_info { struct chunk *chunk; struct hax *before, *after; };
+struct freed_chunk_info { const struct chunk *chunk; const struct hax *before, *after; };
 
 /* html env may be null */
 static void print_freed_chunk_info(void *env, struct fab_html_env *html_env)
@@ -295,9 +296,9 @@ static void print_freed_chunk_info(void *env, struct fab_html_env *html_env)
 	char allocated_msg[BUF_SIZE];
 	char freed_msg[BUF_SIZE];
 	unsigned int pos = 0;
-	struct chunk *c    = ((struct freed_chunk_info *)env)->chunk;
-	struct hax *before = ((struct freed_chunk_info *)env)->before;
-	struct hax *after  = ((struct freed_chunk_info *)env)->after;
+	const struct chunk *c    = ((struct freed_chunk_info *)env)->chunk;
+	const struct hax *before = ((struct freed_chunk_info *)env)->before;
+	const struct hax *after  = ((struct freed_chunk_info *)env)->after;
 
 	scnprintf(allocated_msg, BUF_SIZE, "Heap block [0x%x | %d] "
 		  "was allocated at:", c->base, c->len);
@@ -442,11 +443,12 @@ static void mem_enter_free(struct ls_state *ls, bool in_kernel, bool is_palloc, 
 		lsprintf(INFO, "Free() NULL (in %s); ok, I guess...\n",
 			 K_STR(in_kernel));
 	} else if (chunk == NULL) {
-		struct hax *before;
-		struct hax *after;
-		chunk = find_freed_chunk(ls, base, in_kernel, &before, &after);
-		if (chunk != NULL) {
-			struct freed_chunk_info env = { .chunk = chunk,
+		const struct hax *before;
+		const struct hax *after;
+		const struct chunk *freed_chunk =
+			find_freed_chunk(ls, base, in_kernel, &before, &after);
+		if (freed_chunk != NULL) {
+			struct freed_chunk_info env = { .chunk = freed_chunk,
 				.before = before, .after = after, };
 			print_freed_chunk_info((void *)(&env), NULL);
 			char buf[BUF_SIZE];
@@ -598,7 +600,7 @@ static void merge_chunk_id_info(enum chunk_id_info *dst_any, unsigned int *dst_i
 	} /* otherwise, nothing to do */
 }
 
-static bool was_freed_remalloced(struct mem_lockset *l0, struct mem_lockset *l1)
+static bool was_freed_remalloced(const struct mem_lockset *l0, const struct mem_lockset *l1)
 {
 	return l0->any_chunk_ids == HAS_CHUNK_ID &&
 		l1->any_chunk_ids == HAS_CHUNK_ID &&
@@ -608,7 +610,7 @@ static bool was_freed_remalloced(struct mem_lockset *l0, struct mem_lockset *l1)
 /* Actually looking for data races cannot happen until we know the
  * happens-before relationship to previous transitions, in save.c. */
 static void add_lockset_to_shm(struct ls_state *ls, struct mem_access *ma,
-			       struct chunk *c, bool write, bool in_kernel)
+			       const struct chunk *c, bool write, bool in_kernel)
 {
 	struct lockset *current_locks =
 		in_kernel ? &ls->sched.cur_agent->kern_locks_held :
@@ -751,7 +753,7 @@ static void add_lockset_to_shm(struct ls_state *ls, struct mem_access *ma,
 #define MEM_ENTRY(rb) \
 	((rb) == NULL ? NULL : rb_entry(rb, struct mem_access, nobe))
 
-static void add_shm(struct ls_state *ls, struct mem_state *m, struct chunk *c,
+static void add_shm(struct ls_state *ls, struct mem_state *m, const struct chunk *c,
 		    unsigned int addr, bool write, bool in_kernel)
 {
 	struct rb_node **p = &m->shm.rb_node;
@@ -815,9 +817,9 @@ static void use_after_free(struct ls_state *ls, unsigned int addr,
 	}
 
 	/* Find the chunk and print stack traces for it */
-	struct hax *before;
-	struct hax *after;
-	struct chunk *c = find_freed_chunk(ls, addr, in_kernel, &before, &after);
+	const struct hax *before;
+	const struct hax *after;
+	const struct chunk *c = find_freed_chunk(ls, addr, in_kernel, &before, &after);
 
 	if (c == NULL) {
 		lsprintf(BUG, "0x%x was never allocated...\n", addr);
@@ -978,9 +980,16 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 			 * i.e., this thread wasn't the one that ran last. */
 			return;
 		} else if (in_kernel) {
-			m = ls->save.current->old_kern_mem;
+			/* NB XXX: Bypassing the const restriction on old PPs
+			 * to record this memory access without informing the
+			 * timetravel infrastructure. This is ok because if
+			 * we time travel to that process, it's going to execute
+			 * the very same instruction, and will record this
+			 * access on its own in due time. */
+			m = (struct mem_state *)ls->save.current->old_kern_mem;
 		} else {
-			m = ls->save.current->old_user_mem;
+			/* NB XXX: See above */
+			m = (struct mem_state *)ls->save.current->old_user_mem;
 		}
 	} else if (ls->sched.voluntary_resched_stack != NULL &&
 		   // XXX: can't rely on voluntary_resched_tid, see #178.
@@ -1022,7 +1031,7 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 
 	if ((in_kernel && kern_address_in_heap(addr)) ||
 	    (!in_kernel && user_address_in_heap(addr))) {
-		struct chunk *c = find_alloced_chunk(m, addr);
+		const struct chunk *c = find_alloced_chunk(m, addr);
 		if (c == NULL) {
 			use_after_free(ls, addr, write, KERNEL_MEMORY(addr));
 		} else if (do_add_shm) {
@@ -1049,7 +1058,7 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 	}
 }
 
-bool shm_contains_addr(struct mem_state *m, unsigned int addr)
+bool shm_contains_addr(const struct mem_state *m, unsigned int addr)
 {
 	struct mem_access *ma = MEM_ENTRY(m->shm.rb_node);
 
@@ -1072,9 +1081,10 @@ bool shm_contains_addr(struct mem_state *m, unsigned int addr)
 #define print_heap_address(buf, size, addr, base, len) \
 	scnprintf(buf, size, "0x%x in [0x%x | %d]", addr, base, len)
 
-static void print_shm_conflict(verbosity v, struct mem_state *m0, struct mem_state *m1,
-			       struct mem_access *ma0, struct mem_access *ma1,
-			       struct chunk *c0, struct chunk *c1)
+static void print_shm_conflict(verbosity v, const struct mem_state *m0,
+			       const struct mem_state *m1,
+			       const struct mem_access *ma0, const struct mem_access *ma1,
+			       const struct chunk *c0, const struct chunk *c1)
 {
 	char buf[BUF_SIZE];
 	bool in_kernel = KERNEL_MEMORY(ma0->addr);
@@ -1136,11 +1146,11 @@ static void check_stack_conflict(struct mem_access *ma, unsigned int other_tid,
 	}
 }
 
-static void check_freed_conflict(struct mem_access *ma0, struct mem_state *m1,
+static void check_freed_conflict(struct mem_access *ma0, const struct mem_state *m1,
 				 unsigned int other_tid, unsigned int *conflicts)
 {
 	// FIXME: Unimplemented for the palloc heap. What are the consequences?
-	struct chunk *c = find_containing_chunk(&m1->freed, ma0->addr);
+	const struct chunk *c = find_containing_chunk(&m1->freed, ma0->addr);
 
 	if (c != NULL) {
 		char buf[BUF_SIZE];
@@ -1158,10 +1168,11 @@ static void check_freed_conflict(struct mem_access *ma0, struct mem_state *m1,
 	}
 }
 
-static void print_data_race(struct ls_state *ls, struct hax *h0, struct hax *h1,
-			    struct mem_access *ma0, struct mem_access *ma1,
-			    struct chunk *c0, struct chunk *c1,
-			    struct mem_lockset *l0, struct mem_lockset *l1,
+static void print_data_race(struct ls_state *ls,
+			    const struct hax *h0, const struct hax *h1,
+			    const struct mem_access *ma0, const struct mem_access *ma1,
+			    const struct chunk *c0, const struct chunk *c1,
+			    const struct mem_lockset *l0, const struct mem_lockset *l1,
 			    bool in_kernel, bool confirmed, bool free_re_malloc)
 {
 	/* a heuristic for distinguishing, among 'suspected' data races, those
@@ -1179,9 +1190,9 @@ static void print_data_race(struct ls_state *ls, struct hax *h0, struct hax *h1,
 
 #ifdef PRINT_DATA_RACES
 #if PRINT_DATA_RACES != 0
-	struct mem_state *m  = in_kernel ? &ls->kern_mem    : &ls->user_mem;
-	struct mem_state *m0 = in_kernel ? h0->old_kern_mem : h0->old_user_mem;
-	struct mem_state *m1 = in_kernel ? h1->old_kern_mem : h1->old_user_mem;
+	const struct mem_state *m  = in_kernel ? &ls->kern_mem    : &ls->user_mem;
+	const struct mem_state *m0 = in_kernel ? h0->old_kern_mem : h0->old_user_mem;
+	const struct mem_state *m1 = in_kernel ? h1->old_kern_mem : h1->old_user_mem;
 
 	const char *colour =
 		confirmed ? COLOUR_BOLD COLOUR_RED : COLOUR_BOLD COLOUR_YELLOW;
@@ -1321,7 +1332,10 @@ static bool check_data_race(struct mem_state *m, unsigned int eip0, unsigned int
 	return false;
 }
 
-static void check_enable_speculative_pp(struct hax *h, unsigned int eip)
+static void update_hax_set_speculative_pp(struct hax *h, int *unused)
+	{ h->is_preemption_point = true; }
+
+static void check_enable_speculative_pp(const struct hax *h, unsigned int eip)
 {
 	if (h != NULL && h->data_race_eip != -1 && h->data_race_eip == eip) {
 		if (h->is_preemption_point) {
@@ -1330,14 +1344,16 @@ static void check_enable_speculative_pp(struct hax *h, unsigned int eip)
 		} else {
 			lsprintf(DEV, "data race enables PP #%d/tid%d\n",
 				 h->depth, h->chosen_thread);
-			h->is_preemption_point = true;
+			modify_hax(update_hax_set_speculative_pp, h, 0);
 		}
 	}
 }
 
-static void check_locksets(struct ls_state *ls, struct hax *h0, struct hax *h1,
-			   struct mem_access *ma0, struct mem_access *ma1,
-			   struct chunk *c0, struct chunk *c1, bool in_kernel)
+static void check_locksets(struct ls_state *ls,
+			   const struct hax *h0, const struct hax *h1,
+			   const struct mem_access *ma0, const struct mem_access *ma1,
+			   const struct chunk *c0, const struct chunk *c1,
+			   bool in_kernel)
 {
 	struct mem_state *m = in_kernel ? &ls->kern_mem : &ls->user_mem;
 	struct mem_lockset *l0;
@@ -1386,11 +1402,12 @@ static void check_locksets(struct ls_state *ls, struct hax *h0, struct hax *h1,
 }
 
 /* Compute the intersection of two transitions' shm accesses */
-bool mem_shm_intersect(struct ls_state *ls, struct hax *h0, struct hax *h1,
+bool mem_shm_intersect(struct ls_state *ls,
+		       const struct hax *h0, const struct hax *h1,
 		       bool in_kernel)
 {
-	struct mem_state *m0 = in_kernel ? h0->old_kern_mem : h0->old_user_mem;
-	struct mem_state *m1 = in_kernel ? h1->old_kern_mem : h1->old_user_mem;
+	const struct mem_state *m0 = in_kernel ? h0->old_kern_mem : h0->old_user_mem;
+	const struct mem_state *m1 = in_kernel ? h1->old_kern_mem : h1->old_user_mem;
 	unsigned int tid0 = h0->chosen_thread;
 	unsigned int tid1 = h1->chosen_thread;
 
@@ -1422,8 +1439,8 @@ bool mem_shm_intersect(struct ls_state *ls, struct hax *h0, struct hax *h1,
 		} else {
 			/* found a match; advance both */
 			if (ma0->any_writes || ma1->any_writes) {
-				struct chunk *c0 = find_alloced_chunk(m0, ma0->addr);
-				struct chunk *c1 = find_alloced_chunk(m1, ma1->addr);
+				const struct chunk *c0 = find_alloced_chunk(m0, ma0->addr);
+				const struct chunk *c1 = find_alloced_chunk(m1, ma1->addr);
 				if (conflicts < MAX_CONFLICTS) {
 					if (conflicts > 0) {
 						printf(DEV, ", ");

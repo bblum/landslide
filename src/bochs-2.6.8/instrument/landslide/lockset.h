@@ -44,7 +44,7 @@ enum lockset_cmp_result {
 
 void lockset_init(struct lockset *l);
 void lockset_free(struct lockset *l);
-void lockset_print(verbosity v, struct lockset *l);
+void lockset_print(verbosity v, const struct lockset *l);
 void lockset_clone(struct lockset *dest, const struct lockset *src);
 void lockset_record_semaphore(struct lockset *semaphores, unsigned int lock_addr,
 			      bool is_semaphore);

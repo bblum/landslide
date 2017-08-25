@@ -232,7 +232,7 @@ static void agent_vanish(struct sched_state *s)
 		vc_destroy(&s->last_vanished_agent->clock);
 #endif
 		if (s->last_vanished_agent->pre_vanish_trace != NULL) {
-			free_stack_trace(s->last_vanished_agent->pre_vanish_trace);
+			free_stack_trace(mutable_pre_vanish_trace(s->last_vanished_agent));
 		}
 		MM_FREE(s->last_vanished_agent);
 	}
@@ -257,7 +257,7 @@ static void set_schedule_target(struct sched_state *s, struct agent *a)
 static struct agent *get_blocked_on(struct sched_state *s, struct agent *src)
 {
 	if (src->kern_blocked_on != NULL) {
-		return src->kern_blocked_on;
+		return mutable_kern_blocked_on_agent(src);
 	} else {
 		unsigned int tid = src->kern_blocked_on_tid;
 		struct agent *dest     = agent_by_tid_or_null(&s->rq, tid);
@@ -291,7 +291,8 @@ static unsigned int print_deadlock(char *buf, unsigned int len, struct agent *a)
 {
 	struct agent *start = a;
 	unsigned int pos = scnprintf(buf, len, "(%d", a->tid);
-	for (a = a->kern_blocked_on; a != start; a = a->kern_blocked_on) {
+	for (a = mutable_kern_blocked_on_agent(a); a != start;
+	     a = mutable_kern_blocked_on_agent(a)) {
 		assert(a != NULL && "a wasn't deadlocked!");
 		pos += scnprintf(buf + pos, len - pos, " -> %d", a->tid);
 	}
@@ -488,10 +489,10 @@ struct agent *find_agent(struct sched_state *s, unsigned int tid)
 	return a;
 }
 
-struct agent *find_runnable_agent(struct sched_state *s, unsigned int tid)
+const struct agent *find_runnable_agent(const struct sched_state *s, unsigned int tid)
 {
-	struct agent *a;
-	FOR_EACH_RUNNABLE_AGENT(a, s,
+	const struct agent *a;
+	CONST_FOR_EACH_RUNNABLE_AGENT(a, s,
 		if (a->tid == tid) {
 			return a;
 		}

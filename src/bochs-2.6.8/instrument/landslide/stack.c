@@ -40,7 +40,7 @@ void destroy_frame(struct stack_frame *f)
 
 /* Emits a "0xADDR in NAME (FILE:LINE)" line with optional pretty colours. */
 unsigned int sprint_frame(char *buf, unsigned int maxlen,
-			  struct stack_frame *f, bool colours)
+			  const struct stack_frame *f, bool colours)
 {
 #define PRINT(...) do { pos += scnprintf(buf + pos, maxlen - pos, __VA_ARGS__); } while (0)
 	unsigned int pos = 0;
@@ -84,7 +84,7 @@ unsigned int sprint_frame(char *buf, unsigned int maxlen,
 #undef PRINT
 }
 
-void print_stack_frame(verbosity v, struct stack_frame *f)
+void print_stack_frame(verbosity v, const struct stack_frame *f)
 {
 	char buf[FRAME_BUF_LEN];
 	sprint_frame(buf, FRAME_BUF_LEN, f, true);
@@ -102,9 +102,9 @@ void print_eip(verbosity v, unsigned int eip)
 
 /* Prints a stack trace to the console. Uses printf, not lsprintf, separates
  * frames with ", ", and does not emit a newline at the end. */
-void print_stack_trace(verbosity v, struct stack_trace *st)
+void print_stack_trace(verbosity v, const struct stack_trace *st)
 {
-	struct stack_frame *f;
+	const struct stack_frame *f;
 	bool first_frame = true;
 
 	/* print TID prefix before first frame */
@@ -121,12 +121,12 @@ void print_stack_trace(verbosity v, struct stack_trace *st)
 }
 
 /* Prints a stack trace to a multiline html table. Returns length printed. */
-unsigned int html_stack_trace(char *buf, unsigned int maxlen, struct stack_trace *st)
+unsigned int html_stack_trace(char *buf, unsigned int maxlen, const struct stack_trace *st)
 {
 #define PRINT(...) do { pos += scnprintf(buf + pos, maxlen - pos, __VA_ARGS__); } while (0)
 	unsigned int pos = 0;
 	bool first_frame = true;
-	struct stack_frame *f;
+	const struct stack_frame *f;
 
 	Q_FOREACH(f, &st->frames, nobe) {
 		if (!first_frame) {
@@ -160,10 +160,10 @@ unsigned int html_stack_trace(char *buf, unsigned int maxlen, struct stack_trace
 #undef PRINT
 }
 
-struct stack_trace *copy_stack_trace(struct stack_trace *src)
+struct stack_trace *copy_stack_trace(const struct stack_trace *src)
 {
 	struct stack_trace *dest = MM_XMALLOC(1, struct stack_trace);
-	struct stack_frame *f_src;
+	const struct stack_frame *f_src;
 	dest->tid = src->tid;
 	Q_INIT_HEAD(&dest->frames);
 
@@ -173,7 +173,7 @@ struct stack_trace *copy_stack_trace(struct stack_trace *src)
 		f_dest->name = f_src->name == NULL ? NULL : MM_XSTRDUP(f_src->name);
 		f_dest->file = f_src->file == NULL ? NULL : MM_XSTRDUP(f_src->file);
 		f_dest->line = f_src->line;
-		Q_INSERT_TAIL(&dest->frames, f_dest, nobe);
+		Q_INSERT_TAIL(mutable_stack_frames(dest), f_dest, nobe);
 	}
 	return dest;
 }
@@ -181,9 +181,9 @@ struct stack_trace *copy_stack_trace(struct stack_trace *src)
 void free_stack_trace(struct stack_trace *st)
 {
 	while (Q_GET_SIZE(&st->frames) > 0) {
-		struct stack_frame *f = Q_GET_HEAD(&st->frames);
+		struct stack_frame *f = Q_GET_HEAD(mutable_stack_frames(st));
 		assert(f != NULL);
-		Q_REMOVE(&st->frames, f, nobe);
+		Q_REMOVE(mutable_stack_frames(st), f, nobe);
 		destroy_frame(f);
 		MM_FREE(f);
 	}
@@ -193,7 +193,7 @@ void free_stack_trace(struct stack_trace *st)
 static bool splice_pre_vanish_trace(struct ls_state *ls, struct stack_trace *st,
 				    unsigned int eip)
 {
-	struct stack_trace *pvt = ls->sched.cur_agent->pre_vanish_trace;
+	struct stack_trace *pvt = mutable_pre_vanish_trace(ls->sched.cur_agent);
 	bool found_eip = false;
 
 	if (pvt == NULL || KERNEL_MEMORY(eip)) {
@@ -201,7 +201,7 @@ static bool splice_pre_vanish_trace(struct ls_state *ls, struct stack_trace *st,
 	}
 
 	struct stack_frame *f;
-	Q_FOREACH(f, &pvt->frames, nobe) {
+	Q_FOREACH(f, mutable_stack_frames(pvt), nobe) {
 		if (f->eip == eip) {
 			found_eip = true;
 		}
@@ -211,7 +211,7 @@ static bool splice_pre_vanish_trace(struct ls_state *ls, struct stack_trace *st,
 			newf->name = f->name == NULL ? NULL : MM_XSTRDUP(f->name);
 			newf->file = f->file == NULL ? NULL : MM_XSTRDUP(f->file);
 			newf->line = f->line;
-			Q_INSERT_TAIL(&st->frames, newf, nobe);
+			Q_INSERT_TAIL(mutable_stack_frames(st), newf, nobe);
 		}
 	}
 	return found_eip;
@@ -241,7 +241,7 @@ static bool add_frame(struct stack_trace *st, unsigned int eip)
 {
 	struct stack_frame *f = MM_XMALLOC(1, struct stack_frame);
 	bool lookup_success = eip_to_frame(eip, f);
-	Q_INSERT_TAIL(&st->frames, f, nobe);
+	Q_INSERT_TAIL(mutable_stack_frames(st), f, nobe);
 	return lookup_success;
 }
 
@@ -463,10 +463,10 @@ struct stack_trace *stack_trace(struct ls_state *ls)
 
 /* As below but doesn't require duplicating the work of making a fresh stack
  * trace if you already have one. .*/
-bool within_function_st(struct stack_trace *st, unsigned int func,
+bool within_function_st(const struct stack_trace *st, unsigned int func,
 			unsigned int func_end)
 {
-	struct stack_frame *f;
+	const struct stack_frame *f;
 	bool result = false;
 	Q_FOREACH(f, &st->frames, nobe) {
 		if (f->eip >= func && f->eip <= func_end) {

@@ -170,10 +170,10 @@ void check_user_mutex_access(struct ls_state *ls, unsigned int addr)
 
 /******************** DPOR-related ********************/
 
-static void update_blocked_transition(struct hax *h0, struct hax *h, struct agent *a)
+static void update_blocked_transition(const struct hax *h0, const struct hax *h, const struct agent *a)
 {
 	unsigned int expected_count = a->user_yield.loop_count;
-	struct hax *previous_h2 = NULL;
+	const struct hax *previous_h2 = NULL;
 	/* If an ancestor's yield count has the special value indicating
 	 * xchg loop with PPs in between, we will switch to counting the
 	 * xchg counter instead of the yield loop counter. */
@@ -189,11 +189,11 @@ static void update_blocked_transition(struct hax *h0, struct hax *h, struct agen
 	/* Propagate backwards in time the fact that this sequence of yields
 	 * reached the max number and is considered blocked. Start at h, not
 	 * h->parent, to include the one we just saw. */
-	for (struct hax *h2 = h; expected_count > 0; h2 = h2->parent) {
+	for (const struct hax *h2 = h; expected_count > 0; h2 = h2->parent) {
 		assert(h2 != NULL && "nonzero yield count at root");
 
 		/* Find the past version of the yield-blocked thread. */
-		struct agent *a2 = find_runnable_agent(h2->oldsched, a->tid);
+		const struct agent *a2 = find_runnable_agent(h2->oldsched, a->tid);
 		assert(a2 != NULL && "yielding thread vanished in the past");
 
 		/* Its count must have incremented between the end of this
@@ -214,7 +214,7 @@ static void update_blocked_transition(struct hax *h0, struct hax *h, struct agen
 				 h2->depth, h2->chosen_thread,
 				 xchg_blocked ? "XCB" : "YLB",
 				 ylc, h->depth, h->chosen_thread);
-			a2->user_yield.blocked = true;
+			modify_hax(update_hax_yield_block_tid, h2, a2->tid);
 			/* Before we knew this thread was yield-blocked, we
 			 * might have tagged it during DPOR. Undo that. */
 			if (a2->do_explore) {
@@ -229,7 +229,7 @@ static void update_blocked_transition(struct hax *h0, struct hax *h, struct agen
 
 		/* Also, if that thread actually ran during this (old)
 		 * transition, expect its count to have increased. */
-		struct agent *a3 =
+		const struct agent *a3 =
 			find_runnable_agent(h2->parent->oldsched, a->tid);
 		assert(a3 != NULL && "yielding thread vanished in the past");
 		if (xchg_blocked) {
@@ -286,7 +286,7 @@ static void update_blocked_transition(struct hax *h0, struct hax *h, struct agen
 
 /* Scans the history of the branch ending in 'h0' and sets the yield-blocked
  * flag for branches "preceding" one where we realized a thread was blocked. */
-void update_user_yield_blocked_transitions(struct hax *h0)
+void update_user_yield_blocked_transitions(const struct hax *h0)
 {
 	/* Here we scan backwards looking for transitions where we realized
 	 * a user thread was yield-blocked (its yield-loop counter hit max),
@@ -302,8 +302,8 @@ void update_user_yield_blocked_transitions(struct hax *h0)
 	 * While we're at it, of course, we also check the invariant that the
 	 * yield-loop counters are either zero or counting up to the max. */
 
-	for (struct hax *h = h0; h->parent != NULL; h = h->parent) {
-		struct agent *a = find_runnable_agent(h->oldsched, h->chosen_thread);
+	for (const struct hax *h = h0; h->parent != NULL; h = h->parent) {
+		const struct agent *a = find_runnable_agent(h->oldsched, h->chosen_thread);
 		if (a == NULL) {
 			/* The chosen thread vanished during its transition.
 			 * Definitely not a yield-loop-blocked one. */
@@ -326,9 +326,9 @@ void update_user_yield_blocked_transitions(struct hax *h0)
 	}
 }
 
-bool is_user_yield_blocked(struct hax *h)
+bool is_user_yield_blocked(const struct hax *h)
 {
-	struct agent *a = find_runnable_agent(h->oldsched, h->chosen_thread);
+	const struct agent *a = find_runnable_agent(h->oldsched, h->chosen_thread);
 	return a != NULL && a->user_yield.blocked;
 }
 
@@ -462,7 +462,7 @@ static void maybe_unblock(struct ls_state *ls, struct agent *a, unsigned int add
 	bool found_one = false;
 
 	/* Find all its past transitions (since it started yielding) */
-	for (struct hax *h = ls->save.current; h->parent != NULL; h = h->parent) {
+	for (const struct hax *h = ls->save.current; h->parent != NULL; h = h->parent) {
 		if (h->chosen_thread != a->tid) {
 			continue;
 		}
@@ -474,7 +474,7 @@ static void maybe_unblock(struct ls_state *ls, struct agent *a, unsigned int add
 		 * in the yield sequence, as it may have other unrelated shm
 		 * accesses, so do this now before the real check below. */
 		assert(h->parent != NULL && "reached root too soon");
-		struct agent *a2 = find_runnable_agent(h->parent->oldsched, a->tid);
+		const struct agent *a2 = find_runnable_agent(h->parent->oldsched, a->tid);
 		assert(a2 != NULL);
 		/* ...unless it became blocked in an xchg loop, in which case
 		 * there won't be a chain of counting-up transitions. */

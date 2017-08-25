@@ -31,7 +31,7 @@ conf_object_t *get_symtable()
 	return symtable;
 }
 
-void set_symtable(conf_object_t *symtable)
+void set_symtable(const conf_object_t *symtable)
 {
 	conf_object_t *cell0_context = SIM_get_object(CONTEXT_NAME);
 	if (cell0_context == NULL) {

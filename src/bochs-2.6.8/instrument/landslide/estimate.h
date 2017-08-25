@@ -19,12 +19,13 @@ uint64_t update_time(struct timeval *tv);
 
 /* internal logic used by user_sync. when a thread is identified to be
  * yield-blocked, we may need to undo estimates from tagging it in the past. */
-void untag_blocked_branch(struct hax *ancestor, struct hax *leaf,
-			  struct agent *a, bool was_ancestor);
+void update_hax_yield_block_tid(struct hax *h, unsigned int *tid);
+void untag_blocked_branch(const struct hax *ancestor, const struct hax *leaf,
+			  const struct agent *a, bool was_ancestor);
 
 /* main interface. */
-long double estimate_time(struct hax *root, struct hax *current);
-long double estimate_proportion(struct hax *root, struct hax *current);
+long double estimate_time(const struct hax *root, const struct hax *current);
+long double estimate_proportion(const struct hax *root, const struct hax *current);
 void print_estimates(struct ls_state *ls);
 
 #endif

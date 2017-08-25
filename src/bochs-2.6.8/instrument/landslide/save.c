@@ -301,8 +301,8 @@ static void copy_mem(struct mem_state *dest, const struct mem_state *src, bool i
 	}
 }
 static void copy_user_sync(struct user_sync_state *dest,
-				 struct user_sync_state *src,
-				 int already_known_size)
+			   const struct user_sync_state *src,
+			   int already_known_size)
 {
 	if (already_known_size == 0) {
 		/* save work: don't clear an already learned size when jumping
@@ -352,7 +352,7 @@ static void free_sched_q(struct agent_q *q)
 		vc_destroy(&a->clock);
 #endif
 		if (a->pre_vanish_trace != NULL) {
-			free_stack_trace(a->pre_vanish_trace);
+			free_stack_trace(mutable_pre_vanish_trace(a));
 		}
 		MM_FREE(a);
 	}
@@ -381,8 +381,8 @@ static void free_heap(struct rb_node *nobe)
 	free_heap(nobe->rb_right);
 
 	struct chunk *c = rb_entry(nobe, struct chunk, nobe);
-	if (c->malloc_trace != NULL) free_stack_trace(c->malloc_trace);
-	if (c->free_trace   != NULL) free_stack_trace(c->free_trace);
+	if (c->malloc_trace != NULL) free_stack_trace(mutable_malloc_trace(c));
+	if (c->free_trace   != NULL) free_stack_trace(mutable_free_trace(c));
 	MM_FREE(c);
 }
 
@@ -451,53 +451,36 @@ static void free_arbiter_choices(struct arbiter_state *a)
 	}
 }
 
-static void free_haxs_children(struct hax *h)
-{
-	while (Q_GET_SIZE(&h->children) > 0) {
-		struct hax *child = Q_GET_HEAD(&h->children);
-		assert(child != NULL);
-		Q_REMOVE(&h->children, child, sibling);
-		assert(Q_GET_SIZE(&child->children) == 0);
-		assert(child->oldsched == NULL);
-		assert(child->oldtest == NULL);
-		assert(child->old_kern_mem == NULL);
-		assert(child->old_user_mem == NULL);
-		assert(child->conflicts == NULL);
-		assert(child->happens_before == NULL);
-		MM_FREE(child);
-	}
-}
-
 static void free_hax(struct hax *h)
 {
-	free_sched(h->oldsched);
-	MM_FREE(h->oldsched);
-	free_test(h->oldtest);
-	MM_FREE(h->oldtest);
-	free_mem(h->old_kern_mem, true);
-	MM_FREE(h->old_kern_mem);
-	free_mem(h->old_user_mem, true);
-	MM_FREE(h->old_user_mem);
-	free_user_sync(h->old_user_sync);
-	MM_FREE(h->old_user_sync);
+	free_sched(mutable_oldsched(h));
+	MM_FREE(mutable_oldsched(h));
+	free_test(mutable_oldtest(h));
+	MM_FREE(mutable_oldtest(h));
+	free_mem(mutable_old_kern_mem(h), true);
+	MM_FREE(mutable_old_kern_mem(h));
+	free_mem(mutable_old_user_mem(h), true);
+	MM_FREE(mutable_old_user_mem(h));
+	free_user_sync(mutable_old_user_sync(h));
+	MM_FREE(mutable_old_user_sync(h));
 	h->oldsched = NULL;
 	h->oldtest = NULL;
 	h->old_kern_mem = NULL;
 	h->old_user_mem = NULL;
-	MM_FREE(h->conflicts);
-	MM_FREE(h->happens_before);
+	MM_FREE(mutable_conflicts(h));
+	MM_FREE(mutable_happens_before(h));
 	h->conflicts = NULL;
 	h->happens_before = NULL;
-	free_stack_trace(h->stack_trace);
-	free_haxs_children(h);
+	free_stack_trace(mutable_stack_trace(h));
+	ARRAY_LIST_FREE(mutable_children(h));
 	if (h->xbegin) {
-		ARRAY_LIST_FREE(&h->xabort_codes_ever);
-		ARRAY_LIST_FREE(&h->xabort_codes_todo);
+		ARRAY_LIST_FREE(mutable_xabort_codes_todo(h));
+		ARRAY_LIST_FREE(mutable_xabort_codes_ever(h));
 	}
 }
 
 /* Reverse that which is not glowing green. */
-static void restore_ls(struct ls_state *ls, struct hax *h)
+static void restore_ls(struct ls_state *ls, const struct hax *h)
 {
 	lsprintf(DEV, "88 MPH: eip 0x%x -> 0x%x; "
 		 "triggers %lu -> %lu (absolute %" PRIu64 "); last choice %d\n",
@@ -529,27 +512,26 @@ static void restore_ls(struct ls_state *ls, struct hax *h)
  * Independence and happens-before computation
  ******************************************************************************/
 
-static void inherit_happens_before(struct hax *h, struct hax *old)
+static void inherit_happens_before(struct hax *h, const struct hax *old)
 {
 	for (int i = 0; i < old->depth; i++) {
-		h->happens_before[i] =
-			h->happens_before[i] || old->happens_before[i];
+		set_happens_before(h, i, h->happens_before[i] || old->happens_before[i]);
 	}
 }
 
-static bool enabled_by(struct hax *h, struct hax *old)
+static bool enabled_by(struct hax *h, const struct hax *old)
 {
 	if (old->parent == NULL) {
 		lsprintf(INFO, "#%d/tid%d has no parent\n",
 			 old->depth, old->chosen_thread);
 		return true;
 	} else {
-		struct agent *a;
+		const struct agent *a;
 		lsprintf(INFO, "Searching for #%d/tid%d among siblings of "
 			 "#%d/tid%d: ", h->depth, h->chosen_thread, old->depth,
 			 old->chosen_thread);
 		print_qs(INFO, old->parent->oldsched);
-		FOR_EACH_RUNNABLE_AGENT(a, old->parent->oldsched,
+		CONST_FOR_EACH_RUNNABLE_AGENT(a, old->parent->oldsched,
 			if (a->tid == h->chosen_thread && !BLOCKED(a)) {
 				printf(INFO, "not enabled_by\n");
 				return false;
@@ -569,30 +551,30 @@ static void compute_happens_before(struct hax *h)
 	/* Between two transitions of a thread X, X_0 before X_1, while there
 	 * may be many transitions Y that for which enabled_by(X_1, Y), only the
 	 * earliest such Y (the one soonest after X_0) is the actual enabler. */
-	struct hax *enabler = NULL;
+	const struct hax *enabler = NULL;
 
 	for (i = 0; i < h->depth; i++) {
-		h->happens_before[i] = false;
+		set_happens_before(h, i, false);
 	}
 
-	for (struct hax *old = h->parent; old != NULL; old = old->parent) {
+	for (const struct hax *old = h->parent; old != NULL; old = old->parent) {
 		assert(--i == old->depth); /* sanity check */
 		assert(old->depth >= 0 && old->depth < h->depth);
 		if (h->chosen_thread == old->chosen_thread) {
-			h->happens_before[old->depth] = true;
+			set_happens_before(h, old->depth, true);
 			inherit_happens_before(h, old);
 			/* Computing any further would be redundant, and would
 			 * break the true-enabler finding alg. */
 			break;
 		} else if (enabled_by(h, old)) {
 			enabler = old;
-			h->happens_before[enabler->depth] = true;
+			set_happens_before(h, enabler->depth, true);
 		}
 	}
 
 	/* Take the happens-before set of the oldest enabler. */
 	if (enabler != NULL) {
-		h->happens_before[enabler->depth] = true;
+		set_happens_before(h, enabler->depth, true);
 		inherit_happens_before(h, enabler);
 	}
 
@@ -605,29 +587,29 @@ static void compute_happens_before(struct hax *h)
 	printf(DEV, "} happen-before #%d/tid%d.\n", h->depth, h->chosen_thread);
 }
 
-static void add_xabort_code(struct hax *h, unsigned int code)
+static void add_xabort_code(struct hax *h, unsigned int *code)
 {
 	assert(h->xbegin);
 	unsigned int i;
 	unsigned int *existing_code;
-	ARRAY_LIST_FOREACH(&h->xabort_codes_ever, i, existing_code) {
-		if (*existing_code == code) {
+	ARRAY_LIST_FOREACH(mutable_xabort_codes_ever(h), i, existing_code) {
+		if (*existing_code == *code) {
 			return;
 		}
 	}
-	ARRAY_LIST_APPEND(&h->xabort_codes_ever, code);
-	ARRAY_LIST_APPEND(&h->xabort_codes_todo, code);
+	ARRAY_LIST_APPEND(mutable_xabort_codes_ever(h), *code);
+	ARRAY_LIST_APPEND(mutable_xabort_codes_todo(h), *code);
 }
 
 
 /* h2 should be supplied as the parent PP of the transition which should abort */
-void abort_transaction(unsigned int tid, struct hax *h2, unsigned int code)
+void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code)
 {
 #ifdef HTM_ABORT_CODES
 	for (; h2 != NULL; h2 = h2->parent) {
 		if (h2->chosen_thread == tid) {
 			if (h2->xbegin) {
-				add_xabort_code(h2, code);
+				modify_hax(add_xabort_code, h2, code);
 			} else {
 				assert(code != _XABORT_EXPLICIT);
 			}
@@ -645,7 +627,8 @@ void abort_transaction(unsigned int tid, struct hax *h2, unsigned int code)
 static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
 {
 	/* note: NOT "&h->foo"! gcc does NOT warn for this mistake! ARGH! */
-	struct mem_state *oldmem = in_kernel ? h->old_kern_mem : h->old_user_mem;
+	struct mem_state *oldmem = in_kernel ? mutable_old_kern_mem(h)
+	                                     : mutable_old_user_mem(h);
 	struct mem_state *newmem = in_kernel ? &ls->kern_mem   : &ls->user_mem;
 
 	/* store shared memory accesses from this transition; reset to empty */
@@ -669,7 +652,7 @@ static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
 	}
 
 	/* compute newly-completed transition's conflicts with previous ones */
-	for (struct hax *old = h->parent; old != NULL; old = old->parent) {
+	for (const struct hax *old = h->parent; old != NULL; old = old->parent) {
 		assert(old->depth >= 0 && old->depth < h->depth);
 		if (h->chosen_thread == old->chosen_thread) {
 			lsprintf(INFO, "Same TID %d for #%d and #%d\n",
@@ -677,17 +660,17 @@ static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
 		} else if (TID_IS_IDLE(h->chosen_thread) ||
 			   TID_IS_IDLE(old->chosen_thread)) {
 			/* Idle shouldn't have siblings, but just in case. */
-			h->conflicts[old->depth] = true;
+			set_conflicts(h, old->depth, true);
 		} else if (old->depth == 0) {
 			/* Basically guaranteed, and irrelevant. Suppress printing. */
-			h->conflicts[0] = true;
+			set_conflicts(h, 0, true);
 		} else if (h->happens_before[old->depth]) {
 			/* No conflict if reordering is impossible */
-			h->conflicts[old->depth] = false;
+			set_conflicts(h, old->depth, false);
 		} else {
 			/* The haxes are independent if there was no intersection. */
-			h->conflicts[old->depth] =
-				mem_shm_intersect(ls, h, old, in_kernel);
+			set_conflicts(h, old->depth,
+				      mem_shm_intersect(ls, h, old, in_kernel));
 			if (h->conflicts[old->depth]) {
 				// TODO: reduction challenge: does it suffice
 				// TODO: to only tag one of these txns?
@@ -703,6 +686,8 @@ static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
 /******************************************************************************
  * interface
  ******************************************************************************/
+
+#define HAX_CHILDREN_INIT_SIZE 4
 
 void save_init(struct save_state *ss)
 {
@@ -727,6 +712,20 @@ void save_recover(struct save_state *ss, struct ls_state *ls, int new_tid)
 	assert(ls->just_jumped);
 	ss->next_tid = new_tid;
 	lsprintf(INFO, "explorer chose tid %d; ready for action\n", new_tid);
+}
+
+static void add_hax_child(struct hax *h, int *chosen_thread)
+{
+	struct hax_child child;
+	const struct hax_child *other;
+	unsigned int i;
+	ARRAY_LIST_FOREACH(&h->children, i, other) {
+		assert(other->chosen_thread != *chosen_thread &&
+		       "fixme: support transactions in h->children!");
+	}
+	child.chosen_thread = *chosen_thread;
+	child.all_explored  = false;
+	ARRAY_LIST_APPEND(mutable_children(h), child);
 }
 
 /* In the typical case, this signifies that we have reached a new decision
@@ -781,21 +780,22 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			assert(!ss->current->estimate_computed &&
 			       "last nobe was estimate()d; cannot give it a child");
 
-			Q_INSERT_HEAD(&ss->current->children, h, sibling);
+			modify_hax(add_hax_child, ss->current, h->chosen_thread);
 			h->parent = ss->current;
 			h->depth = 1 + h->parent->depth;
 
 			lsprintf(DEV, "elapsed usecs %" PRIu64 "\n", h->usecs);
 		}
 
-		Q_INIT_HEAD(&h->children);
+		ARRAY_LIST_INIT(&h->children, HAX_CHILDREN_INIT_SIZE);
 		h->all_explored = end_of_test;
 
 		h->data_race_eip = data_race_eip;
 #ifdef PREEMPT_EVERYWHERE
 		h->is_preemption_point = true;
 #else
-		h->is_preemption_point = is_preemption_point;
+		/* root nobe can't be speculative; see explore.c pp_parent() */
+		h->is_preemption_point = is_preemption_point || h->parent == NULL;
 		if (is_preemption_point) { assert(data_race_eip == -1); }
 #endif
 
@@ -807,7 +807,8 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		if ((h->xbegin = xbegin)) {
 			ARRAY_LIST_INIT(&h->xabort_codes_ever, 8);
 			ARRAY_LIST_INIT(&h->xabort_codes_todo, 8);
-			add_xabort_code(h, _XABORT_RETRY);
+			unsigned int retry_code = _XABORT_RETRY;
+			add_xabort_code(h, &retry_code);
 		}
 
 		timetravel_hax_init(&h->time_machine);
@@ -822,14 +823,15 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			h->stack_trace = ls->sched.voluntary_resched_stack;
 			ls->sched.voluntary_resched_stack = NULL;
 		} else {
-			h->stack_trace = stack_trace(ls);
+			struct stack_trace *st = stack_trace(ls);
+			h->stack_trace = st;
 
 			if (data_race_eip != -1) {
 				/* first frame of stack will be bogus, due to
 				 * the technique for delaying the access (in
 				 * x86.c). fix it up with the proper eip. */
 				struct stack_frame *first_frame =
-					Q_GET_HEAD(&h->stack_trace->frames);
+					Q_GET_HEAD(mutable_stack_frames(st));
 				assert(first_frame != NULL);
 				destroy_frame(first_frame);
 				eip_to_frame(data_race_eip, first_frame);
@@ -839,40 +841,22 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		ss->total_choice_poince++;
 	} else {
 		assert(0 && "Not our_choice deprecated.");
-
-		assert(ss->root != NULL);
-		assert(ss->current != NULL);
-		assert(end_of_test || ss->next_tid != -1);
-		assert(!end_of_test);
-
-		/* Find already-existing previous choice nobe */
-		Q_SEARCH(h, &ss->current->children, sibling,
-			 h->chosen_thread == ss->next_tid);
-		assert(h != NULL && "!our_choice but chosen tid not found...");
-
-		assert(h->eip == ls->eip);
-		assert(h->trigger_count == ls->trigger_count);
-		assert(h->oldsched == NULL);
-		assert(h->oldtest == NULL);
-		assert(h->old_kern_mem == NULL);
-		assert(h->old_user_mem == NULL);
-		assert(!h->all_explored); /* exploration invariant */
 	}
 
 	h->oldsched = MM_XMALLOC(1, struct sched_state);
-	copy_sched(h->oldsched, &ls->sched);
+	copy_sched(mutable_oldsched(h), &ls->sched);
 
 	h->oldtest = MM_XMALLOC(1, struct test_state);
-	copy_test(h->oldtest, &ls->test);
+	copy_test(mutable_oldtest(h), &ls->test);
 
 	h->old_kern_mem = MM_XMALLOC(1, struct mem_state);
-	copy_mem(h->old_kern_mem, &ls->kern_mem, true);
+	copy_mem(mutable_old_kern_mem(h), &ls->kern_mem, true);
 
 	h->old_user_mem = MM_XMALLOC(1, struct mem_state);
-	copy_mem(h->old_user_mem, &ls->user_mem, true);
+	copy_mem(mutable_old_user_mem(h), &ls->user_mem, true);
 
 	h->old_user_sync = MM_XMALLOC(1, struct user_sync_state);
-	copy_user_sync(h->old_user_sync, &ls->user_sync, 0);
+	copy_user_sync(mutable_old_user_sync(h), &ls->user_sync, 0);
 
 	h->old_symtable = get_symtable();
 
@@ -920,14 +904,14 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			 COLOUR_DEFAULT, h->depth, h->chosen_thread);
 	}
 
-	timetravel_set(&ls->timetravel, h);
+	timetravel_set(ls, h);
 	ss->total_choices++;
 }
 
-void save_longjmp(struct save_state *ss, struct ls_state *ls, struct hax *h,
+void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *h,
 		  unsigned int tid, bool txn, unsigned int xabort_code)
 {
-	struct hax *rabbit = ss->current;
+	const struct hax *rabbit = ss->current;
 
 	assert(ss->root != NULL && "Can't longjmp with no decision tree!");
 	assert(ss->current != NULL);
@@ -941,12 +925,20 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, struct hax *h,
 
 	/* Find the target choice point from among our ancestors. */
 	while (ss->current != h) {
-		/* This nobe will soon be in the future. Reclaim memory. */
-		free_hax(ss->current);
-		timetravel_delete(&ls->timetravel, &ss->current->time_machine);
-
+		timetravel_delete(ls, &ss->current->time_machine);
+#ifndef BOCHS
+		/* This nobe will soon be in the future. Reclaim memory.
+		 * (Bochs, ofc, will reclaim the memory upon process exit.) */
+		struct hax *old_current = (struct hax *)ss->current;
+		free_hax(old_current);
+#endif
 		ss->current = ss->current->parent;
-		assert(Q_GET_SIZE(&ss->current->children) > 0);
+		/* allow for empty children iff ICB just reset the tree */
+		assert(ARRAY_LIST_SIZE(&ss->current->children) > 0 ||
+		       (ss->current == ss->root && ss->stats.total_jumps == -1));
+#ifndef BOCHS
+		MM_FREE(old_current);
+#endif
 
 		/* We won't have simics bookmarks, or indeed some saved state,
 		 * for non-ancestor choice points. */
@@ -962,38 +954,43 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, struct hax *h,
 
 	restore_ls(ls, h);
 
-	timetravel_jump(&ls->timetravel, &h->time_machine, tid, txn, xabort_code);
 	ss->total_jumps++;
+	timetravel_jump(ls, &h->time_machine, tid, txn, xabort_code);
 }
 
 #ifdef ICB
-void save_reset_tree(struct save_state *ss, struct ls_state *ls)
+static void reset_root(struct hax *root, int *unused)
 {
-	struct hax *root = ss->root;
+	assert(root->parent == NULL);
 	struct agent *a;
-
-	/* Do this before longjmp so the change gets copied into ls->sched. */
-	FOR_EACH_RUNNABLE_AGENT(a, root->oldsched,
+	FOR_EACH_RUNNABLE_AGENT(a, mutable_oldsched(root),
 		a->do_explore = false;
 	);
 
-	/* As before but with some additional changes */
-	save_longjmp(ss, ls, root);
-
 	/* Need to reset tree state as if this is the 1st time we came here. */
-	free_haxs_children(root);
+	ARRAY_LIST_FREE(mutable_children(root));
+	ARRAY_LIST_INIT(mutable_children(root), HAX_CHILDREN_INIT_SIZE);
 	root->all_explored = false;
 	root->marked_children = 0;
 	root->proportion = 0.0L;
 	root->subtree_usecs = 0.0L;
 	root->estimate_computed = false;
+}
+
+void save_reset_tree(struct save_state *ss, struct ls_state *ls)
+{
+	/* Do this before longjmp so the change gets copied into ls->sched. */
+	modify_hax(reset_root, ss->root, 0);
 
 	ss->total_choice_poince = 0;
 	ss->total_choices = 0;
-	ss->total_jumps = 0;
 	ss->total_triggers = 0;
-	ss->depth_total = 0;
-	ss->total_usecs = root->usecs;
+	ss->total_usecs = ss->root->usecs;
+	ss->total_jumps = (uint64_t)-1; /* to become 0; see longjmp */
+	ss->depth_total = (uint64_t)-ss->current->depth; /* see above */
+
+	/* As before but with some additional changes */
+	save_longjmp(ss, ls, ss->root);
 }
 #else
 void save_reset_tree(struct save_state *ss, struct ls_state *ls)

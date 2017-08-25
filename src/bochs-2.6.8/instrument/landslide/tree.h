@@ -20,6 +20,11 @@ struct sched_state;
 struct stack_trace;
 struct test_state;
 
+struct hax_child {
+	int chosen_thread;
+	bool all_explored;
+};
+
 /* Represents a single preemption point in the decision tree.
  * The data here stored actually reflects the state upon the *completion* of
  * that transition; i.e., when the next preemption has to be made. */
@@ -29,17 +34,17 @@ struct hax {
 	unsigned int eip; /* The eip for the *next* preemption point. */
 	unsigned long trigger_count; /* from ls_state */
 	int chosen_thread; /* TID that was chosen to get here. -1 if root. */
-	struct stack_trace *stack_trace;
+	const struct stack_trace *stack_trace;
 
 	/***** Saved state from the past. The state struct pointers are
 	 * non-NULL if it's a point directly backwards from where we are. *****/
 
-	struct sched_state *oldsched;
-	struct test_state *oldtest;
-	struct mem_state *old_kern_mem;
-	struct mem_state *old_user_mem;
-	struct user_sync_state *old_user_sync;
-	symtable_t *old_symtable;
+	const struct sched_state *oldsched;
+	const struct test_state *oldtest;
+	const struct mem_state *old_kern_mem;
+	const struct mem_state *old_user_mem;
+	const struct user_sync_state *old_user_sync;
+	const symtable_t *old_symtable;
 	/* List of things that are *not* saved/restored (i.e., glowing green):
 	 *  - arbiter_state (just a preemption history queue, maintained internally)
 	 *  - ls_state's absolute_trigger_count (obv.)
@@ -51,17 +56,16 @@ struct hax {
 
 	/**** Tree link data. ****/
 
-	struct hax *parent;
+	const struct hax *parent;
 	unsigned int depth; /* starts at 0 */
-	Q_NEW_LINK(struct hax) sibling;
-	Q_NEW_HEAD(struct, struct hax) children;
+	ARRAY_LIST(const struct hax_child) children;
 
 	/**** DPOR state ****/
 
 	/* Other transitions (ancestors) that conflict with or happen-before
 	 * this one. The length of each array is given by 'depth'. */
-	bool *conflicts;      /* if true, then they aren't independent. */
-	bool *happens_before; /* "happens_after", really. */
+	const bool *conflicts;      /* if true, then they aren't independent. */
+	const bool *happens_before; /* "happens_after", really. */
 
 	/* All branches of the subtree rooted here executed already? */
 	bool all_explored;
@@ -77,8 +81,8 @@ struct hax {
 	/* Does this preemption point denote the start of a transaction?
 	 * (If so, then a failure will need to be injected, not just timers.) */
 	bool xbegin;
-	ARRAY_LIST(unsigned int) xabort_codes_ever; /* append-only */
-	ARRAY_LIST(unsigned int) xabort_codes_todo; /* serves as workqueue */
+	ARRAY_LIST(const unsigned int) xabort_codes_ever; /* append-only */
+	ARRAY_LIST(const unsigned int) xabort_codes_todo; /* serves as workqueue */
 
 	/* Note: a list of available tids to run next is implicit in the copied
 	 * sched! Also, the "tags" that POR uses to denote to-be-explored
@@ -108,5 +112,32 @@ struct hax {
 	 * nodes cannot be used as the source of an estimate. */
 	bool estimate_computed;
 };
+
+/* c's type system sucks too much to propagate const through data structures,
+ * so this lets you modify them in modify-hax callback's. (see timetravel.h) */
+#define MUTABLE_FN(type, fieldname) \
+	static inline type *mutable_##fieldname(struct hax *h)	\
+		{ return (type *)h->fieldname; }
+MUTABLE_FN(struct sched_state, oldsched)
+MUTABLE_FN(struct test_state, oldtest)
+MUTABLE_FN(struct stack_trace, stack_trace)
+MUTABLE_FN(struct mem_state, old_kern_mem)
+MUTABLE_FN(struct mem_state, old_user_mem)
+MUTABLE_FN(struct user_sync_state, old_user_sync)
+MUTABLE_FN(bool, conflicts)
+MUTABLE_FN(bool, happens_before)
+typedef ARRAY_LIST(struct hax_child) mutable_children_t;
+static inline mutable_children_t *mutable_children(struct hax *h)
+	{ return (mutable_children_t *)&h->children; }
+typedef ARRAY_LIST(unsigned int) mutable_xabort_codes_t;
+static inline mutable_xabort_codes_t *mutable_xabort_codes_todo(struct hax *h)
+	{ return (mutable_xabort_codes_t *)&h->xabort_codes_todo; }
+static inline mutable_xabort_codes_t *mutable_xabort_codes_ever(struct hax *h)
+	{ return (mutable_xabort_codes_t *)&h->xabort_codes_ever; }
+typedef Q_NEW_HEAD(struct, struct hax) mutable_hax_children_t;
+static inline void set_happens_before(struct hax *h, unsigned int i, bool val)
+	{ *(bool *)&(h->happens_before[i]) = val; }
+static inline void set_conflicts(struct hax *h, unsigned int i, bool val)
+	{ *(bool *)&(h->conflicts[i]) = val; }
 
 #endif

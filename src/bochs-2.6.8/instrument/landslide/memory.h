@@ -104,10 +104,15 @@ struct chunk {
 	unsigned int id; /* distinguishes chunks in same-space-different-time */
 	struct rb_node nobe;
 	/* for use-after-free reporting */
-	struct stack_trace *malloc_trace;
-	struct stack_trace *free_trace;
+	const struct stack_trace *malloc_trace;
+	const struct stack_trace *free_trace;
 	bool pages_reserved_for_malloc;
 };
+
+static inline struct stack_trace *mutable_malloc_trace(struct chunk *c)
+	{ return (struct stack_trace *)c->malloc_trace; }
+static inline struct stack_trace *mutable_free_trace(struct chunk *c)
+	{ return (struct stack_trace *)c->free_trace; }
 
 struct malloc_actions {
 	bool in_alloc;
@@ -172,10 +177,11 @@ void mem_update(struct ls_state *);
 
 void mem_check_shared_access(struct ls_state *, unsigned int phys_addr,
 							 unsigned int virt_addr, bool write);
-bool mem_shm_intersect(struct ls_state *ls, struct hax *h0, struct hax *h2,
+bool mem_shm_intersect(struct ls_state *ls,
+		       const struct hax *h0, const struct hax *h2,
                        bool in_kernel);
 
-bool shm_contains_addr(struct mem_state *m, unsigned int addr);
+bool shm_contains_addr(const struct mem_state *m, unsigned int addr);
 
 bool check_user_address_space(struct ls_state *ls);
 

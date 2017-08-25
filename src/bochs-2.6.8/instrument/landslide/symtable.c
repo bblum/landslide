@@ -28,7 +28,7 @@ symtable_t *get_symtable()
 	return NULL;
 }
 
-void set_symtable(symtable_t *symtable)
+void set_symtable(const symtable_t *symtable)
 {
 }
 

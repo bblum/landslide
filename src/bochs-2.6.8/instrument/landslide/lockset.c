@@ -30,7 +30,7 @@ void lockset_clone(struct lockset *dest, const struct lockset *src)
 	ARRAY_LIST_CLONE(&dest->list, &src->list);
 }
 
-void lockset_print(verbosity v, struct lockset *l)
+void lockset_print(verbosity v, const struct lockset *l)
 {
 	unsigned int i;
 	struct lock *lock;

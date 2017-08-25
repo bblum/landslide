@@ -16,20 +16,21 @@
 #include "user_sync.h"
 #include "variable_queue.h"
 
-static bool is_child_searched(struct hax *h, unsigned int child_tid) {
-	struct hax *child;
+static bool is_child_searched(const struct hax *h, unsigned int child_tid) {
+	const struct hax_child *child;
+	unsigned int i;
 
-	Q_FOREACH(child, &h->children, sibling) {
+	ARRAY_LIST_FOREACH(&h->children, i, child) {
 		if (child->chosen_thread == child_tid && child->all_explored)
 			return true;
 	}
 	return false;
 }
 
-static void branch_sanity(struct hax *root, struct hax *current)
+static void branch_sanity(const struct hax *root, const struct hax *current)
 {
-	struct hax *our_branch = NULL;
-	struct hax *rabbit = current;
+	const struct hax *our_branch = NULL;
+	const struct hax *rabbit = current;
 
 	assert(root != NULL);
 	assert(current != NULL);
@@ -49,7 +50,7 @@ static void branch_sanity(struct hax *root, struct hax *current)
 	}
 }
 
-static bool is_evil_ancestor(struct hax *h0, struct hax *h)
+static bool is_evil_ancestor(const struct hax *h0, const struct hax *h)
 {
 	return !h0->happens_before[h->depth] && h0->conflicts[h->depth];
 }
@@ -57,7 +58,7 @@ static bool is_evil_ancestor(struct hax *h0, struct hax *h)
 /* Finds the nearest parent save point that's actually a preemption point.
  * This is how we skip over speculative data race save points when identifying
  * which "good sibling" transitions to tag (when to preempt to get to them?) */
-static struct hax *pp_parent(struct hax *h)
+static const struct hax *pp_parent(const struct hax *h)
 {
 	do {
 		h = h->parent;
@@ -67,22 +68,32 @@ static struct hax *pp_parent(struct hax *h)
 		 * Really what we want is the oldest non-speculative ancestor,
 		 * and to change the condition at the fixme in explore() to see
 		 * if ancestor has no non-speculative parent. */
-		if (h->parent == NULL) {
-			h->is_preemption_point = true;
-		}
+		assert(h->parent != NULL || h->is_preemption_point);
 	} while (!h->is_preemption_point);
 	return h;
 }
 
-static bool tag_good_sibling(struct hax *h0, struct hax *ancestor,
+static void update_hax_tag_tid(struct hax *h, unsigned int *tid)
+{
+	struct agent *a;
+	FOR_EACH_RUNNABLE_AGENT(a, mutable_oldsched(h),
+		if (a->tid == *tid) {
+			a->do_explore = true;
+			return;
+		}
+	);
+	assert(0 && "couldn't find tid in oldsched to tag");
+}
+
+static bool tag_good_sibling(const struct hax *h0, const struct hax *ancestor,
 			     unsigned int icb_bound, bool *need_bpor)
 {
 	unsigned int tid = h0->chosen_thread;
-	struct hax *grandparent = pp_parent(ancestor);
+	const struct hax *grandparent = pp_parent(ancestor);
 	assert(need_bpor == NULL || !*need_bpor);
 
-	struct agent *a;
-	FOR_EACH_RUNNABLE_AGENT(a, grandparent->oldsched,
+	const struct agent *a;
+	CONST_FOR_EACH_RUNNABLE_AGENT(a, grandparent->oldsched,
 		if (a->tid == tid) {
 			if (BLOCKED(a) || HTM_BLOCKED(grandparent->oldsched, a) ||
 			    is_child_searched(grandparent, a->tid)) {
@@ -101,7 +112,7 @@ static bool tag_good_sibling(struct hax *h0, struct hax *ancestor,
 				return false;
 			} else {
 				/* normal case; thread can be tagged */
-				a->do_explore = true;
+				modify_hax(update_hax_tag_tid, grandparent, a->tid);
 				lsprintf(DEV, "from #%d/tid%d, tagged TID %d%s, "
 					 "sibling of #%d/tid%d\n", h0->depth,
 					 h0->chosen_thread, a->tid,
@@ -115,10 +126,10 @@ static bool tag_good_sibling(struct hax *h0, struct hax *ancestor,
 	return false;
 }
 
-static void tag_all_siblings(struct hax *h0, struct hax *ancestor,
+static void tag_all_siblings(const struct hax *h0, const struct hax *ancestor,
 			     unsigned int icb_bound, bool *need_bpor)
 {
-	struct hax *grandparent = pp_parent(ancestor);
+	const struct hax *grandparent = pp_parent(ancestor);
 	unsigned int num_tagged = 0;
 
 	lsprintf(DEV, "from #%d/tid%d%s, tagged all siblings of #%d/tid%d: ",
@@ -126,8 +137,8 @@ static void tag_all_siblings(struct hax *h0, struct hax *ancestor,
 		 need_bpor == NULL ? " (during BPOR)" : "",
 		 ancestor->depth, ancestor->chosen_thread);
 
-	struct agent *a;
-	FOR_EACH_RUNNABLE_AGENT(a, grandparent->oldsched,
+	const struct agent *a;
+	CONST_FOR_EACH_RUNNABLE_AGENT(a, grandparent->oldsched,
 		if (BLOCKED(a) || HTM_BLOCKED(grandparent->oldsched, a) ||
 		    is_child_searched(grandparent, a->tid)) {
 			// continue;
@@ -145,7 +156,7 @@ static void tag_all_siblings(struct hax *h0, struct hax *ancestor,
 			}
 		} else {
 			/* normal case; sibling can be tagged */
-			a->do_explore = true;
+			modify_hax(update_hax_tag_tid, grandparent, a->tid);
 			print_agent(DEV, a);
 			printf(DEV, " ");
 			num_tagged++;
@@ -157,7 +168,7 @@ static void tag_all_siblings(struct hax *h0, struct hax *ancestor,
 	assert(need_bpor == NULL || !*need_bpor || num_tagged <= 2);
 }
 
-static bool tag_sibling(struct hax *h0, struct hax *ancestor,
+static bool tag_sibling(const struct hax *h0, const struct hax *ancestor,
 			unsigned int icb_bound)
 {
 	bool need_bpor = false;
@@ -168,13 +179,13 @@ static bool tag_sibling(struct hax *h0, struct hax *ancestor,
 }
 
 #ifdef ICB
-static bool stop_bpor_backtracking(struct hax *h0, struct hax *ancestor2)
+static bool stop_bpor_backtracking(const struct hax *h0, const struct hax *ancestor2)
 {
 	/* Don't BPOR-tag past the previous transition of same thread... */
 	if (h0->chosen_thread == ancestor2->chosen_thread) {
 		return true;
 	/* ...or past the point where the thread was created. */
-	} else if (find_agent(ancestor2->oldsched, h0->chosen_thread) == NULL) {
+	} else if (const_find_agent(ancestor2->oldsched, h0->chosen_thread) == NULL) {
 		return true;
 	} else {
 		return false;
@@ -183,7 +194,7 @@ static bool stop_bpor_backtracking(struct hax *h0, struct hax *ancestor2)
 }
 
 /* BPOR [Coons et al, OOPSLA 2013]. */
-static void tag_reachable_aunts(struct hax *h0, struct hax *ancestor,
+static void tag_reachable_aunts(const struct hax *h0, const struct hax *ancestor,
 				unsigned int icb_bound)
 {
 	bool good_sibling_tagged = false;
@@ -195,7 +206,7 @@ static void tag_reachable_aunts(struct hax *h0, struct hax *ancestor,
 
 	/* Search among ancestors for a place where we could switch to running
 	 * h0's thread without exceeding the preemption bound. */
-	for (struct hax *ancestor2 = ancestor->parent;
+	for (const struct hax *ancestor2 = ancestor->parent;
 	     ancestor2 != NULL && ancestor2->parent != NULL
 	     && !stop_bpor_backtracking(h0, ancestor2);
 	     ancestor2 = ancestor2->parent) {
@@ -220,7 +231,7 @@ static void tag_reachable_aunts(struct hax *h0, struct hax *ancestor,
 	 * which is reachable within the bound (either because the other sibling
 	 * is runnable during a voluntary resched, or because the preemption
 	 * count changes among these ancestors). */
-	for (struct hax *ancestor2 = ancestor->parent;
+	for (const struct hax *ancestor2 = ancestor->parent;
 	     ancestor2 != NULL && ancestor2->parent != NULL
 	     && !stop_bpor_backtracking(h0, ancestor2);
 	     ancestor2 = ancestor2->parent) {
@@ -229,16 +240,21 @@ static void tag_reachable_aunts(struct hax *h0, struct hax *ancestor,
 }
 #endif
 
-static bool any_tagged_child(struct hax *h, unsigned int *new_tid, bool *txn,
+static void update_hax_pop_xabort_code(struct hax *h, int *index)
+{
+	ARRAY_LIST_REMOVE_SWAP(mutable_xabort_codes_todo(h), *index);
+}
+
+static bool any_tagged_child(const struct hax *h, unsigned int *new_tid, bool *txn,
 			     unsigned int *xabort_code)
 {
-	struct agent *a;
+	const struct agent *a;
 
 	if ((*txn = (h->xbegin && ARRAY_LIST_SIZE(&h->xabort_codes_todo) > 0))) {
 		// TODO: reduction challenge?
 		/* pop the code from the list so it won't be doubly explored */
 		*xabort_code = *ARRAY_LIST_GET(&h->xabort_codes_todo, 0);
-		ARRAY_LIST_REMOVE_SWAP(&h->xabort_codes_todo, 0);
+		modify_hax(update_hax_pop_xabort_code, h, 0);
 		/* injecting a failure in the xbeginning thread, obvs. */
 		*new_tid = h->chosen_thread;
 		return true;
@@ -246,7 +262,7 @@ static bool any_tagged_child(struct hax *h, unsigned int *new_tid, bool *txn,
 
 	/* do_explore doesn't get set on blocked threads, but might get set
 	 * on threads we've already looked at. */
-	FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
+	CONST_FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
 		if (a->do_explore && !is_child_searched(h, a->tid)) {
 			*new_tid = a->tid;
 			return true;
@@ -256,12 +272,12 @@ static bool any_tagged_child(struct hax *h, unsigned int *new_tid, bool *txn,
 	return false;
 }
 
-static void print_pruned_children(struct save_state *ss, struct hax *h)
+static void print_pruned_children(struct save_state *ss, const struct hax *h)
 {
 	bool any_pruned = false;
-	struct agent *a;
+	const struct agent *a;
 
-	FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
+	CONST_FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
 		if (!is_child_searched(h, a->tid)) {
 			if (!any_pruned) {
 				lsprintf(DEV, "at #%d/tid%d pruned tids ",
@@ -275,13 +291,33 @@ static void print_pruned_children(struct save_state *ss, struct hax *h)
 		printf(DEV, "\n");
 }
 
-struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
-		    unsigned int *xabort_code)
+static void update_hax_set_all_explored(struct hax *h, int *unused)
+{
+	h->all_explored = true;
+}
+static void update_hax_set_child_all_explored(struct hax *h, int *chosen_thread)
+{
+	// FIXME: wont this need extra stuff for transactions
+	struct hax_child *child;
+	unsigned int i;
+	ARRAY_LIST_FOREACH(mutable_children(h), i, child) {
+		if (child->chosen_thread == *chosen_thread) {
+			child->all_explored = true;
+			return;
+		}
+	}
+	assert(0 && "child hax not found to mark all-explored");
+}
+
+const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
+			  unsigned int *xabort_code)
 {
 	struct save_state *ss = &ls->save;
-	struct hax *current = ss->current;
+	const struct hax *current = ss->current;
 
-	current->all_explored = true;
+	modify_hax(update_hax_set_all_explored, current, 0);
+	modify_hax(update_hax_set_child_all_explored,
+		   current->parent, current->chosen_thread);
 	branch_sanity(ss->root, ss->current);
 
 	/* this cannot happen in-line with walking the branch, below, since it
@@ -291,13 +327,12 @@ struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 
 	/* Compare each transition along this branch against each of its
 	 * ancestors. */
-	for (struct hax *h = current; h != NULL; h = h->parent) {
+	for (const struct hax *h = current; h != NULL; h = h->parent) {
 		/* In outer loop, we include user threads blocked in a yield
 		 * loop as the "descendant" for comparison, because we want
 		 * to reorder them before conflicting ancestors if needed... */
-		for (struct hax *ancestor = h->parent; ancestor != NULL;
+		for (const struct hax *ancestor = h->parent; ancestor != NULL;
 		     ancestor = ancestor->parent) {
-			// FIXME: see fixme in pp_parent
 			if (ancestor->parent == NULL) {
 				continue;
 			/* ...however, in this inner loop, we never consider
@@ -342,7 +377,7 @@ struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 	 * depth-first ordering. This allows us to avoid having tagged siblings
 	 * outside of the current branch of the tree. A trail of "all_explored"
 	 * flags gets left behind. */
-	for (struct hax *h = current->parent; h != NULL; h = h->parent) {
+	for (const struct hax *h = current->parent; h != NULL; h = h->parent) {
 		if (any_tagged_child(h, new_tid, txn, xabort_code)) {
 			assert(h->is_preemption_point);
 			lsprintf(BRANCH, "from #%d/tid%d, chose tid %d%s, "
@@ -360,7 +395,9 @@ struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 				lsprintf(INFO, "#%d/tid%d not a PP\n",
 					 h->depth, h->chosen_thread);
 			}
-			h->all_explored = true;
+			modify_hax(update_hax_set_all_explored, h, 0);
+			modify_hax(update_hax_set_child_all_explored,
+				   h->parent, h->chosen_thread);
 		}
 	}
 

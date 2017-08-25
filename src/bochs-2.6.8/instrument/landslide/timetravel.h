@@ -9,6 +9,8 @@
 
 #include <stdbool.h>
 
+struct hax;
+
 #ifdef BOCHS
 
 struct timetravel_state {
@@ -24,6 +26,19 @@ struct timetravel_hax {
 void timetravel_init(struct timetravel_state *ts);
 #define timetravel_hax_init(th) do { (th)->active = false; } while (0)
 
+/* Time travel is implemented by fork()ing the simulation at each PP.
+ * Accordingly, any landslide state which should "glow green" must be updated
+ * very carefully -- i.e., the forked processes must see all changes by DPOR/
+ * estimation/etc. To accomplish this, all haxes are protected by const, and
+ * in order to change them, you need to go through this function. */
+template <typename T> inline void modify_hax(void (*cb)(struct hax *h_rw, T *),
+					     const struct hax *h_ro, T arg)
+{
+	// TODO - message the parence!!
+	/* also update the version in our local memory, of course */
+	cb((struct hax *)h_ro, &arg);
+}
+
 #else /* SIMICS */
 
 struct timetravel_state { char *cmd_file; };
@@ -31,10 +46,9 @@ struct timetravel_hax { };
 
 #define timetravel_init(ts)     do { (ts)->cmd_file = NULL; } while (0)
 #define timetravel_hax_init(th) do { } while (0)
+#define modify_hax(cb, h_ro, arg) ((cb)((struct hax *)(h_ro), (arg)))
 
 #endif
-
-struct hax;
 
 void timetravel_set(struct timetravel_state *ts, struct hax *h);
 void timetravel_jump(struct timetravel_state *ts, struct timetravel_hax *tt,

@@ -10,7 +10,7 @@
 #include "simulator.h"
 
 symtable_t *get_symtable();
-void set_symtable(symtable_t *symtable);
+void set_symtable(const symtable_t *symtable);
 bool symtable_lookup(unsigned int eip, char **func, char **file, int *line);
 unsigned int symtable_lookup_data(char *buf, unsigned int maxlen, unsigned int addr);
 bool function_eip_offset(unsigned int eip, unsigned int *offset);

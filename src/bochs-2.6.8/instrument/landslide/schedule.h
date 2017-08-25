@@ -93,7 +93,7 @@ struct agent {
 #endif
 	/* For noob deadlock detection. The pointer might not be set; if it is
 	 * NULL but the tid field is not -1, it should be computed. */
-	struct agent *kern_blocked_on;
+	const struct agent *kern_blocked_on;
 	unsigned int kern_blocked_on_tid;
 	/* action.locking implies addr is valid; also kern_blocked_on set implies
 	 * locking, which implies addr is valid. -1 if nothing. */
@@ -132,12 +132,17 @@ struct agent {
 	/* State for tracking userspace synchronization actions */
 	struct user_yield_state user_yield;
 	/* Possible stack trace saved from before sim_unreg_process. */
-	struct stack_trace *pre_vanish_trace;
+	const struct stack_trace *pre_vanish_trace;
 	/* Used by partial order reduction, only in "oldsched"s in the tree. */
 	bool do_explore;
 };
 
 Q_NEW_HEAD(struct agent_q, struct agent);
+
+static struct stack_trace *mutable_pre_vanish_trace(struct agent *a)
+	{ return (struct stack_trace *)a->pre_vanish_trace; }
+static struct agent *mutable_kern_blocked_on_agent(struct agent *a)
+	{ return (struct agent *)a->kern_blocked_on; }
 
 #define BLOCKED(a) \
 	((a)->kern_blocked_on_tid != -1 || (a)->user_blocked_on_addr != -1 || \
@@ -282,19 +287,27 @@ struct sched_state {
 	}						\
 	} while (0)
 
+#define CONST_FOR_EACH_RUNNABLE_AGENT(a, s, code) do {			\
+	struct agent *__rw_a;						\
+	FOR_EACH_RUNNABLE_AGENT(__rw_a, (struct sched_state *)(s), {	\
+		a = (const struct agent *)__rw_a;			\
+		code							\
+	});								\
+	} while (0)
+
 /* For purposes of ICB, would switching to the given thread constitute a
  * preemption? Note that in a voluntary resched senario, both cur and last
  * agence are allowed (i.e., we could choose them even when the ICB bound
  * is exceeded), as we may need to run one or the other for correctness. */
 #define NO_PREEMPTION_REQUIRED(s, voluntary, a) ({			\
-	struct agent *__a = (a);					\
-	struct sched_state *____s = (s); /* wtf gcc wrt shadowing  */	\
+	const struct agent *__a = (a);					\
+	const struct sched_state *____s = (s); /* wtf gcc wrt shadowing  */	\
 	(__a == ____s->cur_agent ||					\
 	 ((voluntary) && __a == ____s->last_agent)); })
 
 #ifdef ICB
 #define ICB_BLOCKED(s, bound, voluntary, a) ({			\
-	struct sched_state *__s = (s);				\
+	const struct sched_state *__s = (s);				\
 	(__s->icb_preemption_count >= (bound) &&		\
 	 !NO_PREEMPTION_REQUIRED(__s, voluntary, a)); })
 #else
@@ -312,7 +325,9 @@ void print_agent(verbosity v, const struct agent *);
 void print_qs(verbosity v, const struct sched_state *);
 void print_scheduler_state(verbosity v, const struct sched_state *);
 struct agent *find_agent(struct sched_state *s, unsigned int tid);
-struct agent *find_runnable_agent(struct sched_state *s, unsigned int tid);
+static inline const struct agent *const_find_agent(const struct sched_state *s, unsigned int tid)
+	{ return (const struct agent *)find_agent((struct sched_state *)s, tid); }
+const struct agent *find_runnable_agent(const struct sched_state *s, unsigned int tid);
 
 /* called at every "interesting" point ... */
 void sched_update(struct ls_state *);
