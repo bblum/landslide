@@ -17,6 +17,8 @@
 #include "variable_queue.h"
 #include "x86.h"
 
+#define FRAME_LIST_INITIAL_SIZE 16
+
 /******************************************************************************
  * printing utilities / glue
  ******************************************************************************/
@@ -105,13 +107,14 @@ void print_eip(verbosity v, unsigned int eip)
 void print_stack_trace(verbosity v, const struct stack_trace *st)
 {
 	const struct stack_frame *f;
+	unsigned int i;
 	bool first_frame = true;
 
 	/* print TID prefix before first frame */
 	printf(v, "TID%d at ", st->tid);
 
 	/* print each frame */
-	Q_FOREACH(f, &st->frames, nobe) {
+	ARRAY_LIST_FOREACH(&st->frames, i, f) {
 		if (!first_frame) {
 			printf(v, ", ");
 		}
@@ -127,8 +130,9 @@ unsigned int html_stack_trace(char *buf, unsigned int maxlen, const struct stack
 	unsigned int pos = 0;
 	bool first_frame = true;
 	const struct stack_frame *f;
+	unsigned int i;
 
-	Q_FOREACH(f, &st->frames, nobe) {
+	ARRAY_LIST_FOREACH(&st->frames, i, f) {
 		if (!first_frame) {
 			PRINT("<br />");
 		}
@@ -164,29 +168,29 @@ struct stack_trace *copy_stack_trace(const struct stack_trace *src)
 {
 	struct stack_trace *dest = MM_XMALLOC(1, struct stack_trace);
 	const struct stack_frame *f_src;
+	unsigned int i;
 	dest->tid = src->tid;
-	Q_INIT_HEAD(&dest->frames);
+	ARRAY_LIST_INIT(&dest->frames, FRAME_LIST_INITIAL_SIZE);
 
-	Q_FOREACH(f_src, &src->frames, nobe) {
-		struct stack_frame *f_dest = MM_XMALLOC(1, struct stack_frame);
-		f_dest->eip = f_src->eip;
-		f_dest->name = f_src->name == NULL ? NULL : MM_XSTRDUP(f_src->name);
-		f_dest->file = f_src->file == NULL ? NULL : MM_XSTRDUP(f_src->file);
-		f_dest->line = f_src->line;
-		Q_INSERT_TAIL(mutable_stack_frames(dest), f_dest, nobe);
+	ARRAY_LIST_FOREACH(&src->frames, i, f_src) {
+		struct stack_frame f_dest;
+		f_dest.eip  = f_src->eip;
+		f_dest.name = f_src->name == NULL ? NULL : MM_XSTRDUP(f_src->name);
+		f_dest.file = f_src->file == NULL ? NULL : MM_XSTRDUP(f_src->file);
+		f_dest.line = f_src->line;
+		ARRAY_LIST_APPEND(mutable_stack_frames(dest), f_dest);
 	}
 	return dest;
 }
 
 void free_stack_trace(struct stack_trace *st)
 {
-	while (Q_GET_SIZE(&st->frames) > 0) {
-		struct stack_frame *f = Q_GET_HEAD(mutable_stack_frames(st));
-		assert(f != NULL);
-		Q_REMOVE(mutable_stack_frames(st), f, nobe);
+	struct stack_frame *f;
+	unsigned int i;
+	ARRAY_LIST_FOREACH(mutable_stack_frames(st), i, f) {
 		destroy_frame(f);
-		MM_FREE(f);
 	}
+	ARRAY_LIST_FREE(mutable_stack_frames(st));
 	MM_FREE(st);
 }
 
@@ -201,17 +205,18 @@ static bool splice_pre_vanish_trace(struct ls_state *ls, struct stack_trace *st,
 	}
 
 	struct stack_frame *f;
-	Q_FOREACH(f, mutable_stack_frames(pvt), nobe) {
+	unsigned int i;
+	ARRAY_LIST_FOREACH(mutable_stack_frames(pvt), i, f) {
 		if (f->eip == eip) {
 			found_eip = true;
 		}
 		if (found_eip) {
-			struct stack_frame *newf = MM_XMALLOC(1, struct stack_frame);
-			newf->eip  = f->eip;
-			newf->name = f->name == NULL ? NULL : MM_XSTRDUP(f->name);
-			newf->file = f->file == NULL ? NULL : MM_XSTRDUP(f->file);
-			newf->line = f->line;
-			Q_INSERT_TAIL(mutable_stack_frames(st), newf, nobe);
+			struct stack_frame newf;
+			newf.eip  = f->eip;
+			newf.name = f->name == NULL ? NULL : MM_XSTRDUP(f->name);
+			newf.file = f->file == NULL ? NULL : MM_XSTRDUP(f->file);
+			newf.line = f->line;
+			ARRAY_LIST_APPEND(mutable_stack_frames(st), newf);
 		}
 	}
 	return found_eip;
@@ -239,9 +244,9 @@ static unsigned int check_noreturn_function(cpu_t *cpu, unsigned int eip)
 /* returns false if symtable lookup failed */
 static bool add_frame(struct stack_trace *st, unsigned int eip)
 {
-	struct stack_frame *f = MM_XMALLOC(1, struct stack_frame);
-	bool lookup_success = eip_to_frame(eip, f);
-	Q_INSERT_TAIL(mutable_stack_frames(st), f, nobe);
+	struct stack_frame f;
+	bool lookup_success = eip_to_frame(eip, &f);
+	ARRAY_LIST_APPEND(mutable_stack_frames(st), f);
 	return lookup_success;
 }
 
@@ -268,7 +273,7 @@ struct stack_trace *stack_trace(struct ls_state *ls)
 
 	struct stack_trace *st = MM_XMALLOC(1, struct stack_trace);
 	st->tid = tid;
-	Q_INIT_HEAD(&st->frames);
+	ARRAY_LIST_INIT(&st->frames, FRAME_LIST_INITIAL_SIZE);
 
 	/* Add current frame, even if it's in kernel and we're in user. */
 	add_frame(st, eip);
@@ -468,7 +473,8 @@ bool within_function_st(const struct stack_trace *st, unsigned int func,
 {
 	const struct stack_frame *f;
 	bool result = false;
-	Q_FOREACH(f, &st->frames, nobe) {
+	unsigned int i;
+	ARRAY_LIST_FOREACH(&st->frames, i, f) {
 		if (f->eip >= func && f->eip <= func_end) {
 			result = true;
 			break;

@@ -136,13 +136,14 @@ static void html_print_stack_trace_in_table(struct fab_html_env *env,
 void print_stack_to_console(const struct stack_trace *st, bool bug_found, const char *prefix)
 {
 	const struct stack_frame *f;
+	unsigned int i;
 	bool first_frame = true;
 
 	/* print TID prefix before first frame */
 	lsprintf(BUG, bug_found, "%sTID%d at ", prefix, st->tid);
 
 	/* print each frame */
-	Q_FOREACH(f, &st->frames, nobe) {
+	ARRAY_LIST_FOREACH(&st->frames, i, f) {
 		if (!first_frame) {
 			printf(BUG, "\n");
 			lsprintf(BUG, bug_found, "%s\t", prefix);

@@ -831,7 +831,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 				 * the technique for delaying the access (in
 				 * x86.c). fix it up with the proper eip. */
 				struct stack_frame *first_frame =
-					Q_GET_HEAD(mutable_stack_frames(st));
+					ARRAY_LIST_GET(mutable_stack_frames(st), 0);
 				assert(first_frame != NULL);
 				destroy_frame(first_frame);
 				eip_to_frame(data_race_eip, first_frame);

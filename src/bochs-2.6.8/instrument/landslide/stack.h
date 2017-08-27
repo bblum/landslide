@@ -9,30 +9,26 @@
 
 #include "common.h"
 #include "simulator.h"
-#include "variable_queue.h"
+#include "array_list.h"
 
 struct ls_state;
 
 /* stack trace data structures. */
 struct stack_frame {
-	// FIXME: turn this into an array list which can handle const properly
-	Q_NEW_LINK(/* const XXX */ struct stack_frame) nobe;
 	unsigned int eip;
 	char *name; /* may be null if symtable lookup failed */
 	char *file; /* may be null, as above */
 	int line;   /* valid iff above fields are not null */
 };
 
-Q_NEW_HEAD(struct stack_frames, const struct stack_frame);
-
 struct stack_trace {
 	unsigned int tid;
-	struct stack_frames frames;
+	ARRAY_LIST(const struct stack_frame) frames;
 };
 
-Q_NEW_HEAD(struct mutable_stack_frames, struct stack_frame);
-static inline struct mutable_stack_frames *mutable_stack_frames(struct stack_trace *st)
-	{ return (struct mutable_stack_frames *)&st->frames; }
+typedef ARRAY_LIST(struct stack_frame) mutable_stack_frames_t;
+static inline mutable_stack_frames_t *mutable_stack_frames(struct stack_trace *st)
+	{ return (mutable_stack_frames_t *)&st->frames; }
 
 /* interface */
 
