@@ -31,9 +31,14 @@ void timetravel_init(struct timetravel_state *ts);
  * very carefully -- i.e., the forked processes must see all changes by DPOR/
  * estimation/etc. To accomplish this, all haxes are protected by const, and
  * in order to change them, you need to go through this function. */
+#include <type_traits>
+extern bool active_world_line;
 template <typename T> inline void modify_hax(void (*cb)(struct hax *h_rw, T *),
 					     const struct hax *h_ro, T arg)
 {
+	assert(h_ro != NULL);
+	/* prevent sending pointers which might be invalid in another process */
+	STATIC_ASSERT(std::is_fundamental<T>::value && "no pointers allowed!");
 	// TODO - message the parence!!
 	/* also update the version in our local memory, of course */
 	cb((struct hax *)h_ro, &arg);
