@@ -694,14 +694,13 @@ void save_init(struct save_state *ss)
 	ss->root = NULL;
 	ss->current = NULL;
 	ss->next_tid = -1;
-	ss->total_choice_poince = 0;
-	ss->total_choices = 0;
-	ss->total_jumps = 0;
-	ss->total_triggers = 0;
-	ss->depth_total = 0;
-	ss->total_usecs = 0;
+	ss->stats.total_choices = 0;
+	ss->stats.total_jumps = 0;
+	ss->stats.total_triggers = 0;
+	ss->stats.depth_total = 0;
+	ss->stats.total_usecs = 0;
 
-	update_time(&ss->last_save_time);
+	update_time(&ss->stats.last_save_time);
 }
 
 void save_recover(struct save_state *ss, struct ls_state *ls, int new_tid)
@@ -758,8 +757,8 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		h->chosen_thread = ss->next_tid;
 
 		/* compute elapsed and cumulative time */
-		h->usecs = update_time(&ss->last_save_time);
-		ss->total_usecs += h->usecs;
+		h->usecs = update_time(&ss->stats.last_save_time);
+		ss->stats.total_usecs += h->usecs;
 
 		/* Put the choice into the tree. */
 		if (ss->root == NULL) {
@@ -837,8 +836,6 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 				eip_to_frame(data_race_eip, first_frame);
 			}
 		}
-
-		ss->total_choice_poince++;
 	} else {
 		assert(0 && "Not our_choice deprecated.");
 	}
@@ -864,7 +861,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		h->conflicts      = MM_XMALLOC(h->depth, bool);
 		h->happens_before = MM_XMALLOC(h->depth, bool);
 		/* For progress sense. */
-		ss->total_triggers +=
+		ss->stats.total_triggers +=
 			ls->trigger_count - h->parent->trigger_count;
 	} else {
 		h->conflicts      = NULL;
@@ -905,7 +902,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 	}
 
 	timetravel_set(ls, h);
-	ss->total_choices++;
+	ss->stats.total_choices++;
 }
 
 void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *h,
@@ -917,7 +914,7 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *
 	assert(ss->current != NULL);
 	assert(ss->current->estimate_computed);
 
-	ss->depth_total += ss->current->depth;
+	ss->stats.depth_total += ss->current->depth;
 
 	/* The caller is allowed to say NULL, which means jump to the root. */
 	if (h == NULL)
@@ -950,11 +947,9 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *
 		assert(rabbit != ss->current && "somehow, a cycle?!?");
 	}
 
-	PRINT_TREE_INFO(DEV, ls);
-
 	restore_ls(ls, h);
 
-	ss->total_jumps++;
+	ss->stats.total_jumps++;
 	timetravel_jump(ls, &h->time_machine, tid, txn, xabort_code);
 }
 
@@ -982,12 +977,11 @@ void save_reset_tree(struct save_state *ss, struct ls_state *ls)
 	/* Do this before longjmp so the change gets copied into ls->sched. */
 	modify_hax(reset_root, ss->root, 0);
 
-	ss->total_choice_poince = 0;
-	ss->total_choices = 0;
-	ss->total_triggers = 0;
-	ss->total_usecs = ss->root->usecs;
-	ss->total_jumps = (uint64_t)-1; /* to become 0; see longjmp */
-	ss->depth_total = (uint64_t)-ss->current->depth; /* see above */
+	ss->stats.total_choices = 1;
+	ss->stats.total_triggers = 0;
+	ss->stats.total_usecs = ss->root->usecs;
+	ss->stats.total_jumps = (uint64_t)-1; /* to become 0; see longjmp */
+	ss->stats.depth_total = (uint64_t)-ss->current->depth; /* see above */
 
 	/* As before but with some additional changes */
 	save_longjmp(ss, ls, ss->root);

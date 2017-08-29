@@ -228,15 +228,15 @@ static bool check_infinite_loop(struct ls_state *ls, char *message, unsigned int
 	 * loops within user sync primitives, so be more aggressive checking
 	 * there. However, the past instruction average must be non-0. */
 	bool possible_to_check = ls->save.current != NULL &&
-		ls->save.total_triggers != 0;
+		ls->save.stats.total_triggers != 0;
 	bool more_aggressive_check = possible_to_check && testing_userspace() &&
-		(ls->save.total_jumps == 0 || /* don't get owned on 0th branch */
+		(ls->save.stats.total_jumps == 0 || /* don't get owned on 0th branch */
 		 IN_USER_SYNC_PRIMITIVES(ls->sched.cur_agent));
 
 	/* Can't check for tight loops 0th branch. If one transition has an
 	 * expensive operation like vm_free_pagedir() we don't want to trip on
 	 * it; we want to incorporate it into the average. */
-	if (ls->save.total_jumps == 0 && !possible_to_check) {
+	if (ls->save.stats.total_jumps == 0 && !possible_to_check) {
 		return false;
 	}
 
@@ -244,7 +244,7 @@ static bool check_infinite_loop(struct ls_state *ls, char *message, unsigned int
 	unsigned long most_recent =
 		ls->trigger_count - ls->save.current->trigger_count;
 	unsigned long average_triggers =
-		MAX(ls->save.total_triggers / ls->save.total_choices,
+		MAX(ls->save.stats.total_triggers / ls->save.stats.total_choices,
 		    PROGRESS_MIN_TRIGGER_AVERAGE);
 	unsigned long trigger_factor = more_aggressive_check ?
 		PROGRESS_AGGRESSIVE_TRIGGER_FACTOR : PROGRESS_TRIGGER_FACTOR;
@@ -265,7 +265,7 @@ static bool check_infinite_loop(struct ls_state *ls, char *message, unsigned int
 		return true;
 	}
 
-	if (ls->save.total_jumps == 0) {
+	if (ls->save.stats.total_jumps == 0) {
 		/* We can't confidently FAB infinite loop here because we don't
 		 * know how long a branch is supposed to be. But we can't make
 		 * progress either because 1000 simics snapshots is swapping
@@ -283,12 +283,12 @@ static bool check_infinite_loop(struct ls_state *ls, char *message, unsigned int
 	 * depth was -- the fewer branches explored so far, the less so. */
 	long double depth_factor = PROGRESS_DEPTH_FACTOR;
 	/* For each branch short of the magic number, become less confident. */
-	for (unsigned int i = ls->save.total_jumps;
+	for (unsigned int i = ls->save.stats.total_jumps;
 	     i < PROGRESS_CONFIDENT_BRANCHES; i++) {
 		depth_factor *= PROGRESS_BRANCH_UNCERTAINTY_EXPONENT;
 	}
 	unsigned int average_depth =
-		ls->save.depth_total / (1 + ls->save.total_jumps);
+		ls->save.stats.depth_total / (1 + ls->save.stats.total_jumps);
 	unsigned long depth_thresh = average_depth * depth_factor;
 	/* we're right on top of the PP; if it's a DR PP, avoid emitting a bogus
 	 * stack-address value as current eip (see dr eip logic in save.c). */
@@ -533,7 +533,7 @@ static bool time_travel(struct ls_state *ls)
 	struct hax *h = explore(ls, &tid, &txn, &xabort_code);
 
 	lsprintf(BRANCH, COLOUR_BOLD COLOUR_GREEN "End of branch #%" PRIu64
-		 ".\n" COLOUR_DEFAULT, ls->save.total_jumps + 1);
+		 ".\n" COLOUR_DEFAULT, ls->save.stats.total_jumps + 1);
 	print_estimates(ls);
 	lsprintf(BRANCH, "ICB preemption count this branch = %u\n",
 		 ls->sched.icb_preemption_count);

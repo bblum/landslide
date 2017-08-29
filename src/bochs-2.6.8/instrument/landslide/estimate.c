@@ -448,7 +448,7 @@ void print_estimates(struct ls_state *ls)
 {
 	long double proportion = estimate_proportion(ls->save.root, ls->save.current);
 	long double usecs = estimate_time(ls->save.root, ls->save.current);
-	unsigned int branches = ls->save.total_jumps + 1;
+	unsigned int branches = ls->save.stats.total_jumps + 1;
 
 	lsprintf(BRANCH, COLOUR_BOLD COLOUR_GREEN
 		 "Estimate: %Lf%% (%Lf total branches)\n" COLOUR_DEFAULT,
@@ -456,8 +456,8 @@ void print_estimates(struct ls_state *ls)
 
 	struct human_friendly_time total_time, elapsed_time, remaining_time;
 	human_friendly_time(usecs, &total_time);
-	human_friendly_time(ls->save.total_usecs, &elapsed_time);
-	human_friendly_time(usecs - (long double)ls->save.total_usecs,
+	human_friendly_time(ls->save.stats.total_usecs, &elapsed_time);
+	human_friendly_time(usecs - (long double)ls->save.stats.total_usecs,
 			    &remaining_time);
 
 	lsprintf(BRANCH, COLOUR_BOLD COLOUR_GREEN "Estimated time: ");
@@ -470,12 +470,12 @@ void print_estimates(struct ls_state *ls)
 
 	lsprintf(DEV, COLOUR_BOLD COLOUR_GREEN "Estimated time: "
 		 "%Lfs (elapsed %Lfs; remain %Lfs)\n",
-		 usecs / 1000000, (long double)ls->save.total_usecs / 1000000,
-		 (usecs - (long double)ls->save.total_usecs) / 1000000);
+		 usecs / 1000000, (long double)ls->save.stats.total_usecs / 1000000,
+		 (usecs - (long double)ls->save.stats.total_usecs) / 1000000);
 
 	uint64_t time_asleep =
 		message_estimate(&ls->mess, proportion, branches,
-				 usecs, ls->save.total_usecs,
+				 usecs, ls->save.stats.total_usecs,
 				 ls->sched.icb_preemption_count, ls->icb_bound);
-	fudge_time(&ls->save.last_save_time, time_asleep);
+	fudge_time(&ls->save.stats.last_save_time, time_asleep);
 }

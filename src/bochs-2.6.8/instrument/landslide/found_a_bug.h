@@ -25,12 +25,15 @@ struct ls_state;
 		  ls->trigger_count, ls->absolute_trigger_count);	\
 	_lsprintf(v, mn, mc, "Total preemption-points %" PRIu64 ", "	\
 		  "total backtracks %" PRIu64 "\n", 			\
-		  ls->save.total_choices, ls->save.total_jumps);	\
+		  ls->save.stats.total_choices,				\
+		  ls->save.stats.total_jumps);				\
 	_lsprintf(v, mn, mc,						\
 		  "Average instrs/preemption-point %lu, "		\
 		  "average branch depth %lu\n",				\
-		  ls->save.total_triggers / (1+ls->save.total_choices),	\
-		  ls->save.depth_total / (1+ls->save.total_jumps));	\
+		  ls->save.stats.total_triggers /			\
+		  (1+ls->save.stats.total_choices),			\
+		  ls->save.stats.depth_total / 				\
+		  (1+ls->save.stats.total_jumps));			\
 	} while (0)
 
 #define PRINT_TREE_INFO(v, ls) \

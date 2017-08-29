@@ -229,7 +229,7 @@ static long double compute_state_space_size(struct ls_state *ls,
 	 * foundabug deterministically), in which case we don't even know how
 	 * long the test execution is supposed to run, so doing the estimation
 	 * after all is the best we can do. */
-	if (ls->save.total_jumps == 0) {
+	if (ls->save.stats.total_jumps == 0) {
 		/* First branch - either found a 'deterministic' bug, or
 		 * asked to output PP info after branch completion. Either way,
 		 * need to add a terminal 'leaf' nobe before computing the
@@ -266,7 +266,7 @@ static long double compute_state_space_size(struct ls_state *ls,
 		*needed_compute = false;
 		/* Modify the proportion to account for this 1 branch that we
 		 * explored since. (Matters more with small state spaces.) */
-		return ((ls->save.total_jumps + 1.0L) / ls->save.total_jumps)
+		return ((ls->save.stats.total_jumps + 1.0L) / ls->save.stats.total_jumps)
 			* ls->save.root->proportion;
 	}
 }
@@ -345,9 +345,9 @@ void _found_a_bug(struct ls_state *ls, bool bug_found, bool verbose,
 			HTML_PRINTF(&env, HTML_NEWLINE);
 		}
 		HTML_PRINTF(&env, "Distinct interleavings tested: %" PRIu64
-			    HTML_NEWLINE, ls->save.total_jumps + 1);
+			    HTML_NEWLINE, ls->save.stats.total_jumps + 1);
 		HTML_PRINTF(&env, "Estimated state space size: %Lf" HTML_NEWLINE,
-			    (ls->save.total_jumps + 1) / proportion);
+			    (ls->save.stats.total_jumps + 1) / proportion);
 		HTML_PRINTF(&env, "Estimated state space coverage: %Lf%%"
 			    HTML_NEWLINE, proportion * 100);
 		HTML_PRINTF(&env, HTML_NEWLINE);
@@ -399,7 +399,7 @@ void _found_a_bug(struct ls_state *ls, bool bug_found, bool verbose,
 	PRINT_TREE_INFO(BUG, bug_found, ls);
 
 	lsprintf(BUG, bug_found, "Estimated state space size: %Lf; coverage: %Lf%%\n",
-		 (ls->save.total_jumps + 1) / proportion, proportion * 100);
+		 (ls->save.stats.total_jumps + 1) / proportion, proportion * 100);
 
 	if (tabular) {
 		/* Finish up html output */

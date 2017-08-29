@@ -14,15 +14,7 @@
 struct ls_state;
 struct hax;
 
-struct save_state {
-	/* The root of the decision tree, or NULL if save_setjmp() was never
-	 * called. */
-	const struct hax *root;
-	/* If root is set, this points to the "current" node in the tree */
-	const struct hax *current;
-	int next_tid;
-	/* Statistics */
-	uint64_t total_choice_poince;
+struct save_statistics {
 	uint64_t total_choices;
 	uint64_t total_jumps;
 	uint64_t total_triggers;
@@ -34,6 +26,17 @@ struct save_state {
 	 * on the last nobe in the previous branch. */
 	struct timeval last_save_time;
 	uint64_t total_usecs;
+};
+
+struct save_state {
+	/* The root of the decision tree, or NULL if save_setjmp() was never
+	 * called. */
+	const struct hax *root;
+	/* If root is set, this points to the "current" node in the tree */
+	const struct hax *current;
+	int next_tid;
+	/* Statistics */
+	struct save_statistics stats;
 };
 
 void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code);

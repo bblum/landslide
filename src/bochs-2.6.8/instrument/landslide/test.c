@@ -150,7 +150,7 @@ static bool unexpected_idle()
 	print_scheduler_state(ALWAYS, &ls->sched);
 	printf(ALWAYS, "\n");
 
-	if (ls->save.total_jumps > 0) {
+	if (ls->save.stats.total_jumps > 0) {
 		/* ...a race? Give a full report instead of a terse complaint. */
 		FOUND_A_BUG(ls, "Kernel is unexpectedly idling.");
 	}

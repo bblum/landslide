@@ -12,6 +12,7 @@
 
 #include "common.h"
 #include "landslide.h"
+#include "save.h"
 #include "simulator.h"
 #include "timetravel.h"
 #include "tree.h"
@@ -42,6 +43,11 @@ struct timetravel_message {
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code;
+
+	/* used for tag run only */
+	struct save_statistics save_stats;
+	unsigned int icb_bound;
+	bool icb_need_increment_bound;
 };
 
 #define QUIT_BOCHS(v) do { BX_EXIT(v); assert(0 && "noreturn"); } while (0)
@@ -94,7 +100,7 @@ void quit_landslide(unsigned int code)
 // what to do as child -- run thread X, inject txn failure Y, or exit
 // TODO: remember if youre the child, you have to create a new child whenever youre
 // about to return and execute more stuff. just "return timetravel_set()" should be ok
-void timetravel_set(struct timetravel_state *unused, struct hax *h)
+void timetravel_set(struct ls_state *ls, struct hax *h)
 {
 	struct timetravel_hax *th = &h->time_machine;
 	int pipefd[2];
@@ -127,6 +133,22 @@ void timetravel_set(struct timetravel_state *unused, struct hax *h)
 		assert(tm.magic == TIMETRAVEL_MAGIC && "bad magic");
 		if (tm.tag == TIMETRAVEL_RUN) {
 			active_world_line = true;
+			memcpy(&ls->save.stats, &tm.save_stats,
+			       sizeof(struct save_statistics));
+			if (ls->icb_bound == tm.icb_bound) {
+				/* normal jump within same ICB bound; expect
+				 * "need increment" flag to be monotonic */
+				assert(!ls->icb_need_increment_bound ||
+				       tm.icb_need_increment_bound);
+				ls->icb_need_increment_bound =
+					tm.icb_need_increment_bound;
+			} else {
+				/* special ICB tree-reset jump */
+				assert(h->depth == 0);
+				assert(!tm.icb_need_increment_bound);
+				assert(!ls->icb_need_increment_bound);
+				ls->icb_bound = tm.icb_bound;
+			}
 			// TODO - this will need a bunch of refactoring
 			assert(0 && "unimplemepted");
 
@@ -145,7 +167,7 @@ void timetravel_set(struct timetravel_state *unused, struct hax *h)
 	QUIT_BOCHS(LS_NO_KNOWN_BUG);
 }
 
-void timetravel_jump(struct timetravel_state *unused, struct timetravel_hax *th,
+void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,
 		     unsigned int tid, bool txn, unsigned int xabort_code)
 {
 	assert(th->active);
@@ -156,15 +178,21 @@ void timetravel_jump(struct timetravel_state *unused, struct timetravel_hax *th,
 	struct timetravel_message tm;
 	tm.tag         = TIMETRAVEL_RUN;
 	tm.magic       = TIMETRAVEL_MAGIC;
+	/* info about what to do */
 	tm.tid         = tid;
 	tm.txn         = txn;
 	tm.xabort_code = xabort_code;
+	/* anything else that needs to "glow green" */
+	memcpy(&tm.save_stats, &ls->save.stats, sizeof(struct save_statistics));
+	tm.icb_bound = ls->icb_bound;
+	tm.icb_need_increment_bound = ls->icb_need_increment_bound;
+	/* send the message */
 	int ret = write(th->pipefd, &tm, sizeof(tm));
 	assert(ret == sizeof(tm) && "write failed");
 	QUIT_BOCHS(LS_NO_KNOWN_BUG);
 }
 
-void timetravel_delete(struct timetravel_state *unused, struct timetravel_hax *th)
+void timetravel_delete(struct ls_state *ls, const struct timetravel_hax *th)
 {
 	assert(th->active);
 	assert(th->parent);
