@@ -20,8 +20,7 @@
 #ifdef BOCHS
 
 enum timetravel_message_tag {
-	TIMETRAVEL_TAG_ANCESTOR,
-	// TODO: something about estimace?
+	TIMETRAVEL_MODIFY_HAX,
 	TIMETRAVEL_RUN,
 };
 
@@ -36,15 +35,16 @@ struct timetravel_message {
 	enum timetravel_message_tag tag;
 	unsigned int magic;
 
-	/* used for tag_ancestor only */
-	unsigned int depth; /* tag child of hax at this depth */
+	/* used for tag modify hax only */
+	void (*cb)(struct hax *h_rw, void *arg);
+	const struct hax *h_ro;
+	unsigned int h_depth;
+	unsigned int arg_size; /* arg will be sent in a separate message */
 
-	/* used for either tag_ancestor or run */
+	/* used for tag run only */
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code;
-
-	/* used for tag run only */
 	struct save_statistics save_stats;
 	unsigned int icb_bound;
 	bool icb_need_increment_bound;
@@ -94,6 +94,35 @@ void quit_landslide(unsigned int code)
 		// assert(ret == sizeof(gm) && "failed write");
 	}
 	BX_EXIT(code);
+}
+
+/* called by modify_hax to send changes to the forked processes */
+void __modify_haxes(void (*cb)(struct hax *h_rw, void *), const struct hax *h_ro,
+		    void *arg, unsigned int arg_size)
+{
+	/* prevent recursive calls of this hax-modification procedure by child
+	 * processes. the actively-landsliding process is alone responsible for
+	 * sending update messages to all dormant timetravel nobes. */
+	assert(active_world_line && "recursive hax tree changes forbidden");
+	struct timetravel_message tm;
+	tm.tag      = TIMETRAVEL_MODIFY_HAX;
+	tm.magic    = TIMETRAVEL_MAGIC;
+	tm.cb       = cb;
+	tm.h_ro     = h_ro;
+	tm.h_depth  = h_ro->depth;
+	tm.arg_size = arg_size;
+	/* send message to all processes in between current and target hax; they
+	 * all have a target hax in their local memory that needs modified. */
+	for (const struct hax *ancestor = GET_LANDSLIDE()->save.current;
+	     ancestor != h_ro->parent; ancestor = ancestor->parent) {
+		assert(ancestor != NULL && "h_ro not an ancestor of current?");
+		assert(ancestor->time_machine.active);
+		assert(ancestor->time_machine.parent);
+		int ret = write(ancestor->time_machine.pipefd, &tm, sizeof(tm));
+		assert(ret == sizeof(tm) && "failed write to modify haxes");
+		ret = write(ancestor->time_machine.pipefd, arg, arg_size);
+		assert(ret == arg_size && "failed write arg to modify haxes");
+	}
 }
 
 // TODO: this should return bool and return a value through parameters on
@@ -156,6 +185,19 @@ void timetravel_set(struct ls_state *ls, struct hax *h)
 			th->active = false;
 			close(th->pipefd);
 			// TODO - will need a call to timetravel_set here
+		} else if (tm.tag == TIMETRAVEL_MODIFY_HAX) {
+			/* check sanity of the hax we're asked to modify */
+			assert(tm.h_depth <= h->depth && "hax from the future");
+			for (const struct hax *h2 = h; h2 != tm.h_ro;
+			     h2 = h2->parent) {
+				assert(h2 != NULL && "h_ro not an ancestor?");
+			}
+			/* get the argument */
+			char arg[tm.arg_size];
+			ret = read(th->pipefd, arg, tm.arg_size);
+			assert(ret == tm.arg_size && "failed read arg");
+			/* update our local version of this hax */
+			tm.cb((struct hax *)tm.h_ro, arg);
 		} else {
 			assert(0 && "bad message tag");
 		}
