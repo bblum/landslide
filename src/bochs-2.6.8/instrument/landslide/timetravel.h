@@ -56,7 +56,8 @@ struct timetravel_hax { };
 
 #endif
 
-void timetravel_set(struct ls_state *ls, struct hax *h);
+bool timetravel_set(struct ls_state *ls, struct hax *h,
+		    unsigned int *tid, bool *txn, unsigned int *xabort_code);
 void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *tt,
 		     unsigned int tid, bool txn, unsigned int xabort_code);
 void timetravel_delete(struct ls_state *ls, const struct timetravel_hax *tt);

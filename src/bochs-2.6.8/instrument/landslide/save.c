@@ -901,8 +901,30 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			 COLOUR_DEFAULT, h->depth, h->chosen_thread);
 	}
 
-	timetravel_set(ls, h);
 	ss->stats.total_choices++;
+	unsigned int tid;
+	bool txn;
+	unsigned int xabort_code;
+	bool was_jumped_to = false;
+	/* In bochs, if timetravel-set indicates we're a jumped-to child and
+	 * should switch our choice, we also need to refresh the time machine
+	 * so it can be jumped to again. Do this "until" we're the parent. */
+	while (timetravel_set(ls, h, &tid, &txn, &xabort_code)) {
+		lsprintf(DEV, "#%d/tid%d: child process, suggested to run "
+			 "tid%d/txn%d/code%d; refreshing save point\n",
+			 h->depth, h->chosen_thread, tid, txn, xabort_code);
+		was_jumped_to = true;
+	}
+	if (was_jumped_to) {
+#ifdef BOCHS
+		if (tid != -1) {
+			arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code);
+		}
+		restore_ls(ls, h);
+#else
+		assert(0 && "in simics timetravel-set should only return once");
+#endif
+	}
 }
 
 void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *h,
@@ -947,10 +969,20 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *
 		assert(rabbit != ss->current && "somehow, a cycle?!?");
 	}
 
+#ifndef BOCHS
+	/* In simics, timetravel-jump will return and this process will have
+	 * properties of my wayward son; so prepare state for the new branch.
+	 * In bochs, it will not return; rather timetravel_set returns twice.
+	 * These ifndefs just skip whatever the next process will never see. */
+	arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code);
 	restore_ls(ls, h);
+#endif
 
 	ss->stats.total_jumps++;
 	timetravel_jump(ls, &h->time_machine, tid, txn, xabort_code);
+#ifdef BOCHS
+	assert(0 && "returned from time leap somehow");
+#endif
 }
 
 #ifdef ICB
@@ -984,7 +1016,7 @@ void save_reset_tree(struct save_state *ss, struct ls_state *ls)
 	ss->stats.depth_total = (uint64_t)-ss->current->depth; /* see above */
 
 	/* As before but with some additional changes */
-	save_longjmp(ss, ls, ss->root);
+	save_longjmp(ss, ls, ss->root, -1, false, -1);
 }
 #else
 void save_reset_tree(struct save_state *ss, struct ls_state *ls)

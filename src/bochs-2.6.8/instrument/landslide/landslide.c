@@ -542,7 +542,6 @@ static bool time_travel(struct ls_state *ls)
 	// TODO: revamp for boxes
 	if (h != NULL) {
 		assert(!h->all_explored);
-		arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code);
 		save_longjmp(&ls->save, ls, h, tid, txn, xabort_code);
 		return true;
 	} else if (ls->icb_need_increment_bound) {

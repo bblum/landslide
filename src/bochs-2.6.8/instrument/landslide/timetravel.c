@@ -125,11 +125,11 @@ void __modify_haxes(void (*cb)(struct hax *h_rw, void *), const struct hax *h_ro
 	}
 }
 
-// TODO: this should return bool and return a value through parameters on
-// what to do as child -- run thread X, inject txn failure Y, or exit
-// TODO: remember if youre the child, you have to create a new child whenever youre
-// about to return and execute more stuff. just "return timetravel_set()" should be ok
-void timetravel_set(struct ls_state *ls, struct hax *h)
+/* returns false if the parent process; true if the (just-jumped-to) child, in
+ * which case the output pointers will be set to what thread to run instead,
+ * whereupon this must be re-called to refresh the save for another jump. */
+bool timetravel_set(struct ls_state *ls, struct hax *h,
+		    unsigned int *tid, bool *txn, unsigned int *xabort_code)
 {
 	struct timetravel_hax *th = &h->time_machine;
 	int pipefd[2];
@@ -148,7 +148,7 @@ void timetravel_set(struct ls_state *ls, struct hax *h)
 		th->parent = true;
 		th->pipefd = pipefd[1];
 		close(pipefd[0]);
-		return;
+		return false;
 	}
 
 	/* child process */
@@ -162,6 +162,7 @@ void timetravel_set(struct ls_state *ls, struct hax *h)
 		assert(tm.magic == TIMETRAVEL_MAGIC && "bad magic");
 		if (tm.tag == TIMETRAVEL_RUN) {
 			active_world_line = true;
+			/* receive "glowing green" state from previous line */
 			memcpy(&ls->save.stats, &tm.save_stats,
 			       sizeof(struct save_statistics));
 			if (ls->icb_bound == tm.icb_bound) {
@@ -178,13 +179,14 @@ void timetravel_set(struct ls_state *ls, struct hax *h)
 				assert(!ls->icb_need_increment_bound);
 				ls->icb_bound = tm.icb_bound;
 			}
-			// TODO - this will need a bunch of refactoring
-			assert(0 && "unimplemepted");
-
 			/* refresh for a future jump from this process */
 			th->active = false;
 			close(th->pipefd);
-			// TODO - will need a call to timetravel_set here
+			/* indicate what to do */
+			*tid = tm.tid;
+			*txn = tm.txn;
+			*xabort_code = tm.xabort_code;
+			return true;
 		} else if (tm.tag == TIMETRAVEL_MODIFY_HAX) {
 			/* check sanity of the hax we're asked to modify */
 			assert(tm.h_depth <= h->depth && "hax from the future");

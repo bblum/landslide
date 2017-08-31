@@ -78,9 +78,12 @@ static void run_command(const char *file, const char *cmd, const struct timetrav
 	SIM_run_alone(run_command_cb, (lang_void *)p);
 }
 
-void timetravel_set(struct ls_state *ls, struct timetravel_hax *th)
+bool timetravel_set(struct ls_state *ls, struct timetravel_hax *th,
+		    unsigned int *tid, bool *txn, unsigned int *xabort_code)
 {
 	run_command(ls->timetravel.file, CMD_BOOKMARK, th);
+	/* unlike in bochs, set() doesn't return twice; see save.c */
+	return false;
 }
 
 void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,

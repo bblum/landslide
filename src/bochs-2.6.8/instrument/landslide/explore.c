@@ -396,8 +396,10 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 					 h->depth, h->chosen_thread);
 			}
 			modify_hax(update_hax_set_all_explored, h, 0);
-			modify_hax(update_hax_set_child_all_explored,
-				   h->parent, h->chosen_thread);
+			if (h->parent != NULL) {
+				modify_hax(update_hax_set_child_all_explored,
+					   h->parent, h->chosen_thread);
+			}
 		}
 	}
 
