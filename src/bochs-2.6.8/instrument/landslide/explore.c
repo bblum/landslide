@@ -21,7 +21,8 @@ static bool is_child_searched(const struct hax *h, unsigned int child_tid) {
 	unsigned int i;
 
 	ARRAY_LIST_FOREACH(&h->children, i, child) {
-		if (child->chosen_thread == child_tid && child->all_explored)
+		if (child->chosen_thread == child_tid && !child->xabort &&
+		    child->all_explored)
 			return true;
 	}
 	return false;
@@ -295,18 +296,41 @@ static void update_hax_set_all_explored(struct hax *h, int *unused)
 {
 	h->all_explored = true;
 }
-static void update_hax_set_child_all_explored(struct hax *h, int *chosen_thread)
+
+static void update_hax_set_child_all_explored(struct hax *h, int chosen_thread,
+					      bool xabort, unsigned int xabort_code)
 {
-	// FIXME: wont this need extra stuff for transactions
 	struct hax_child *child;
 	unsigned int i;
 	ARRAY_LIST_FOREACH(mutable_children(h), i, child) {
-		if (child->chosen_thread == *chosen_thread) {
+		if (child->chosen_thread == chosen_thread &&
+		    child->xabort == xabort &&
+		    (!xabort || child->xabort_code == xabort_code)) {
 			child->all_explored = true;
 			return;
 		}
 	}
 	assert(0 && "child hax not found to mark all-explored");
+}
+
+static void update_hax_xabort_all_explored(struct hax *h, unsigned int *xabort_code)
+	{ update_hax_set_child_all_explored(h, h->chosen_thread, true, *xabort_code); }
+static void update_hax_preempt_all_explored(struct hax *h, int *chosen_thread)
+	{ update_hax_set_child_all_explored(h, *chosen_thread, false, 0); }
+
+static void set_all_explored(const struct hax *h)
+{
+	modify_hax(update_hax_set_all_explored, h, 0);
+	if (h->parent != NULL) {
+		if (h->xaborted) {
+			assert(h->chosen_thread == h->parent->chosen_thread);
+			modify_hax(update_hax_xabort_all_explored,
+				   h->parent, h->xabort_code);
+		} else {
+			modify_hax(update_hax_preempt_all_explored,
+				   h->parent, h->chosen_thread);
+		}
+	}
 }
 
 const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
@@ -315,9 +339,7 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 	struct save_state *ss = &ls->save;
 	const struct hax *current = ss->current;
 
-	modify_hax(update_hax_set_all_explored, current, 0);
-	modify_hax(update_hax_set_child_all_explored,
-		   current->parent, current->chosen_thread);
+	set_all_explored(current);
 	branch_sanity(ss->root, ss->current);
 
 	/* this cannot happen in-line with walking the branch, below, since it
@@ -395,11 +417,7 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 				lsprintf(INFO, "#%d/tid%d not a PP\n",
 					 h->depth, h->chosen_thread);
 			}
-			modify_hax(update_hax_set_all_explored, h, 0);
-			if (h->parent != NULL) {
-				modify_hax(update_hax_set_child_all_explored,
-					   h->parent, h->chosen_thread);
-			}
+			set_all_explored(h);
 		}
 	}
 

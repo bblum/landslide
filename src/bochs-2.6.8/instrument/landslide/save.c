@@ -694,6 +694,8 @@ void save_init(struct save_state *ss)
 	ss->root = NULL;
 	ss->current = NULL;
 	ss->next_tid = -1;
+	ss->next_xabort = false;
+	ss->next_xabort_code = _XBEGIN_STARTED;
 	ss->stats.total_choices = 0;
 	ss->stats.total_jumps = 0;
 	ss->stats.total_triggers = 0;
@@ -703,29 +705,40 @@ void save_init(struct save_state *ss)
 	update_time(&ss->stats.last_save_time);
 }
 
-void save_recover(struct save_state *ss, struct ls_state *ls, int new_tid)
+void save_recover(struct save_state *ss, struct ls_state *ls, int new_tid, bool xabort, unsigned int xabort_code)
 {
 	/* After a longjmp, we will be on exactly the node we jumped to, but
 	 * there must be a special call to let us know what our new course is
 	 * (see sched_recover). */
 	assert(ls->just_jumped);
 	ss->next_tid = new_tid;
+	ss->next_xabort = xabort;
+	ss->next_xabort_code = xabort_code;
 	lsprintf(INFO, "explorer chose tid %d; ready for action\n", new_tid);
 }
 
-static void add_hax_child(struct hax *h, int *chosen_thread)
+static void add_hax_child(struct hax *h, int tid, bool xabort, unsigned int xabort_code)
 {
-	struct hax_child child;
 	const struct hax_child *other;
 	unsigned int i;
 	ARRAY_LIST_FOREACH(&h->children, i, other) {
-		assert(other->chosen_thread != *chosen_thread &&
-		       "fixme: support transactions in h->children!");
+		assert(other->chosen_thread != tid || other->xabort != xabort ||
+		       (other->xabort && xabort && other->xabort_code != xabort_code));
 	}
-	child.chosen_thread = *chosen_thread;
+	struct hax_child child;
+	child.chosen_thread = tid;
 	child.all_explored  = false;
+	child.xabort        = xabort;
+	child.xabort_code   = xabort_code;
 	ARRAY_LIST_APPEND(mutable_children(h), child);
 }
+
+static void add_hax_child_preempt(struct hax *h, int *chosen_thread)
+	{ add_hax_child(h, *chosen_thread, false, _XBEGIN_STARTED); }
+
+/* chosen thread will be the same as haxs chosen thread */
+static void add_hax_child_xabort(struct hax *h, unsigned int *xabort_code)
+	{ add_hax_child(h, h->chosen_thread, true, *xabort_code); }
 
 /* In the typical case, this signifies that we have reached a new decision
  * point. We:
@@ -779,7 +792,15 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			assert(!ss->current->estimate_computed &&
 			       "last nobe was estimate()d; cannot give it a child");
 
-			modify_hax(add_hax_child, ss->current, h->chosen_thread);
+			if (ss->next_xabort) {
+				assert(ss->current->chosen_thread == h->chosen_thread);
+				modify_hax(add_hax_child_xabort, ss->current,
+					   ss->next_xabort_code);
+			} else {
+				modify_hax(add_hax_child_preempt, ss->current,
+					   h->chosen_thread);
+			}
+
 			h->parent = ss->current;
 			h->depth = 1 + h->parent->depth;
 
@@ -877,6 +898,8 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 
 	ss->current  = h;
 	ss->next_tid = new_tid;
+	ss->next_xabort = false;
+	ss->next_xabort_code = _XBEGIN_STARTED;
 	if (h->chosen_thread == -1) {
 		lsprintf(CHOICE, MODULE_COLOUR "#%d: Starting test with TID %d.\n"
 			 COLOUR_DEFAULT, h->depth, ss->next_tid);

@@ -23,6 +23,9 @@ struct test_state;
 struct hax_child {
 	int chosen_thread;
 	bool all_explored;
+	/* if xabort, then (h->)child->chosen_thread == h->chosen_thread */
+	bool xabort;
+	unsigned int xabort_code;
 };
 
 /* Represents a single preemption point in the decision tree.
@@ -34,6 +37,8 @@ struct hax {
 	unsigned int eip; /* The eip for the *next* preemption point. */
 	unsigned long trigger_count; /* from ls_state */
 	int chosen_thread; /* TID that was chosen to get here. -1 if root. */
+	bool xaborted;
+	unsigned int xabort_code;
 	const struct stack_trace *stack_trace;
 
 	/***** Saved state from the past. The state struct pointers are

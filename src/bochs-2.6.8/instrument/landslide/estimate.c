@@ -59,7 +59,7 @@ static bool is_child_marked(const struct hax *h, const struct agent *a)
 		return true;
 	}
 	ARRAY_LIST_FOREACH(&h->children, i, child) {
-		if (child->chosen_thread == a->tid) {
+		if (child->chosen_thread == a->tid && !child->xabort) {
 			return true;
 		}
 	}

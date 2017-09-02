@@ -35,6 +35,8 @@ struct save_state {
 	/* If root is set, this points to the "current" node in the tree */
 	const struct hax *current;
 	int next_tid;
+	bool next_xabort;
+	unsigned int next_xabort_code;
 	/* Statistics */
 	struct save_statistics stats;
 };
@@ -43,7 +45,7 @@ void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code
 
 void save_init(struct save_state *);
 
-void save_recover(struct save_state *, struct ls_state *, int new_tid);
+void save_recover(struct save_state *, struct ls_state *, int new_tid, bool xabort, unsigned int xabort_code);
 
 /* Current state, and the next_tid/our_choice is about the next in-flight
  * choice. */

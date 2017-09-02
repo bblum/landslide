@@ -1999,8 +1999,10 @@ void sched_recover(struct ls_state *ls)
 		 * will always be legal w/o "preempting" (per ICB). */
 	} else {
 		tid = CURRENT(s, tid);
+		txn = false;
+		xabort_code = _XBEGIN_STARTED;
 		lsprintf(BUG, "Explorer chose no tid; defaulting to %d\n", tid);
 	}
 
-	save_recover(&ls->save, ls, tid);
+	save_recover(&ls->save, ls, tid, txn, xabort_code);
 }
