@@ -24,7 +24,7 @@ static void handle_sigint(int MAYBE_UNUSED signum)
 	ERR("ctrl-C pressed, aborting...\n");
 	try_print_live_data_race_pps();
 	WARN("\n");
-	WARN("some landslide processes may be left hanging; please 'killall simics-common'.\n");
+	WARN("some landslide processes may be left hanging; please 'killall bochs'.\n");
 	exit(ID_EXIT_CRASH);
 }
 
