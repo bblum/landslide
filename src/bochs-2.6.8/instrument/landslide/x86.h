@@ -54,7 +54,7 @@
 #define CPL_USER(cpu) ((cpu)->user_pl)
 
 #define READ_PHYS_MEMORY(cpu, addr, width) ({				\
-	unsigned int __data;						\
+	unsigned int __data = 0;					\
 	unsigned int __w = (width);					\
 	assert((__w) <= 4 && "cant read so much at once");		\
 	BX_MEM(0)->readPhysicalPage((cpu), (addr), __w, &__data);	\
