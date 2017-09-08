@@ -59,4 +59,22 @@ install/
 
 # Etc
 todo.txt
+ls-id-options-*.cfg.*
 src/bochs-2.6.8/instrument/landslide/student_specifics.h
+id/landslide-id
+id/ls*log*.gz
+pebsim/config.landslide
+pebsim/config-extra.landslide.pintos
+pebsim/bochsrc.txt
+pebsim/kernel
+pebsim/kernel-pintos
+pebsim/bootfd.img
+pebsim/config.quicksand.*
+pebsim/pps-and-such.quicksand.*
+pebsim/current-architecture.txt
+pebsim/current-p2-group.txt
+pebsim/current-pintos-group.txt
+pebsim/pintos/*.bin
+pebsim/pintos/*.o
+pebsim/pintos/*.o.*
+pebsim/pintos/pintos/

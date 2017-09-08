@@ -1,0 +1,54 @@
+#!/bin/bash
+
+IDDIR=id
+IDEXE=landslide-id
+
+if [ ! -d "pebsim" -o ! -d "src/bochs-2.6.8/instrument/landslide" ]; then
+	echo -e "\033[01;31m$0 must be run from the root of the landslide repository.\033[00m"
+	exit 1
+fi
+
+if [ ! -f "$IDDIR/$IDEXE" ]; then
+	echo -e "\033[01;31mp2-setup.sh was not run or did not succeed.\033[00m"
+	exit 1
+fi
+
+if [ "`cat pebsim/current-architecture.txt 2>/dev/null`" = "p2" ]; then
+	cd pebsim/p2-basecode
+	./check-need-p2-setup-again.sh || exit 1
+	cd ../../
+fi
+
+SUFFIX=`date +%Y%m%d%H%M%S`
+
+CMDLINE_OPTION_FILE=`mktemp "ls-id-options-$SUFFIX.cfg.XXXXXXXX"`
+echo "$@" > $CMDLINE_OPTION_FILE
+
+WRAPPER_LOG="ls-id-log-$SUFFIX.log"
+
+ORIGDIR="$PWD"
+cd "$IDDIR"
+./$IDEXE -L $WRAPPER_LOG "$@"
+RV=$?
+
+cd "$ORIGDIR"
+
+ID_EXIT_USAGE=2
+ID_EXIT_CTRL_C=3
+
+if [ "$RV" = "$ID_EXIT_USAGE" ]; then
+	exit $RV
+elif [ "$RV" = "$ID_EXIT_CTRL_C" ]; then
+	reset -I
+	echo
+fi
+
+echo -e "\033[01;33mSaving results. Please be patient.\033[00m"
+
+for logfile in id/ls*log*; do
+	gzip -q $logfile
+done
+
+# TODO
+
+exit $RV
