@@ -49,6 +49,7 @@ struct ls_state *new_landslide()
 #endif
 	ls->trigger_count = 0;
 	ls->absolute_trigger_count = 0;
+	ls->last_instr_eip = 0;
 
 	sched_init(&ls->sched);
 	arbiter_init(&ls->arbiter);
@@ -602,11 +603,20 @@ void landslide_entrypoint(struct ls_state *ls, struct trace_entry *entry)
 			 * record the access where/when it belongs. */
 			return;
 		}
+		assert(ls->last_instr_eip != 0);
+#ifdef BOCHS
+		/* bochs updates eip to the next instruction before tracing
+		 * memory accesses, which would screw up data race PPs. */
+		ls->eip = ls->last_instr_eip;
+#else
+		assert(ls->eip == ls->last_instr_eip);
+#endif
 		/* mem access - do heap checks, whether user or kernel */
 		mem_check_shared_access(ls, entry->pa, entry->va, entry->write);
 	} else if (entry->type == TRACE_EXCEPTION) {
 		check_exception(ls, entry->exn_number);
 	} else if (entry->type == TRACE_INSTRUCTION) {
+		ls->last_instr_eip = ls->eip;
 		memcpy(ls->instruction_text, entry->instruction_text,
 		       TRACE_OPCODES_LEN);
 

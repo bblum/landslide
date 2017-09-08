@@ -37,6 +37,7 @@ struct ls_state {
 	apic_t     *apic0;
 	pic_t      *pic0;
 	unsigned int eip;
+	unsigned int last_instr_eip;
 	uint8_t instruction_text[TRACE_OPCODES_LEN];
 
 	struct sched_state sched;
