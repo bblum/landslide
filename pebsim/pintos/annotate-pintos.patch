@@ -290,3 +290,12 @@ index 87f22b8..fb88495 100644
    ASSERT (intr_get_level () == INTR_OFF);
    ASSERT (cur->status != THREAD_RUNNING);
    ASSERT (is_thread (next));
+--- a/pintos/src/lib/kernel/console.c
++++ b/pintos/src/lib/kernel/console.c
+@@ -7,6 +7,7 @@
+ #include "threads/interrupt.h"
+ #include "threads/synch.h"
+ 
++#define DISABLE_CONSOLE_TO_SERIAL_PORT
+ static void vprintf_helper (char, void *);
+ static void putchar_have_lock (uint8_t c);
