@@ -412,9 +412,15 @@ void talk_to_child(struct messaging_state *state, struct job *j)
 				RW_UNLOCK(&j->stats_lock);
 			} else {
 				READ_LOCK(&j->stats_lock);
+#if 0
 				/* this should scare you. it scares me. */
 				bool need_rerun = testing_pintos() &&
 					j->elapsed_branches == 0;
+#else
+				/* turning this off for studence; of course
+				 * they will have deterministic buges. */
+				bool need_rerun = false;
+#endif
 				RW_UNLOCK(&j->stats_lock);
 				if (need_rerun) {
 					WRITE_LOCK(&j->stats_lock);
