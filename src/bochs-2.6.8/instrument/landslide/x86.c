@@ -45,6 +45,7 @@ unsigned int avoid_timer_interrupt_immediately(cpu_t *cpu)
 	BX_OUTP(0x20, 0x20, 1);
 	SET_CPU_ATTR(cpu, eip, GUEST_TIMER_WRAP_EXIT);
 	assert(!cpu->async_event); // might not be sound; if trips, mb remove?
+	return GUEST_TIMER_WRAP_EXIT;
 }
 
 static void do_scan(int key_event, bool shift)
