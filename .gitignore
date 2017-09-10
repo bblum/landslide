@@ -62,7 +62,8 @@ todo.txt
 ls-id-options-*.cfg.*
 src/bochs-2.6.8/instrument/landslide/student_specifics.h
 id/landslide-id
-id/ls*log*.gz
+id/ls*.log.*
+*landslide-trace-*.html
 pebsim/config.landslide
 pebsim/config-extra.landslide.pintos
 pebsim/bochsrc.txt
