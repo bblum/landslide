@@ -37,7 +37,7 @@ logprefix: %t%e%d
 debug: action=ignore
 info: action=report
 error: action=report
-panic: action=ask
+panic: action=fatal
 keyboard: type=mf, serial_delay=250, paste_delay=100000, user_shortcut=none
 mouse: type=ps2, enabled=0, toggle=ctrl+mbutton
 speaker: enabled=1, mode=system

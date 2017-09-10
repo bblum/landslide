@@ -50,10 +50,11 @@ struct timetravel_message {
 	bool icb_need_increment_bound;
 };
 
-#define QUIT_BOCHS(v) do { BX_EXIT(v); assert(0 && "noreturn"); } while (0)
+#define QUIT_BOCHS(v) do { ls_safe_exit = true; BX_EXIT(v); assert(0); } while (0)
 
 static bool timetravel_inited = false;
 bool active_world_line = true;
+bool ls_safe_exit = false;
 
 /* because setting up timetravel at each PP involves creating a new process,
  * to manage exit code and wait()ing by any parent process (whether shell or
@@ -93,7 +94,7 @@ void quit_landslide(unsigned int code)
 		/* don't assert in the function that implements assert, dummy */
 		// assert(ret == sizeof(gm) && "failed write");
 	}
-	BX_EXIT(code);
+	QUIT_BOCHS(code);
 }
 
 /* called by modify_hax to send changes to the forked processes */

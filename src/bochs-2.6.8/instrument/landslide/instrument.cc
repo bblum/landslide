@@ -79,10 +79,15 @@ void bx_instr_hwinterrupt(unsigned cpu, unsigned vector, Bit16u cs, bx_address e
 	bx_instr_interrupt(cpu, vector);
 }
 
+extern bool ls_safe_exit;
+void bx_instr_exit_env(void)
+{
+	assert(ls_safe_exit && "ono, bochs panicked on us!");
+}
+
 /******************************** unused hooks ********************************/
 
 void bx_instr_init_env(void) {}
-void bx_instr_exit_env(void) {}
 
 void bx_instr_exit(unsigned cpu) {}
 void bx_instr_reset(unsigned cpu, unsigned type) {}
