@@ -595,6 +595,11 @@ void landslide_entrypoint(struct ls_state *ls, struct trace_entry *entry)
 {
 	ls->eip = GET_CPU_ATTR(ls->cpu0, eip);
 
+#ifdef BOCHS
+	if (ls->eip < 0x100000) {
+		return;
+	} else
+#endif
 	if (entry->type == TRACE_MEMORY) {
 		if (ls->just_jumped) {
 			/* stray access associated with the last instruction
