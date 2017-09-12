@@ -21,6 +21,7 @@
 *.a
 *.la
 *.lo
+*.lai
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -55,7 +56,13 @@ dkms.conf
 src/bochs-2.6.8/bochs
 src/bochs-2.6.8/bximage
 src/bochs-2.6.8/config.log
+src/bochs-2.6.8/config.status
+src/bochs-2.6.8/build/linux/bochs-dlx
 install/
+src/bochs-2.6.8/Makefile
+src/bochs-2.6.8/*/Makefile
+src/bochs-2.6.8/*/*/Makefile
+src/bochs-2.6.8/*/*/*/Makefile
 
 # Etc
 todo.txt
