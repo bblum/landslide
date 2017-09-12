@@ -86,3 +86,8 @@ pebsim/pintos/*.bin
 pebsim/pintos/*.o
 pebsim/pintos/*.o.*
 pebsim/pintos/pintos/
+pebsim/p2-basecode/config.mk
+pebsim/p2-basecode/*/*.dep
+pebsim/p2-basecode/*/*/*.dep
+pebsim/p2-basecode/user
+pebsim/p2-basecode/temp
