@@ -17,7 +17,7 @@
 #include "found_a_bug.h"
 #include "landslide.h"
 #include "lockset.h"
-#include "memory.h"
+#include "mem.h"
 #include "save.h"
 #include "schedule.h"
 #include "stack.h"

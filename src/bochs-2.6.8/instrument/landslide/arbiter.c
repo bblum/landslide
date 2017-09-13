@@ -15,7 +15,7 @@
 #include "kernel_specifics.h"
 #include "kspec.h"
 #include "landslide.h"
-#include "memory.h"
+#include "mem.h"
 #include "pp.h"
 #include "rand.h"
 #include "schedule.h"

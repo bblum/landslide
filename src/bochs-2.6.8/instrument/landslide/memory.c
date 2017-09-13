@@ -14,7 +14,7 @@
 #include "kernel_specifics.h"
 #include "kspec.h"
 #include "landslide.h"
-#include "memory.h"
+#include "mem.h"
 #include "messaging.h"
 #include "rbtree.h"
 #include "stack.h"
@@ -1270,7 +1270,7 @@ static void print_data_race(struct ls_state *ls,
 
 /* checks for both orderings of eips in a suspected data race, occurring across
  * multiple branches of the state space, before confirming the possibility of a
- * data race. see comment above struct data_race in memory.h for reasoning. */
+ * data race. see comment above struct data_race in mem.h for reasoning. */
 static bool check_data_race(struct mem_state *m, unsigned int eip0, unsigned int eip1)
 {
 	struct rb_node **p = &m->data_races.rb_node;

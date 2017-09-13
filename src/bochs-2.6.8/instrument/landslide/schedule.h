@@ -10,7 +10,7 @@
 #include "common.h"
 #include "kernel_specifics.h"
 #include "lockset.h"
-#include "memory.h"
+#include "mem.h"
 #include "stack.h"
 #include "user_sync.h"
 #include "variable_queue.h"

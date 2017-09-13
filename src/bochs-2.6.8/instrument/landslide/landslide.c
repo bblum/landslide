@@ -19,7 +19,7 @@
 #include "kernel_specifics.h"
 #include "kspec.h"
 #include "landslide.h"
-#include "memory.h"
+#include "mem.h"
 #include "messaging.h"
 #include "rand.h"
 #include "save.h"

@@ -78,7 +78,7 @@ BX_INCLUDES = instrument.h \
   kspec.h \
   landslide.h \
   lockset.h \
-  memory.h \
+  mem.h \
   messaging.h \
   pp.h \
   rand.h \

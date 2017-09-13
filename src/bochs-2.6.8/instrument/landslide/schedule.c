@@ -14,7 +14,7 @@
 #include "landslide.h"
 #include "kernel_specifics.h"
 #include "kspec.h"
-#include "memory.h"
+#include "mem.h"
 #include "schedule.h"
 #include "simulator.h"
 #include "stack.h"

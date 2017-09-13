@@ -1,5 +1,5 @@
 /**
- * @file memory.h
+ * @file mem.h
  * @brief routines for tracking dynamic allocations and otherwise shared memory
  * @author Ben Blum <bblum@andrew.cmu.edu>
  */

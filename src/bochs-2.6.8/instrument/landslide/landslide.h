@@ -11,7 +11,7 @@
 #include <stdint.h>
 
 #include "arbiter.h"
-#include "memory.h"
+#include "mem.h"
 #include "messaging.h"
 #include "pp.h"
 #include "rand.h"
