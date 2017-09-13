@@ -245,7 +245,9 @@ void try_print_live_data_race_pps()
 
 void print_free_re_malloc_false_positives()
 {
-	if (!verbose) return;
+	/* FIXME: if purehb, we should actually assert there are no FRMs!
+	 * at least, as long as malloc is properly mutex protected. */
+	if (!verbose || pure_hb) return;
 
 	bool any_exist = false;
 

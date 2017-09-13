@@ -339,7 +339,8 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	*pathos = arg_pathos;
 	*use_icb = arg_icb;
 	*preempt_everywhere = arg_everywhere;
-	*pure_hb = (!arg_pintos && !arg_pathos && !arg_limited_hb) || arg_pure_hb;
+	/* purehb is the default for pintos and p2; lhb default for pathos */
+	*pure_hb = (!arg_pathos && !arg_limited_hb) || arg_pure_hb;
 	*txn = arg_txn;
 	*txn_abort_codes = arg_txn_abort_codes;
 
