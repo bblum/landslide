@@ -3,8 +3,6 @@ plugin_ctrl: unmapped=1, biosdev=1, speaker=1, extfpuirq=1, parallel=1, serial=1
 config_interface: textconfig
 display_library: nogui
 memory: host=1024, guest=1024
-romimage: file="/usr/share/bochs/BIOS-bochs-latest"
-vgaromimage: file="/usr/share/bochs/VGABIOS-lgpl-latest"
 boot: disk
 ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
 ata0-master: type=disk, path=bootfd.img
