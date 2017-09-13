@@ -12,7 +12,7 @@ if [ ! -d "pebsim" -o ! -d "src/bochs-2.6.8/instrument/landslide" ]; then
 fi
 
 INSTALLDIR="$PWD/install"
-CONFIGURE_CMD="./configure --enable-all-optimizations --enable-idle-hack --enable-cpu-level=6 --enable-smp --enable-x86-64 --enable-gameport --enable-disasm --enable-plugins --with-nogui --without-wx --with-x --with-x11 --with-term --enable-debugger --enable-readline --disable-logging --enable-instrumentation=instrument/landslide --prefix=$INSTALLDIR --exec-prefix=$INSTALLDIR"
+CONFIGURE_CMD="./configure --enable-all-optimizations --enable-idle-hack --enable-cpu-level=6 --enable-smp --enable-x86-64 --enable-gameport --enable-disasm --enable-plugins --with-nogui --without-wx --with-x --with-x11 --with-term --enable-debugger --enable-readline --disable-logging --disable-docbook --enable-instrumentation=instrument/landslide --prefix=$INSTALLDIR --exec-prefix=$INSTALLDIR"
 
 mkdir -p install || die "couldnt make install dir"
 cd src/bochs-2.6.8 || die "??"
@@ -25,5 +25,10 @@ if [ -f "config.status" ]; then
 	fi
 fi
 
-$CONFIGURE_CMD || die "failed ./configure"
+$CONFIGURE_CMD
+RV=$?
+if [ "$RV" != 0 ]; then
+	rm -f config.status
+	die "failed ./configure"
+fi
 cd ../../
