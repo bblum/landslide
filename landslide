@@ -13,10 +13,16 @@ if [ ! -f "$IDDIR/$IDEXE" ]; then
 	exit 1
 fi
 
+PINTOS_FLAG=
 if [ "`cat pebsim/current-architecture.txt 2>/dev/null`" = "p2" ]; then
 	cd pebsim/p2-basecode
 	./check-need-p2-setup-again.sh || exit 1
 	cd ../../
+elif [ "`cat pebsim/current-architecture.txt 2>/dev/null`" = "pintos" ]; then
+	PINTOS_FLAG="-P"
+else
+	echo -e "\033[01;31munknown architecture in pebsim/current-architecture.txt\033[00m"
+	exit 1
 fi
 
 SUFFIX=`date +%Y%m%d%H%M%S`
@@ -28,7 +34,7 @@ WRAPPER_LOG="ls-id-log-$SUFFIX.log"
 
 ORIGDIR="$PWD"
 cd "$IDDIR"
-./$IDEXE -L $WRAPPER_LOG "$@"
+./$IDEXE $PINTOS_FLAG -L $WRAPPER_LOG "$@"
 RV=$?
 
 cd "$ORIGDIR"
