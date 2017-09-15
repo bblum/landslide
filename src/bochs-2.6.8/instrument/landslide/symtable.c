@@ -49,6 +49,14 @@ unsigned int symtable_lookup_data(char *buf, unsigned int maxlen, unsigned int a
  * containing function. */
 bool function_eip_offset(unsigned int eip, unsigned int *offset)
 {
+#ifdef PINTOS_KERNEL
+	// FIXME: hack to allow within_fns to properly find a cli PP's callsite
+	// just remove this when symtable is properly implemented
+	if (eip == GUEST_CLI_ENTER || eip == GUEST_SEMA_DOWN_ENTER) {
+		*offset = 0;
+		return true;
+	}
+#endif
 	return false;
 }
 
