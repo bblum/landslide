@@ -276,5 +276,14 @@ fi
 if [ ! -f $STUDENT ]; then
 	die "$STUDENT doesn't seem to exist yet. Please implement it."
 fi
-(cd ../src/bochs-2.6.8/ && make >/dev/null && make install >/dev/null) || die "Building landslide failed."
+
+cd ../src/bochs-2.6.8/ || die "couldnt cd bochs src dir"
+msg "Compiling landslide..."
+MAKE_OUTPUT=`make`
+MAKE_RV=$?
+[ "$MAKE_RV" = 0 ] || die "building landslide failed"
+if echo "$MAKE_OUTPUT" | grep "g++" >/dev/null; then
+	msg "landslide needed recompile; doing a make install"
+	make install >/dev/null || die "installing landslide failed."
+fi
 success "Build succeeded."
