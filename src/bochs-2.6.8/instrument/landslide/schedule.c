@@ -1484,12 +1484,12 @@ void sched_update(struct ls_state *ls)
 	 * Serious Programmers, by Ben Blum */
 	if (s->entering_timer) {
 		assert(ls->eip == kern_get_timer_wrap_begin() &&
-		       "simics is a clown and tried to delay our interrupt :<");
+		       SIM_NAME " is is a clown and tried to delay our interrupt :<");
 		s->entering_timer = false;
 	} else {
 		if (kern_timer_entering(ls->eip)) {
-			lsprintf(DEV, "Suppressing unwanted timer tick from simics "
-				 "(received at 0x%x).\n", READ_STACK(ls->cpu0, 0));
+			lsprintf(DEV, "Suppressing unwanted timer tick from " SIM_NAME
+				 " (received at 0x%x).\n", READ_STACK(ls->cpu0, 0));
 			ls->eip = avoid_timer_interrupt_immediately(ls->cpu0);
 			// Print whether it thinks anybody's alive.
 			anybody_alive(ls->cpu0, &ls->test, s, true);

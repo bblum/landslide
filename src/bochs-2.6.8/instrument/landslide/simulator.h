@@ -31,8 +31,11 @@ void quit_landslide(unsigned int code); /* defined in timetravel.c */
 #define BREAK_SIMULATION() do { } while (0)
 #define QUIT_SIMULATION(v) quit_landslide(v)
 
+#define SIM_NAME "bochs"
+
 #else
 #include "simulator-simics.h"
+#define SIM_NAME "simics"
 #endif
 
 #define MM_XMALLOC(x,t) ({					\
