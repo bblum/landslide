@@ -143,9 +143,13 @@ bool timetravel_set(struct ls_state *ls, struct hax *h,
 	assert(ret == 0 && "failed pipe for timetravel; out of fds?");
 
 	int child_tid = fork();
-	if (child_tid != 0) {
+	if (child_tid == -1) {
+		char msg[BUF_SIZE];
+		scnprintf(msg, BUF_SIZE, "fork failed at #%d/tid%d: errno %d (%s)",
+			  h->depth, h->chosen_thread, errno, strerror(errno));
+		landslide_assert_fail(msg, __FILE__, __LINE__, __ASSERT_FUNCTION);
+	} else if (child_tid != 0) {
 		/* parence process */
-		assert(child_tid != -1 && "fork failed");
 		th->parent = true;
 		th->pipefd = pipefd[1];
 		close(pipefd[0]);
