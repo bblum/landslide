@@ -166,10 +166,12 @@ if [ -z "$PINTOS_KERNEL" ]; then
 	fi
 else
 	# Pintos. Verify
-	msg "Verifying bootfd built to run $TEST_CASE."
 	cd pintos || die "couldn't cd pintos"
 	./make-bootfd.sh "$TEST_CASE" || die "couldn't remake bootfd"
-	cp bootfd.img .. || die "made bootfd but failed cp"
+	if ! cmp bootfd.img ../bootfd.img >/dev/null 2>/dev/null; then
+		msg "bootfd image needs updated to run $TEST_CASE"
+		cp bootfd.img .. || die "made bootfd but failed cp"
+	fi
 	cd .. || die "?????.... ?"
 fi
 
@@ -261,6 +263,7 @@ if [ ! -z "$QUICKSAND_CONFIG_DYNAMIC" ]; then
 	function output_pipe {
 		echo "O $1" >> "$QUICKSAND_CONFIG_TEMP" || die "couldn't write to $QUICKSAND_CONFIG_TEMP"
 	}
+	msg "Processing dynamic quicksand PPs..."
 	source "$QUICKSAND_CONFIG_DYNAMIC"
 fi
 
