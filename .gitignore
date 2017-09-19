@@ -77,6 +77,7 @@ pebsim/bochsrc.txt
 pebsim/kernel
 pebsim/kernel-pintos
 pebsim/bootfd.img
+pebsim/kernel.sym
 pebsim/config.quicksand.*
 pebsim/pps-and-such.quicksand.*
 pebsim/current-architecture.txt

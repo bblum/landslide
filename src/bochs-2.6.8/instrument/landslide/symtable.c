@@ -36,13 +36,28 @@ void set_symtable(const symtable_t *symtable)
  * which caller must free result strings if returnval is true */
 bool symtable_lookup(unsigned int eip, char **func, char **file, int *line)
 {
-	return false;
+	// FIXME: clean this sucker up
+	const char *result = bx_dbg_symbolic_address(0, eip, 0);
+	if (0 == strncmp(result, "unk. ctxt", 10) ||
+	    0 == strncmp(result, "no symbol", 10)) {
+		return false;
+	}
+	*func = MM_XSTRDUP(result);
+	*file = MM_XSTRDUP("file unknown");
+	*line = 0;
+	return true;
 }
 
 unsigned int symtable_lookup_data(char *buf, unsigned int maxlen, unsigned int addr)
 {
-	return scnprintf(buf, maxlen, GLOBAL_COLOUR "unknown0x%.8x"
-			 COLOUR_DEFAULT, addr);
+	// FIXME: as above
+	const char *result = bx_dbg_symbolic_address(0, addr, 0);
+	if (0 == strncmp(result, "unk. ctxt", 10) ||
+	    0 == strncmp(result, "no symbol", 10)) {
+		return scnprintf(buf, maxlen, GLOBAL_COLOUR "unknown0x%.8x"
+				 COLOUR_DEFAULT, addr);
+	}
+	return scnprintf(buf, maxlen, GLOBAL_COLOUR "%s" COLOUR_DEFAULT, result);
 }
 
 /* Finds how many instructions away the given eip is from the start of its

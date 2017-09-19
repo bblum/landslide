@@ -35,6 +35,9 @@ fi
 if [ -f kernel.o.strip ]; then
 	mv kernel.o.strip kernel.o.strip.old
 fi
+if [ -f kernel.sym ]; then
+	mv kernel.sym kernel.sym.old
+fi
 cp pintos/src/$PROJECT/build/kernel.o kernel.o || die "failed cp kernel.o"
 ./fix-symbols.sh kernel.o || die "failed fix symbols"
 
@@ -44,10 +47,13 @@ cp pintos/src/$PROJECT/build/loader.bin loader.bin || die "failed cp loader.bin"
 
 ./make-bootfd.sh || die "couldn't make boot disk image"
 
+nm kernel.o | sed 's/ . / /' > kernel.sym || die "failed nm symbol table"
+
 msg "Pintos images built successfully."
 
 # Put final product in parent pebsim directory
 mv bootfd.img ../bootfd.img || die "failed mv bootfd.img"
 mv kernel.o.strip ../kernel-pintos || die "failed mv kernel.o.strip"
+mv kernel.sym ../kernel.sym || die "failed mv kernel.sym"
 rm -f ../kernel
 ln -s kernel-pintos ../kernel || die "failed create kernel symlink"
