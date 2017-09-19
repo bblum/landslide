@@ -143,6 +143,9 @@ echo "struct list *get_rq_addr() { return &ready_list; }" >> "$THREAD_C"
 # It's ok for a function decl to go outside the ifdef.
 echo "struct list *get_rq_addr(void);" >> "$THREAD_H"
 
+# Remove whitespace in e.g. "thread_unblock (t)" so the patch applies
+sed -i "s/ (/(/g" "$THREAD_C" || die "couldn't fix whitespace in $THREAD_C"
+
 # Apply tell_landslide annotations.
 
 PATCH=annotate-pintos.patch

@@ -270,16 +270,14 @@ index 87f22b8..fb88495 100644
  #include <random.h>
  #include <stdio.h>
  #include <string.h>
-@@ -199,6 +201,7 @@
+@@ -199,4 +201,5 @@
    sf->ebp = 0;
  
    /* Add to run queue. */
 +  tell_landslide_forking();
-   thread_unblock (t);
- 
-   return tid;
+   thread_unblock(t);
 @@ -556,6 +559,11 @@
-   struct thread *next = next_thread_to_run ();
+   struct thread *next = next_thread_to_run();
    struct thread *prev = NULL;
  
 +  if (cur->status == THREAD_DYING)
@@ -287,15 +285,16 @@ index 87f22b8..fb88495 100644
 +  if (cur != next)
 +    tell_landslide_thread_switch(next->tid);
 +
-   ASSERT (intr_get_level () == INTR_OFF);
-   ASSERT (cur->status != THREAD_RUNNING);
-   ASSERT (is_thread (next));
+   ASSERT(intr_get_level() == INTR_OFF);
+   ASSERT(cur->status != THREAD_RUNNING);
+   ASSERT(is_thread(next));
 --- a/pintos/src/lib/kernel/console.c
 +++ b/pintos/src/lib/kernel/console.c
-@@ -7,6 +7,7 @@
+@@ -7,6 +7,8 @@
  #include "threads/interrupt.h"
  #include "threads/synch.h"
  
 +#define DISABLE_CONSOLE_TO_SERIAL_PORT
++#define serial_putc(x) do { } while (0)
  static void vprintf_helper (char, void *);
  static void putchar_have_lock (uint8_t c);
