@@ -768,6 +768,8 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		h->eip           = ls->eip;
 		h->trigger_count = ls->trigger_count;
 		h->chosen_thread = ss->next_tid;
+		h->xaborted      = ss->next_xabort;
+		h->xabort_code   = ss->next_xabort_code;
 
 		/* compute elapsed and cumulative time */
 		h->usecs = update_time(&ss->stats.last_save_time);
@@ -792,7 +794,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			assert(!ss->current->estimate_computed &&
 			       "last nobe was estimate()d; cannot give it a child");
 
-			if (ss->next_xabort) {
+			if (h->xaborted) {
 				assert(ss->current->chosen_thread == h->chosen_thread);
 				modify_hax(add_hax_child_xabort, ss->current,
 					   ss->next_xabort_code);
