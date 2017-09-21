@@ -1483,8 +1483,24 @@ void sched_update(struct ls_state *ls)
 	/* The Importance of Being Assertive, A Trivial Style Guideline for
 	 * Serious Programmers, by Ben Blum */
 	if (s->entering_timer) {
-		assert(ls->eip == kern_get_timer_wrap_begin() &&
-		       SIM_NAME " is is a clown and tried to delay our interrupt :<");
+		if (ls->eip != kern_get_timer_wrap_begin()) {
+#ifdef BOCHS
+			/* This can happen if we "race" with bochs's PIT clock,
+			 * which can lower the IRQ line right after we cause-
+			 * timer-interrupt. In that case, expect to be in the
+			 * spurious interrupt handler (0x27), and just keep
+			 * going with the schedule in-flight logic. */
+#ifdef GUEST_SPURIOUS_HANDLER
+			assert(ls->eip == GUEST_SPURIOUS_HANDLER);
+#endif
+			assert(!interrupts_enabled(ls->cpu0));
+			assert(s->schedule_in_flight != NULL);
+			assert(s->schedule_in_flight != s->cur_agent);
+			s->delayed_in_flight = true;
+#else
+			assert(0 && "simics is a clown, &c, &c. :<");
+#endif
+		}
 		s->entering_timer = false;
 	} else {
 		if (kern_timer_entering(ls->eip)) {

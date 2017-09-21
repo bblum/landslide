@@ -418,6 +418,10 @@ if [ ! -z "$PAGE_FAULT_WRAPPER" ];  then
 	echo "#define GUEST_PF_HANDLER 0x`get_sym $PAGE_FAULT_WRAPPER`"
 fi
 
+if [ ! -z "$SPURIOUS_INTERRUPT_WRAPPER" ]; then
+	echo "#define GUEST_SPURIOUS_HANDLER 0x`get_sym $SPURIOUS_INTERRUPT_WRAPPER`"
+fi
+
 if [ ! -z "$THREAD_KILLED_FUNC" ]; then
 	echo "#define GUEST_THREAD_KILLED 0x`get_func $THREAD_KILLED_FUNC`"
 	if [ ! -z "$THREAD_KILLED_ARG_VAL" ]; then

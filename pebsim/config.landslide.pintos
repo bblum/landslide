@@ -70,6 +70,8 @@ CURRENT_THREAD_LIVES_ON_RQ=0
 
 PAGE_FAULT_WRAPPER=intr0e_stub # IDT entry 14
 
+SPURIOUS_INTERRUPT_WRAPPER=intr27_stub
+
 # a kernel-space function which makes userspace memory accesses that might
 # conflict (wrt DPOR) with other accesses from userspace. IOW, some system
 # calls could be "covert communication channels" that we don't want to miss
