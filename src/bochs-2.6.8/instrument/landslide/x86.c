@@ -19,10 +19,10 @@
 
 unsigned int cause_timer_interrupt_immediately(cpu_t *cpu)
 {
+	assert(interrupts_enabled(cpu));
 	DEV_pic_lower_irq(0);
 	DEV_pic_raise_irq(0);
 	assert(cpu->async_event);
-	assert(!cpu->interrupts_inhibited(BX_INHIBIT_INTERRUPTS));
 	assert(cpu->is_unmasked_event_pending(BX_EVENT_PENDING_INTR));
 	bool rv = cpu->handleAsyncEvent(); /* modifies eip */
 	assert(!rv); /* not need break out of cpu loop */
@@ -35,6 +35,7 @@ void cause_timer_interrupt(cpu_t *cpu, apic_t *apic, pic_t *pic)
 {
 	assert(apic == NULL && "not needed");
 	assert(pic  == NULL && "not needed");
+	assert(interrupts_enabled(cpu));
 	DEV_pic_lower_irq(0);
 	DEV_pic_raise_irq(0);
 	assert(cpu->async_event);
@@ -105,7 +106,8 @@ void cause_keypress(keyboard_t *kbd, char key)
 
 bool interrupts_enabled(cpu_t *cpu)
 {
-	return !cpu->is_masked_event(BX_EVENT_PENDING_INTR);
+	return !cpu->is_masked_event(BX_EVENT_PENDING_INTR) &&
+		!cpu->interrupts_inhibited(BX_INHIBIT_INTERRUPTS);
 }
 
 #else
