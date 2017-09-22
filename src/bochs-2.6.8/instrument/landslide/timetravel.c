@@ -140,14 +140,32 @@ bool timetravel_set(struct ls_state *ls, struct hax *h,
 	th->active = true;
 
 	int ret = pipe(pipefd);
-	assert(ret == 0 && "failed pipe for timetravel; out of fds?");
+	if (ret != 0) {
+		if (errno == EMFILE) {
+			char msg[BUF_SIZE];
+			if (ls->test.current_test != NULL &&
+			    0 == strcmp(ls->test.current_test,
+			                "alarm-simultaneous")) {
+				scnprintf(msg, BUF_SIZE, "ran out of file "
+					  "descriptors at the %dth PP on this "
+					  "branch; are you sure thread_yield "
+					  "is implemented?\n", h->depth);
+			} else {
+				scnprintf(msg, BUF_SIZE, "ran out of file "
+					  "descriptors at %dth PP\n", h->depth);
+			}
+			landslide_assert_fail(msg, __FILE__, __LINE__, __func__);
+		} else {
+			assert(0 && "pipe failed for a mysterious reason!");
+		}
+	}
 
 	int child_tid = fork();
 	if (child_tid == -1) {
 		char msg[BUF_SIZE];
 		scnprintf(msg, BUF_SIZE, "fork failed at #%d/tid%d: errno %d (%s)",
 			  h->depth, h->chosen_thread, errno, strerror(errno));
-		landslide_assert_fail(msg, __FILE__, __LINE__, __ASSERT_FUNCTION);
+		landslide_assert_fail(msg, __FILE__, __LINE__, __func__);
 	} else if (child_tid != 0) {
 		/* parence process */
 		th->parent = true;
