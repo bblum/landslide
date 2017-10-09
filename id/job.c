@@ -169,6 +169,8 @@ static void *run_job(void *arg)
 		if (0 == strcmp(test_name, "alarm-simultaneous")) {
 			XWRITE(&j->config_dynamic, "%s child_done\n", without);
 			XWRITE(&j->config_dynamic, "%s parent_done\n", without);
+		} else if (0 == strcmp(test_name, "priority-donate-multiple")) {
+			XWRITE(&j->config_dynamic, "%s thread_create\n", without);
 		}
 	} else if (0 == strcmp(test_name, "mutex_test")) {
 		// XXX: Hack. This is special cased here, instead of being a
