@@ -254,6 +254,21 @@ const char* bx_dbg_symbolic_address(Bit32u context, Bit32u eip, Bit32u base)
   return buf;
 }
 
+bx_bool bx_dbg_symbolic_address_landslide(Bit32u eip, char **result, Bit32u *offset)
+{
+  context_t* cntx = context_t::get_context(0);
+  if (cntx == NULL) {
+    return false;
+  }
+  symbol_entry_t* entr = cntx->get_symbol_entry(eip);
+  if (entr == NULL) {
+    return false;
+  }
+  *result = entr->name;
+  *offset = eip - entr->start;
+  return true;
+}
+
 const char* bx_dbg_disasm_symbolic_address(Bit32u eip, Bit32u base)
 {
   static char buf[80];

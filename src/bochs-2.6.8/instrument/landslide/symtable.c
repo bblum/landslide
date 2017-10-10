@@ -62,49 +62,48 @@ static bool line_number_lookup(unsigned int eip, struct line_number **result)
  * which caller must free result strings if returnval is true */
 bool symtable_lookup(unsigned int eip, char **func, char **file, int *line)
 {
-	// FIXME: clean this sucker up
-	const char *result = bx_dbg_symbolic_address(0, eip, 0);
-	if (0 == strncmp(result, "unk. ctxt", 10) ||
-	    0 == strncmp(result, "no symbol", 10)) {
+	char *result;
+	unsigned int _offset;
+	if (bx_dbg_symbolic_address_landslide(eip, &result, &_offset)) {
+		*func = MM_XSTRDUP(result);
+		struct line_number *line_number;
+		if (line_number_lookup(eip, &line_number)) {
+			*file = MM_XSTRDUP(line_number->filename);
+			*line = line_number->line;
+		} else {
+			*file = MM_XSTRDUP("file unknown");
+			*line = 0;
+		}
+		return true;
+	} else {
 		return false;
 	}
-	*func = MM_XSTRDUP(result);
-	struct line_number *line_number;
-	if (line_number_lookup(eip, &line_number)) {
-		*file = MM_XSTRDUP(line_number->filename);
-		*line = line_number->line;
-	} else {
-		*file = MM_XSTRDUP("file unknown");
-		*line = 0;
-	}
-	return true;
 }
 
 unsigned int symtable_lookup_data(char *buf, unsigned int maxlen, unsigned int addr)
 {
-	// FIXME: as above
-	const char *result = bx_dbg_symbolic_address(0, addr, 0);
-	if (0 == strncmp(result, "unk. ctxt", 10) ||
-	    0 == strncmp(result, "no symbol", 10)) {
+	char *result;
+	unsigned int offset;
+	if (bx_dbg_symbolic_address_landslide(addr, &result, &offset)) {
+		if (offset == 0) {
+			return scnprintf(buf, maxlen, GLOBAL_COLOUR "%s"
+					 COLOUR_DEFAULT, result);
+		} else {
+			return scnprintf(buf, maxlen, GLOBAL_COLOUR "%s+0x%x"
+					 COLOUR_DEFAULT, result, offset);
+		}
+	} else {
 		return scnprintf(buf, maxlen, GLOBAL_COLOUR "unknown0x%.8x"
 				 COLOUR_DEFAULT, addr);
 	}
-	return scnprintf(buf, maxlen, GLOBAL_COLOUR "%s" COLOUR_DEFAULT, result);
 }
 
 /* Finds how many instructions away the given eip is from the start of its
  * containing function. */
 bool function_eip_offset(unsigned int eip, unsigned int *offset)
 {
-#ifdef PINTOS_KERNEL
-	// FIXME: hack to allow within_fns to properly find a cli PP's callsite
-	// just remove this when symtable is properly implemented
-	if (eip == GUEST_CLI_ENTER || eip == GUEST_SEMA_DOWN_ENTER) {
-		*offset = 0;
-		return true;
-	}
-#endif
-	return false;
+	char *_result;
+	return bx_dbg_symbolic_address_landslide(eip, &_result, offset);
 }
 
 char *get_global_name_at(symtable_t *table, unsigned int addr, const char *type_name)
