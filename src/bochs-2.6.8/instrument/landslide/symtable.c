@@ -23,13 +23,39 @@
 
 #ifdef BOCHS
 
-symtable_t *get_symtable()
-{
-	return NULL;
-}
+struct line_number {
+	unsigned int eip;
+	const char *filename;
+	unsigned int line;
+};
 
-void set_symtable(const symtable_t *symtable)
+struct line_number line_numbers[] = {
+/* should be sorted */
+#include "line_numbers.h"
+};
+
+symtable_t *get_symtable() { return NULL; }
+void set_symtable(const symtable_t *symtable) { }
+
+static bool line_number_lookup(unsigned int eip, struct line_number **result)
 {
+	int min = 0, max = ARRAY_SIZE(line_numbers) - 1;
+	while (true) {
+		if (max < min) {
+			return false;
+		} else {
+			int i = (max + min) / 2;
+			assert(i < ARRAY_SIZE(line_numbers) && i >= 0);
+			if (line_numbers[i].eip == eip) {
+				*result = &line_numbers[i];
+				return true;
+			} else if (line_numbers[i].eip < eip) {
+				min = i + 1;
+			} else {
+				max = i - 1;
+			}
+		}
+	}
 }
 
 /* New interface. Returns malloced strings through output parameters,
@@ -43,8 +69,14 @@ bool symtable_lookup(unsigned int eip, char **func, char **file, int *line)
 		return false;
 	}
 	*func = MM_XSTRDUP(result);
-	*file = MM_XSTRDUP("file unknown");
-	*line = 0;
+	struct line_number *line_number;
+	if (line_number_lookup(eip, &line_number)) {
+		*file = MM_XSTRDUP(line_number->filename);
+		*line = line_number->line;
+	} else {
+		*file = MM_XSTRDUP("file unknown");
+		*line = 0;
+	}
 	return true;
 }
 

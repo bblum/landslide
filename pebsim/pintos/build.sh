@@ -47,7 +47,20 @@ cp pintos/src/$PROJECT/build/loader.bin loader.bin || die "failed cp loader.bin"
 
 ./make-bootfd.sh || die "couldn't make boot disk image"
 
+# make symbol table file for function names
 nm kernel.o | sed 's/ . / /' > kernel.sym || die "failed nm symbol table"
+
+# make header file for filenames and line numbers
+ADDRS_FILE=`mktemp kernel-code-addrs.XXXXXXXX.txt`
+LINES_FILE=line_numbers.h
+[ -f "$ADDRS_FILE" ] || die "failed make temp file for code addrs"
+rm -f "$LINES_FILE" || die "failed rm old line numbers header"
+# generates a file of lines each with e.g. "c002abcd"
+objdump -d kernel.o | grep '^\S*:' | sed 's/:.*//' | grep -v kernel.o | sort > "$ADDRS_FILE" || die "failed make code addrs list"
+# generates a file of e.g. "{ .eip = 0xc002abcd, .filename = "c.c", .line = 42 },"
+# see symtable.c for the expected format / usage context
+cat "$ADDRS_FILE" | addr2line -e kernel.o | sed 's@.*../../@@' | sed 's/ (discriminator.*//' | sed 's/^??:/unknown:/' | sed 's/:?$/:0/' | sed 's/^/.filename = "/' | sed 's/:/", .line = /' | sed 's/$/ },/' | paste "$ADDRS_FILE" - | sed 's/^/{ .eip = 0x/' | sed 's/\t/, /' > "$LINES_FILE" || die "failed generate line numbers header"
+rm "$ADDRS_FILE" || msg "warning: couldnt remove temp file of code noobs"
 
 msg "Pintos images built successfully."
 
@@ -55,5 +68,6 @@ msg "Pintos images built successfully."
 mv bootfd.img ../bootfd.img || die "failed mv bootfd.img"
 mv kernel.o.strip ../kernel-pintos || die "failed mv kernel.o.strip"
 mv kernel.sym ../kernel.sym || die "failed mv kernel.sym"
+mv "$LINES_FILE" ../../src/bochs-2.6.8/instrument/landslide/ || die "failed mv linenrs"
 rm -f ../kernel
 ln -s kernel-pintos ../kernel || die "failed create kernel symlink"

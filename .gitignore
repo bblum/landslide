@@ -68,6 +68,7 @@ src/bochs-2.6.8/*/*/*/Makefile
 todo.txt
 ls-id-options-*.cfg.*
 src/bochs-2.6.8/instrument/landslide/student_specifics.h
+src/bochs-2.6.8/instrument/landslide/line_numbers.h
 id/landslide-id
 id/ls*.log.*
 *landslide-trace-*.html
