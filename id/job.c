@@ -36,6 +36,7 @@ extern char **environ;
 #define LOG_FILE_TEMPLATE(x) "ls-" x ".log.XXXXXX"
 
 char *test_name = NULL;
+char *user_trace_dir = NULL;
 bool verbose = false;
 bool leave_logs = false;
 bool pintos = false;
@@ -46,12 +47,14 @@ bool pure_hb = false;
 bool transactions = false;
 bool abort_codes = false;
 
-void set_job_options(char *arg_test_name, bool arg_verbose, bool arg_leave_logs,
+void set_job_options(char *arg_test_name, char *arg_trace_dir,
+		     bool arg_verbose, bool arg_leave_logs,
 		     bool arg_pintos, bool arg_use_icb, bool arg_preempt_everywhere,
 		     bool arg_pure_hb, bool arg_txn, bool arg_txn_abort_codes,
 		     bool arg_pathos)
 {
 	test_name = XSTRDUP(arg_test_name);
+	user_trace_dir = arg_trace_dir[0] == 0 ? NULL : XSTRDUP(arg_trace_dir);
 	verbose = arg_verbose;
 	leave_logs = arg_leave_logs;
 	pintos = arg_pintos;

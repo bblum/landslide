@@ -26,6 +26,7 @@ unsigned long eta_threshold;
 int main(int argc, char **argv)
 {
 	char test_name[BUF_SIZE];
+	char trace_dir[BUF_SIZE];
 	unsigned long max_time;
 	unsigned long num_cpus;
 	bool verbose;
@@ -45,8 +46,8 @@ int main(int argc, char **argv)
 			 &verbose, &leave_logs, &control_experiment,
 			 &use_wrapper_log, wrapper_log, BUF_SIZE, &pintos,
 			 &use_icb, &preempt_everywhere, &pure_hb,
-			 &txn, &txn_abort_codes, &pathos,
-			 &progress_interval, &eta_factor, &eta_threshold)) {
+			 &txn, &txn_abort_codes, &pathos, &progress_interval,
+			 trace_dir, BUF_SIZE, &eta_factor, &eta_threshold)) {
 		usage(argv[0]);
 		exit(ID_EXIT_USAGE);
 	}
@@ -55,7 +56,7 @@ int main(int argc, char **argv)
 
 	DBG("will run for at most %lu seconds\n", max_time);
 
-	set_job_options(test_name, verbose, leave_logs, pintos, use_icb, preempt_everywhere, pure_hb, txn, txn_abort_codes, pathos);
+	set_job_options(test_name, trace_dir, verbose, leave_logs, pintos, use_icb, preempt_everywhere, pure_hb, txn, txn_abort_codes, pathos);
 	init_signal_handling();
 	start_time(max_time * 1000000, num_cpus);
 

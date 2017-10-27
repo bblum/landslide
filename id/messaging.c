@@ -322,17 +322,21 @@ static void handle_crash(struct job *j, struct input_message *m)
 	}
 }
 
+extern char *user_trace_dir;
+
 static void move_trace_file(const char *trace_filename)
 {
+	char *dest_dir = user_trace_dir == NULL ? ROOT_PATH : user_trace_dir;
+
 	/* + 2 because 1 for the '/' in between and 1 for the null. */
 	unsigned int length_old =
 		strlen(LANDSLIDE_PATH) + strlen(trace_filename) + 2;
 	unsigned int length_new =
-		strlen(ROOT_PATH) + strlen(trace_filename) + 2;
+		strlen(dest_dir) + strlen(trace_filename) + 2;
 	char *old_path = XMALLOC(length_old, char);
 	char *new_path = XMALLOC(length_new, char);
 	scnprintf(old_path, length_old, "%s/%s", LANDSLIDE_PATH, trace_filename);
-	scnprintf(new_path, length_new, "%s/%s", ROOT_PATH, trace_filename);
+	scnprintf(new_path, length_new, "%s/%s", dest_dir, trace_filename);
 	XRENAME(old_path, new_path);
 	FREE(old_path);
 	FREE(new_path);

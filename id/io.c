@@ -7,6 +7,7 @@
 #define _XOPEN_SOURCE 700
 #define _GNU_SOURCE
 
+#include <dirent.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -158,4 +159,18 @@ void log_msg(const char *pfx, const char *format, ...)
 				"WARNING: couldn't write to log file\n");
 		}
 	}
+}
+
+bool check_directory(const char *dirpath, int *errno_val) {
+	DIR *dir = opendir(dirpath);
+	if (dir == NULL) {
+		*errno_val = errno;
+		return false;
+	}
+	closedir(dir);
+	if (access(dirpath, R_OK | W_OK) != 0) {
+		*errno_val = errno;
+		return false;
+	}
+	return true;
 }

@@ -17,6 +17,7 @@
 #include "array_list.h"
 #include "common.h"
 #include "option.h"
+#include "io.h"
 
 #define MINTIME ((unsigned long)600) /* 10 mins */
 #define DEFAULT_TIME "1h"
@@ -123,6 +124,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		 bool *use_icb, bool *preempt_everywhere, bool *pure_hb,
 		 bool *txn, bool *txn_abort_codes,
 		 bool *pathos, unsigned long *progress_report_interval,
+		 char *trace_dir, unsigned int trace_dir_len,
 		 unsigned long *eta_factor, unsigned long *eta_thresh)
 {
 	/* Set up cmdline options & their default values */
@@ -196,6 +198,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	DEF_CMDLINE_OPTION('t', false, max_time, "Total time budget (suffix s/m/d/h/y)", DEFAULT_TIME);
 	DEF_CMDLINE_OPTION('c', false, num_cpus, "How many CPUs to use", half_the_cpus);
 	DEF_CMDLINE_OPTION('i', false, interval, "Progress report interval", DEFAULT_PROGRESS_INTERVAL);
+	DEF_CMDLINE_OPTION('d', false, trace_dir, "Directory for trace file output", "");
 	DEF_CMDLINE_OPTION('e', true, eta_factor, "ETA factor heuristic", DEFAULT_ETA_FACTOR);
 	DEF_CMDLINE_OPTION('E', true, eta_thresh, "ETA threshold heuristic", DEFAULT_ETA_STABILITY_THRESHOLD);
 	/* Log file to output PRINT/DBG messages to in addition to console.
@@ -330,6 +333,18 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 
 	if ((*use_wrapper_log = (arg_log_name != NULL))) {
 		scnprintf(wrapper_log, wrapper_log_len, "%s", arg_log_name);
+	}
+
+	scnprintf(trace_dir, trace_dir_len, "%s", arg_trace_dir);
+	int errno_val;
+	if (trace_dir[0] != 0) {
+		if (!check_directory(trace_dir, &errno_val)) {
+			ERR("Couldn't open specified trace directory %s: %s\n",
+			    trace_dir, strerror(errno_val));
+			options_valid = false;
+		} else {
+			WARN("HTML trace files will be relocated to %s\n", trace_dir);
+		}
 	}
 
 	*verbose = arg_verbose;

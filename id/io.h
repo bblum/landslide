@@ -40,4 +40,6 @@ void unset_cloexec(int fd);
 void set_logging_options(bool use_log, char *filename);
 void log_msg(const char *pfx, const char *format, ...);
 
+bool check_directory(const char *dirpath, int *errno_val);
+
 #endif
