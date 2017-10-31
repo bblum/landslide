@@ -126,7 +126,7 @@ fi
 MAKE_CONFIG="./$SUBDIR/src/Make.config"
 check_file "$MAKE_CONFIG"
 if grep "^CFLAGS =" "$MAKE_CONFIG" >/dev/null; then
-	sed -i "s/^CFLAGS =/CFLAGS = -fno-omit-frame-pointer/" "$MAKE_CONFIG" || die "couldn't fix CFLAGS in $MAKE_CONFIG"
+	sed -i "s/^CFLAGS =/CFLAGS = -std=gnu99 -fno-omit-frame-pointer/" "$MAKE_CONFIG" || die "couldn't fix CFLAGS in $MAKE_CONFIG"
 else
 	die "$MAKE_CONFIG doesn't contain CFLAGS?"
 fi
@@ -136,15 +136,40 @@ THREAD_C="./$SUBDIR/src/threads/thread.c"
 check_file "$THREAD_H"
 check_file "$THREAD_C"
 
+# Figure out whether the student changed ready_list to an array with whatever name
+READY_LIST=`grep "static struct list.*ready" "$THREAD_C" | head -n 1`
+[ ! -z "$READY_LIST" ] || die "couldn't find ready-list declaration in $THREAD_C"
+READY_LIST_NAME=`echo "$READY_LIST" | sed 's/.* \([a-zA-Z0-9_]*ready[a-zA-Z0-9_]*\).*/\1/'`
+if echo "$READY_LIST" | grep "ready.*\[.*\]" >/dev/null; then
+	# it's an array; find out how many there are
+	READY_LIST_LENGTH=`echo "$READY_LIST" | sed 's/.*\[\([0-9]*\)\].*/\1/'`
+	[ ! -z "$READY_LIST_LENGTH" ] || die "couldn't get length of ready-list array"
+	# add function to provide the length to the part of the patch in list.c
+	echo "#define READY_LIST_LENGTH $READY_LIST_LENGTH" >> "$THREAD_H" || die "ready list length h"
+	# make get rq addr (see below) return the address of the first element
+	READY_LIST_NAME=`echo "$READY_LIST_NAME[0]"`
+else
+	# normal single runqueue
+	echo "#define READY_LIST_LENGTH 1" >> "$THREAD_H" || die "ready list length h"
+fi
+
 # Fix TIME_SLICE issue causing landslide's tick mechanism letting instructions leak.
 sed -i "s/define TIME_SLICE 4/define TIME_SLICE 1/" "$THREAD_C" || die "couldn't fix TIME_SLICE"
 
-echo "struct list *get_rq_addr() { return &ready_list; }" >> "$THREAD_C"
+echo "struct list *get_rq_addr() { return &$READY_LIST_NAME; }" >> "$THREAD_C" || die "get rq addr c"
 # It's ok for a function decl to go outside the ifdef.
-echo "struct list *get_rq_addr(void);" >> "$THREAD_H"
+echo "struct list *get_rq_addr(void);" >> "$THREAD_H" || die "get rq addr h"
 
 # Remove whitespace in e.g. "thread_unblock (t)" so the patch applies
 sed -i "s/ (/(/g" "$THREAD_C" || die "couldn't fix whitespace in $THREAD_C"
+
+# Insert forking() annotation in a more robust way than context-dependent patch
+# This is terrible :( really the right solution is to make landslide so forking()
+# is not needed at all and it will just automatically add the new thread
+sed -i "s@\(.*/\* Add to run queue\. \*/.*\)@  tell_landslide_forking(); \1@" "$THREAD_C"
+# make sure the above hack doesn't get owned in the most obvious way
+NUM_FORKINGS=`grep "tell_landslide_forking" "$THREAD_C" | wc -l`
+[ "$NUM_FORKINGS" == 1 ] || die "ben, your forking annotation hack is broken on this pintos, try something else"
 
 # Apply tell_landslide annotations.
 
@@ -154,8 +179,7 @@ if [ ! -f "$PATCH" ]; then
 fi
 # -l = ignore whitespace
 # -f = force, don't ask questions
-patch -l -f -p1 -i "$PATCH" || die "Failed to patch in annotations. You need to manually merge them. See patch output above."
-# TODO - come up with some advice on what the user should do with the scripts if the patch fails to apply?
+patch -l -f -p1 -i "$PATCH" || die "Failed to patch in annotations. Please email Ben Blum <bblum@cs.cmu.edu> or your local OS course staff for help."
 
 # success
 echo "import pintos success; you may now make, hopefully"

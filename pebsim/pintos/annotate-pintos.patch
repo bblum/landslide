@@ -14,7 +14,7 @@ diff --git a/pintos/src/lib/kernel/list.c b/pintos/src/lib/kernel/list.c
 index 316d9ef..6bd41bb 100644
 --- a/pintos/src/lib/kernel/list.c
 +++ b/pintos/src/lib/kernel/list.c
-@@ -34,6 +34,28 @@
+@@ -34,6 +34,32 @@
  static bool is_sorted (struct list_elem *a, struct list_elem *b,
                         list_less_func *less, void *aux) UNUSED;
  
@@ -25,16 +25,20 @@ index 316d9ef..6bd41bb 100644
 +static bool is_runqueue(struct list_elem *elem)
 +{
 +  struct list_elem *e;
++  unsigned int i;
 +  enum intr_level old_level = intr_disable();
-+  for (e = list_begin(get_rq_addr()); e != list_end(get_rq_addr()); e = list_next(e)) {
-+    if (e == elem) {
++  for (i = 0; i < READY_LIST_LENGTH; i++) {
++    struct list *rq_base = get_rq_addr();
++    for (e = list_begin(&rq_base[i]); e != list_end(&rq_base[i]); e = list_next(e)) {
++      if (e == elem) {
++        intr_set_level(old_level);
++        return true;
++      }
++    }
++    if (e == elem) { /* check for e.g. list_insert(list_end(list), elem) */
 +      intr_set_level(old_level);
 +      return true;
 +    }
-+  }
-+  if (e == elem) { /* check for e.g. list_insert(list_end(list), elem) */
-+    intr_set_level(old_level);
-+    return true;
 +  }
 +  intr_set_level(old_level);
 +  return false;
@@ -43,7 +47,7 @@ index 316d9ef..6bd41bb 100644
  /* Returns true if ELEM is a head, false otherwise. */
  static inline bool
  is_head (struct list_elem *elem)
-@@ -171,6 +193,10 @@
+@@ -171,6 +197,10 @@
    ASSERT (is_interior (before) || is_tail (before));
    ASSERT (elem != NULL);
  
@@ -54,7 +58,7 @@ index 316d9ef..6bd41bb 100644
    elem->prev = before->prev;
    elem->next = before;
    before->prev->next = elem;
-@@ -187,6 +213,13 @@
+@@ -187,6 +217,13 @@
    ASSERT (is_interior (before) || is_tail (before));
    if (first == last)
      return;
@@ -68,7 +72,7 @@ index 316d9ef..6bd41bb 100644
    last = list_prev (last);
  
    ASSERT (is_interior (first));
-@@ -249,6 +282,9 @@
+@@ -249,6 +286,9 @@
  list_remove (struct list_elem *elem)
  {
    ASSERT (is_interior (elem));
@@ -270,13 +274,7 @@ index 87f22b8..fb88495 100644
  #include <random.h>
  #include <stdio.h>
  #include <string.h>
-@@ -199,4 +201,5 @@
-   sf->ebp = 0;
- 
-   /* Add to run queue. */
-+  tell_landslide_forking();
-   thread_unblock(t);
-@@ -556,6 +559,11 @@
+@@ -556,6 +558,11 @@
    struct thread *next = next_thread_to_run();
    struct thread *prev = NULL;
  
