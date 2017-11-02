@@ -171,6 +171,11 @@ sed -i "s@\(.*/\* Add to run queue\. \*/.*\)@  tell_landslide_forking(); \1@" "$
 NUM_FORKINGS=`grep "tell_landslide_forking" "$THREAD_C" | wc -l`
 [ "$NUM_FORKINGS" == 1 ] || die "ben, your forking annotation hack is broken on this pintos, try something else"
 
+# add a new test
+TESTNAME=priority-donate-multiple
+[ -f "$TESTNAME.c" ] || die "custom $TESTNAME test missing"
+cp "$TESTNAME.c" "./$SUBDIR/src/tests/threads/" || die "failed apply custom $TESTNAME test"
+
 # Apply tell_landslide annotations.
 
 PATCH=annotate-pintos.patch
