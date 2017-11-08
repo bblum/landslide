@@ -126,7 +126,7 @@ fi
 MAKE_CONFIG="./$SUBDIR/src/Make.config"
 check_file "$MAKE_CONFIG"
 if grep "^CFLAGS =" "$MAKE_CONFIG" >/dev/null; then
-	sed -i "s/^CFLAGS =/CFLAGS = -std=gnu99 -fno-omit-frame-pointer/" "$MAKE_CONFIG" || die "couldn't fix CFLAGS in $MAKE_CONFIG"
+	sed -i "s/^CFLAGS =/CFLAGS = -std=gnu99 -fno-reorder-blocks -fno-omit-frame-pointer/" "$MAKE_CONFIG" || die "couldn't fix CFLAGS in $MAKE_CONFIG"
 else
 	die "$MAKE_CONFIG doesn't contain CFLAGS?"
 fi
