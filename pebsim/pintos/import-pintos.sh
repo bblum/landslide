@@ -186,5 +186,20 @@ fi
 # -f = force, don't ask questions
 patch -l -f -p1 -i "$PATCH" || die "Failed to patch in annotations. Please email Ben Blum <bblum@cs.cmu.edu> or your local OS course staff for help."
 
+# Figure whether the tcb's ready-list element is called something other than 'elem'.
+# Must be done after applying the patch
+ELEMS=`grep "list_entry *(.*$READY_LIST_NAME.*,.*elem.*)" "$THREAD_C" | sed 's/.*struct thread *, *//' | sed 's/).*//' | sort | uniq`
+if [ -z "$ELEMS" ]; then
+	# couldn't find, assume named just elem
+	msg "warning: couldn't determine name of $READY_LIST_NAME tcb nobe, assuming it's just 'elem'"
+elif [ `echo "$ELEMS" | wc -l` = 1 ]; then
+	if [ "$ELEMS" != "elem" ]; then
+		msg "$READY_LIST_NAME tcb list nobe is named '$ELEMS' instead of 'elem', fixing..."
+		sed -i "s/struct thread, elem/struct thread, $ELEMS/" "./$SUBDIR/src/lib/kernel/list.c" || die "couldnt sed elem into $ELEMS in list annotations"
+	fi
+else
+	die "ambiguous what the $READY_LIST_NAME tcb list nobe is: i found: `echo "$ELEMS" | tr '\n' ' '`"
+fi
+
 # success
 echo "import pintos success; you may now make, hopefully"
