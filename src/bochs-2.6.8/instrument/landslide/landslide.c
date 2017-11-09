@@ -194,8 +194,9 @@ static void check_exception(struct ls_state *ls, int number)
 #define TOO_DEEP_0TH_BRANCH 4000
 #endif
 
-/* Avoid getting owned by DR PPs on e.g. memset which hose the average. */
-#define PROGRESS_MIN_TRIGGER_AVERAGE ((uint64_t)100) /* idk really */
+/* Avoid getting owned by DR PPs on e.g. memset which hose the average.
+ * idk really what a good value for this is, but at least 100 is too small. */
+#define PROGRESS_MIN_TRIGGER_AVERAGE ((uint64_t)1000)
 
 static void wrong_panic_html(void *env, struct fab_html_env *html_env)
 {
