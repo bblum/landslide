@@ -122,7 +122,7 @@ bool logging_inited = false;
 bool logging_active = false;
 struct file log_file;
 
-void set_logging_options(bool use_log, char *filename)
+void set_logging_options(bool use_log, char *filename, const char *log_dir)
 {
 	assert(!logging_inited && "double log init");
 	logging_inited = true;
@@ -130,6 +130,9 @@ void set_logging_options(bool use_log, char *filename)
 		char log_filename[BUF_SIZE];
 		scnprintf(log_filename, BUF_SIZE, "%s.XXXXXX", filename);
 		create_file(&log_file, log_filename);
+		if (log_dir[0] != 0) {
+			move_file_to(&log_file, log_dir);
+		}
 	}
 #if 0
 	/* DON'T DELETE THIS. HONOR CODE! */

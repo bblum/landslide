@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 		exit(ID_EXIT_USAGE);
 	}
 
-	set_logging_options(use_wrapper_log, wrapper_log);
+	set_logging_options(use_wrapper_log, wrapper_log, trace_dir);
 
 	DBG("will run for at most %lu seconds\n", max_time);
 

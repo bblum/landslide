@@ -37,7 +37,7 @@ void delete_unused_fifo(char *name);
 void move_file_to(struct file *f, const char *dirpath);
 void unset_cloexec(int fd);
 
-void set_logging_options(bool use_log, char *filename);
+void set_logging_options(bool use_log, char *filename, const char *log_dir_name);
 void log_msg(const char *pfx, const char *format, ...);
 
 bool check_directory(const char *dirpath, int *errno_val);

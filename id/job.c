@@ -113,6 +113,10 @@ static void *run_job(void *arg)
 	create_file(&j->config_dynamic, CONFIG_DYNAMIC_TEMPLATE);
 	create_file(&j->log_stdout, LOG_FILE_TEMPLATE("setup"));
 	create_file(&j->log_stderr, LOG_FILE_TEMPLATE("output"));
+	if (user_trace_dir != NULL) {
+		move_file_to(&j->log_stdout, user_trace_dir);
+		move_file_to(&j->log_stderr, user_trace_dir);
+	}
 
 	const char *without   = pintos || pathos ? "without_function"
 	                                         : "without_user_function";
