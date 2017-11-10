@@ -138,6 +138,9 @@ check_file "$THREAD_C"
 
 # Figure out whether the student changed ready_list to an array with whatever name
 READY_LIST=`grep "static struct list.*ready" "$THREAD_C" | head -n 1`
+if [ -z "$READY_LIST" ]; then
+	READY_LIST=`grep "^struct list.*ready" "$THREAD_H" | head -n 1`
+fi
 [ ! -z "$READY_LIST" ] || die "couldn't find ready-list declaration in $THREAD_C"
 READY_LIST_NAME=`echo "$READY_LIST" | sed 's/.* \([a-zA-Z0-9_]*ready[a-zA-Z0-9_]*\).*/\1/'`
 if echo "$READY_LIST" | grep "ready.*\[.*\]" >/dev/null; then
@@ -175,6 +178,14 @@ NUM_FORKINGS=`grep "tell_landslide_forking" "$THREAD_C" | wc -l`
 TESTNAME=priority-donate-multiple
 [ -f "$TESTNAME.c" ] || die "custom $TESTNAME test missing"
 cp "$TESTNAME.c" "./$SUBDIR/src/tests/threads/" || die "failed apply custom $TESTNAME test"
+
+# figure out whether the variables in the surrounding context for the vanishing
+# and thread_switch annotations have been renamed... x_x;
+RUNNING_THREAD_NAME=`grep -A5 "^schedule(void)" "$THREAD_C" | grep "struct thread.* = running_thread" | head -n 1 | sed 's/.*struct thread *\*//' | sed 's/ =.*//'`
+if [ ! -z "$RUNNING_THREAD_NAME" -a "$RUNNING_THREAD_NAME" != "cur" ]; then
+	msg "in schedule(), 'cur' was renamed to '$RUNNING_THREAD_NAME'; hopefully the sed i'm about to do won't break the build even further"
+	sed -i "s/\<$RUNNING_THREAD_NAME\>/cur/g" "$THREAD_C" || die "couldn't sed $RUNNING_THREAD_NAME into 'cur'"
+fi
 
 # Apply tell_landslide annotations.
 
