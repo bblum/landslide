@@ -23,6 +23,8 @@ fi
 
 # Process threads-vs-userprog argument
 USERPROG=0
+VM=0
+FILESYS=0
 ARG2=$2
 if [ -z "$2" ]; then
 	ARG2=threads
@@ -32,8 +34,16 @@ if [ "$ARG2" = "threads" -o "$ARG2" = "k" ]; then
 elif [ "$ARG2" = "userprog" -o "$ARG2" = "u" ]; then
 	msg "Setting up a user-space pintos build"
 	USERPROG=1
+elif [ "$ARG2" = "vm" -o "$ARG2" = "v" ]; then
+	msg "Setting up a user-space pintos build with vm enabled"
+	USERPROG=1
+	VM=1
+elif [ "$ARG2" = "filesys" -o "$ARG2" = "f" ]; then
+	msg "Setting up a user-space pintos build with filesys enabled"
+	USERPROG=1
+	FILESYS=1
 else
-	die "Argument 2 must be either 'threads' or 'userprog'"
+	die "Argument 2 must be either 'threads' or 'userprog' or 'vm' or 'filesys'"
 fi
 
 # Get started with side effects.
@@ -70,8 +80,8 @@ cd pintos || die "couldn't cd into pintos directory"
 PINTOSDIR="$PWD"
 msg "Importing your Pintos into '$PINTOSDIR' - look there if something goes wrong..."
 
-./import-pintos.sh "$1" "$USERPROG" || die "could not import your pintos"
-./build.sh "$USERPROG" || die "import pintos was successful, but build failed (from '$PWD')"
+./import-pintos.sh "$1" "$USERPROG" "$VM" "$FILESYS" || die "could not import your pintos"
+./build.sh "$USERPROG" "$VM" "$FILESYS" || die "import pintos was successful, but build failed (from '$PWD')"
 
 cd ../../pebsim/ || die "couldn't cd into pebsim"
 

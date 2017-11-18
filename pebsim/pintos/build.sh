@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# arguments: 3x either 0 or 1, each corresponding to userprog, vm, or filesys
+# projects. if vm or filesys, userprog should also be 1. not both vm and filesys
+# should be 1.
+
 # Converts pintos source (with landslide annotations already applied) into a
 # bootfd.img and kernel binary and puts them into pebsim/.
 
@@ -16,10 +20,18 @@ function die() {
 
 
 USERPROG=$1
+VM=$2
+FILESYS=$3
 if [ -z "$USERPROG" ]; then
 	die "usage: $0 <userprog>"
 elif [ "$USERPROG" = "0" ]; then
+	[ "$VM" = "0" -a "$FILESYS" = "0" ] || die "need specify userprog if you also specify vm or filesys"
 	PROJECT=threads
+elif [ "$VM" = "1" ]; then
+	[ "$FILESYS" = "0" ] || die "can't be both vm and filesys, pick one"
+	PROJECT=vm
+elif [ "$FILESYS" = "1" ]; then
+	PROJECT=filesys
 else
 	PROJECT=userprog
 fi

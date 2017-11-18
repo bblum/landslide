@@ -2,6 +2,8 @@
 
 DIR=$1
 USERPROG=$2
+VM=$3
+FILESYS=$4
 
 function msg {
 	echo -e "\033[01;33m$1\033[00m"
@@ -33,9 +35,16 @@ if [ ! -d "$DIR" ]; then
 fi
 # look for src/.
 if [ "$USERPROG" = "0" ]; then
+	[ "$VM" = "0" -a "$FILESYS" = "0" ] || die "cant have vm/filesys w/o userprog"
 	PROJ="p1"
 else
-	PROJ="p2"
+	if [ "$VM" = 1 ]; then
+		PROJ="p3"
+	elif [ "$FILESYS" = 1 ]; then
+		PROJ="p4"
+	else
+		PROJ="p2"
+	fi
 fi
 if [ ! -d "$DIR/src/threads" ]; then
 	# support either "foo/" or "foo/pintos-pX/" or "foo/pX/",
