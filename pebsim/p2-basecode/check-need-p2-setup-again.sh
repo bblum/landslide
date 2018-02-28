@@ -1,11 +1,18 @@
-#!/bin/sh
+#!/bin/bash
+
+FILE="../current-p2-group.txt"
+SETUP_SCRIPT="./p2-setup.sh"
+if [ ! -f "$FILE" ]; then
+	FILE="../current-psu-group.txt"
+	SETUP_SCRIPT="./psu-setup.sh"
+fi
 
 DISABLE_FILE="dont_check_for_p2_updates"
-RERUN_MSG="Please re-run the ./p2-setup.sh script to make sure landslide sees your updates!"
+RERUN_MSG="Please re-run the $SETUP_SCRIPT script to make sure landslide sees your updates!"
 DISABLE_MSG="If you want to disable this check, run 'touch $DISABLE_FILE'."
 
 if [ -f "$DISABLE_FILE" -o -f "../$DISABLE_FILE" -o -f "../../$DISABLE_FILE" ]; then
-	echo -e "\033[01;33mWarning: Not checking if you updated your p2 code since ./p2-setup.sh.\033[00m"
+	echo -e "\033[01;33mWarning: Not checking if you updated your p2 code since $SETUP_SCRIPT.\033[00m"
 	echo -e "\033[01;33mTo re-enable this check, run 'rm $DISABLE_FILE'.\033[00m"
 	exit 0
 fi
@@ -22,11 +29,10 @@ function die() {
 }
 
 function die_no_p2_path() {
-	RERUN_MSG="Please run the ./p2-setup.sh script so landslide knows where to find your code!"
+	RERUN_MSG="Please run the $SETUP_SCRIPT script so landslide knows where to find your code!"
 	die "Couldn't remember where your p2 directory is."
 }
 
-FILE="../current-p2-group.txt"
 if [ ! -f "$FILE" ]; then
 	die_no_p2_path
 fi
@@ -37,7 +43,7 @@ ORIG_SRC_DIR=`cat "$FILE"`
 if [ -z "$ORIG_SRC_DIR" ]; then
 	die_no_p2_path
 elif [ ! -d "$ORIG_SRC_DIR" ]; then
-	die "Last ./p2-setup.sh argument was '$ORIG_SRC_DIR' but I can't see that directory anymore."
+	die "Last $SETUP_SCRIPT argument was '$ORIG_SRC_DIR' but I can't see that directory anymore."
 fi
 
 # Check for updates in said personal directory.
@@ -46,12 +52,21 @@ function check_updates_in_subdir() {
 	diff -qru --exclude="*.dep" --exclude="*.o" --exclude=".*" "$ORIG_SRC_DIR/$1/" "$1/" >/dev/null
 	RV=$?
 	if [ "$RV" != "0" ]; then
-		die "Files in $ORIG_SRC_DIR have been updated since last ./p2-setup.sh!"
+		die "Files in $ORIG_SRC_DIR have been updated since last $SETUP_SCRIPT!"
 	fi
 }
 function check_updates_in_optional_subdir() {
 	if [ -d "$DIR/$1" ]; then
 		check_updates_in_subdir "$1"
+	fi
+}
+function check_updates_in_optional_file() {
+	if -f [ "$DIR/$1" ]; then
+		diff -qu "$ORIG_SRC_DIR/$1" "$1" >/dev/null
+		RV=$?
+		if [ "$RV" != "0" ]; then
+			die "File $ORIG_SRC_DIR/$1 has been updated since last $SETUP_SCRIPT!"
+		fi
 	fi
 }
 
@@ -61,10 +76,11 @@ check_updates_in_subdir user/inc
 check_updates_in_subdir user/libautostack
 check_updates_in_subdir user/libsyscall
 check_updates_in_subdir user/libthread
+check_updates_in_optional_file user/config.mk
 
 # Check for studence updating code in this import-destination directory.
 
 MAKE_OUTPUPT=`PATH=/afs/cs.cmu.edu/academic/class/15410-s16/bin/:$PATH make --dry-run`
 if [ "`echo "$MAKE_OUTPUPT" | wc -l`" != 1 ]; then
-	die "Some files in pebsim/p2-basecode/ have been updated since ./p2-setup.sh was last run."
+	die "Some files in pebsim/p2-basecode/ have been updated since $SETUP_SCRIPT was last run."
 fi

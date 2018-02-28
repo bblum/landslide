@@ -1,0 +1,185 @@
+diff --git a/src/bochs-2.6.8/instrument/landslide/Makefile.in b/src/bochs-2.6.8/instrument/landslide/Makefile.in
+index ca8072b..5b3e168 100644
+--- a/src/bochs-2.6.8/instrument/landslide/Makefile.in
++++ b/src/bochs-2.6.8/instrument/landslide/Makefile.in
+@@ -26,9 +26,9 @@ SHELL = @SHELL@
+ @SET_MAKE@
+ 
+ CC = g++
+-CFLAGS = @CFLAGS@ -DBOCHS --std=gnu++11
++CFLAGS = @CFLAGS@ -DBOCHS -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS --std=gnu++0x
+ CXX = @CXX@
+-CXXFLAGS = @CXXFLAGS@ -DBOCHS --std=gnu++11
++CXXFLAGS = @CXXFLAGS@ -DBOCHS -D__STDC_LIMIT_MACROS -D__STDC_FORMAT_MACROS --std=gnu++0x
+ 
+ LDFLAGS = @LDFLAGS@
+ LIBS = @LIBS@
+diff --git a/src/bochs-2.6.8/instrument/landslide/landslide.c b/src/bochs-2.6.8/instrument/landslide/landslide.c
+index 65d3e18..86ca43e 100644
+--- a/src/bochs-2.6.8/instrument/landslide/landslide.c
++++ b/src/bochs-2.6.8/instrument/landslide/landslide.c
+@@ -423,7 +423,9 @@ static bool ensure_progress(struct ls_state *ls)
+ 	} else if (check_infinite_loop(ls, message, BUF_SIZE)) {
+ 		const char *headline = "NO PROGRESS (infinite loop?)";
+ 		lsprintf(BUG, COLOUR_BOLD COLOUR_RED "%s\n", message);
+-		struct undesirable_loop_env env = { .ls = ls, .message = message };
++		struct undesirable_loop_env env;
++		env.ls = ls;
++		env.message = message;
+ 		FOUND_A_BUG_HTML_INFO(ls, headline, strlen(headline),
+ 				      (void *)(&env), undesirable_loop_html);
+ 		return false;
+diff --git a/src/bochs-2.6.8/instrument/landslide/lockset.c b/src/bochs-2.6.8/instrument/landslide/lockset.c
+index 24cdd1c..e6120dc 100644
+--- a/src/bochs-2.6.8/instrument/landslide/lockset.c
++++ b/src/bochs-2.6.8/instrument/landslide/lockset.c
+@@ -92,7 +92,9 @@ bool lockset_intersect(struct lockset *l0, struct lockset *l1)
+ 
+ static void _lockset_add(struct lockset *l, unsigned int lock_addr, enum lock_type type)
+ {
+-	struct lock new_lock = { .addr = lock_addr, .type = type };
++	struct lock new_lock;
++	new_lock.addr = lock_addr;
++	new_lock.type = type;
+ 	ARRAY_LIST_APPEND(&l->list, new_lock);
+ 
+ 	/* sort */
+diff --git a/src/bochs-2.6.8/instrument/landslide/memory.c b/src/bochs-2.6.8/instrument/landslide/memory.c
+index 35a060c..c21b1ba 100644
+--- a/src/bochs-2.6.8/instrument/landslide/memory.c
++++ b/src/bochs-2.6.8/instrument/landslide/memory.c
+@@ -448,8 +448,10 @@ static void mem_enter_free(struct ls_state *ls, bool in_kernel, bool is_palloc,
+ 		const struct chunk *freed_chunk =
+ 			find_freed_chunk(ls, base, in_kernel, &before, &after);
+ 		if (freed_chunk != NULL) {
+-			struct freed_chunk_info env = { .chunk = freed_chunk,
+-				.before = before, .after = after, };
++			struct freed_chunk_info env;
++			env.chunk = freed_chunk;
++			env.before = before;
++			env.after = after;
+ 			print_freed_chunk_info((void *)(&env), NULL);
+ 			char buf[BUF_SIZE];
+ 			int len = scnprintf(buf, BUF_SIZE, "DOUBLE FREE (in %s)"
+@@ -828,8 +830,10 @@ static void use_after_free(struct ls_state *ls, unsigned int addr,
+ 			    write ? "write to" : "read from", addr,
+ 			    (int)GET_CPU_ATTR(ls->cpu0, eip));
+ 	} else {
+-		struct freed_chunk_info env = { .chunk = c,
+-			.before = before, .after = after, };
++		struct freed_chunk_info env;
++		env.chunk = c;
++		env.before = before;
++		env.after = after;
+ 		print_freed_chunk_info((void *)(&env), NULL);
+ 		char buf[BUF_SIZE];
+ 		int len = scnprintf(buf, BUF_SIZE, "USE AFTER FREE - "
+diff --git a/src/bochs-2.6.8/instrument/landslide/pp.c b/src/bochs-2.6.8/instrument/landslide/pp.c
+index 16eae75..32ebb0e 100644
+--- a/src/bochs-2.6.8/instrument/landslide/pp.c
++++ b/src/bochs-2.6.8/instrument/landslide/pp.c
+@@ -30,17 +30,19 @@ void pps_init(struct pp_config *p)
+ 
+ 	static const unsigned int kfuncs[][3] = KERN_WITHIN_FUNCTIONS;
+ 	for (int i = 0; i < ARRAY_SIZE(kfuncs); i++) {
+-		struct pp_within pp = { .func_start = kfuncs[i][0],
+-		                        .func_end   = kfuncs[i][1],
+-		                        .within     = (kfuncs[i][2] != 0) };
++		struct pp_within pp;
++		pp.func_start = kfuncs[i][0];
++		pp.func_end   = kfuncs[i][1];
++		pp.within     = (kfuncs[i][2] != 0);
+ 		ARRAY_LIST_APPEND(&p->kern_withins, pp);
+ 	}
+ 
+ 	static const unsigned int ufuncs[][3] = USER_WITHIN_FUNCTIONS;
+ 	for (int i = 0; i < ARRAY_SIZE(ufuncs); i++) {
+-		struct pp_within pp = { .func_start = ufuncs[i][0],
+-		                        .func_end   = ufuncs[i][1],
+-		                        .within     = (ufuncs[i][2] != 0) };
++		struct pp_within pp;
++		pp.func_start = ufuncs[i][0];
++		pp.func_end   = ufuncs[i][1],
++		pp.within     = (ufuncs[i][2] != 0);
+ 		ARRAY_LIST_APPEND(&p->user_withins, pp);
+ 	}
+ 
+@@ -50,10 +52,11 @@ void pps_init(struct pp_config *p)
+ 	 * [i][3] is the most_recent_syscall when the race was observed. */
+ 	static const unsigned int drs[][4] = DATA_RACE_INFO;
+ 	for (int i = 0; i < ARRAY_SIZE(drs); i++) {
+-		struct pp_data_race pp = { .addr                = drs[i][0],
+-		                           .tid                 = drs[i][1],
+-		                           .last_call           = drs[i][2],
+-		                           .most_recent_syscall = drs[i][3] };
++		struct pp_data_race pp;
++		pp.addr                = drs[i][0];
++		pp.tid                 = drs[i][1];
++		pp.last_call           = drs[i][2];
++		pp.most_recent_syscall = drs[i][3];
+ 		ARRAY_LIST_APPEND(&p->data_races, pp);
+ #ifdef PREEMPT_EVERYWHERE
+ 		assert(0 && "DR PPs incompatible with preempt-everywhere mode.");
+@@ -96,23 +99,29 @@ bool load_dynamic_pps(struct ls_state *ls, const char *filename)
+ 			/* kernel within function directive */
+ 			assert(ret == 3 && "invalid kernel within PP");
+ 			lsprintf(DEV, "new PP: kernel %x %x %x\n", x, y, z);
+-			struct pp_within pp = { .func_start = x, .func_end = y,
+-			                        .within = (z != 0) };
++			struct pp_within pp;
++			pp.func_start = x;
++			pp.func_end = y;
++			pp.within = (z != 0);
+ 			ARRAY_LIST_APPEND(&p->kern_withins, pp);
+ 		} else if ((ret = sscanf(buf, "U %x %x %i", &x, &y, &z)) != 0) {
+ 			/* user within function directive */
+ 			assert(ret == 3 && "invalid user within PP");
+ 			lsprintf(DEV, "new PP: user %x %x %x\n", x, y, z);
+-			struct pp_within pp = { .func_start = x, .func_end = y,
+-			                        .within = (z != 0) };
++			struct pp_within pp;
++			pp.func_start = x;
++			pp.func_end = y;
++			pp.within = (z != 0);
+ 			ARRAY_LIST_APPEND(&p->user_withins, pp);
+ 		} else if ((ret = sscanf(buf, "DR %x %i %i %i", &x, &y, &z, &w)) != 0) {
+ 			/* data race preemption poince */
+ 			assert(ret == 4 && "invalid data race PP");
+ 			lsprintf(DEV, "new PP: dr %x %x %x %x\n", x, y, z, w);
+-			struct pp_data_race pp =
+-				{ .addr = x, .tid = y, .last_call = z,
+-				  .most_recent_syscall = w };
++			struct pp_data_race pp;
++			pp.addr = x;
++			pp.tid = y;
++			pp.last_call = z;
++			pp.most_recent_syscall = w;
+ 			ARRAY_LIST_APPEND(&p->data_races, pp);
+ #ifdef PREEMPT_EVERYWHERE
+ 			assert(0 && "DR PPs incompatible with preempt-everywhere mode.");
+diff --git a/src/bochs-2.6.8/instrument/landslide/vector_clock.c b/src/bochs-2.6.8/instrument/landslide/vector_clock.c
+index e014471..8e1a7b9 100644
+--- a/src/bochs-2.6.8/instrument/landslide/vector_clock.c
++++ b/src/bochs-2.6.8/instrument/landslide/vector_clock.c
+@@ -26,7 +26,9 @@ void vc_init(struct vector_clock *vc)
+ {
+ 	ARRAY_LIST_INIT(&vc->v, VC_INIT_SIZE);
+ 	for (unsigned int i = 0; i < VC_INIT_SIZE; i++) {
+-		struct epoch bottom = { .tid = i, .timestamp = 0 };
++		struct epoch bottom;
++		bottom.tid = i;
++		bottom.timestamp = 0;
+ 		ARRAY_LIST_APPEND(&vc->v, bottom);
+ 	}
+ }
+@@ -71,7 +73,9 @@ void vc_inc(struct vector_clock *vc, unsigned int tid)
+ 	if (vc_find(vc, tid, &e)) {
+ 		e->timestamp++;
+ 	} else {
+-		struct epoch new_epoch = { .tid = tid, .timestamp = 1 };
++		struct epoch new_epoch;
++		new_epoch.tid = tid;
++		new_epoch.timestamp = 1;
+ 		ARRAY_LIST_APPEND(&vc->v, new_epoch);
+ 	}
+ }

@@ -40,10 +40,10 @@ MAKE = gmake
 # names which work the same way to be on your PATH.  Note
 # that different versions of gcc generally do NOT work the
 # same way.
-CC = 410-gcc
-LD = 410-ld
-AR = 410-ar
-OBJCOPY = 410-objcopy
+CC = gcc
+LD = ld
+AR = ar
+OBJCOPY = objcopy
 
 PROJROOT = $(PWD)
 # All paths relative to PROJROOT unless otherwise noted

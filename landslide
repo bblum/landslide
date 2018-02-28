@@ -14,11 +14,12 @@ if [ ! -f "$IDDIR/$IDEXE" ]; then
 fi
 
 PINTOS_FLAG=
-if [ "`cat pebsim/current-architecture.txt 2>/dev/null`" = "p2" ]; then
+CURRENT_ARCH="`cat pebsim/current-architecture.txt 2>/dev/null`"
+if [ "$CURRENT_ARCH" = "p2" -o "$CURRENT_ARCH" = "psu" ]; then
 	cd pebsim/p2-basecode
 	./check-need-p2-setup-again.sh || exit 1
 	cd ../../
-elif [ "`cat pebsim/current-architecture.txt 2>/dev/null`" = "pintos" ]; then
+elif [ "$CURRENT_ARCH" = "pintos" ]; then
 	PINTOS_FLAG="-P"
 else
 	echo -e "\033[01;31munknown architecture in pebsim/current-architecture.txt\033[00m"

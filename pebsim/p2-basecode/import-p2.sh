@@ -45,6 +45,12 @@ function sync_optional_subdir() {
 		sync_subdir "$1"
 	fi
 }
+function sync_optional_file() {
+	if -f [ "$DIR/$1" ]; then
+		mkdir -p "`dirname $1`"
+		cp "$DIR/$1" "./$1" || die "couldn't copy $1"
+	fi
+}
 
 # note: if you update this you need to update check-for...sh too
 sync_optional_subdir vq_challenge
@@ -52,6 +58,12 @@ sync_subdir user/inc
 sync_subdir user/libautostack
 sync_subdir user/libsyscall
 sync_subdir user/libthread
+sync_optional_file user/config.mk # e.g. refp2 has this
+
+# e.g. refp2 has this
+if [ -f "$DIR/user/config.mk" ]; then
+	cp "$DIR/user/config.mk" "./user/"
+fi
 
 # Merge student config.mk targets into ours
 
