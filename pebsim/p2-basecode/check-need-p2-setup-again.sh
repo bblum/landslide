@@ -61,7 +61,7 @@ function check_updates_in_optional_subdir() {
 	fi
 }
 function check_updates_in_optional_file() {
-	if -f [ "$DIR/$1" ]; then
+	if [ -f "$DIR/$1" ]; then
 		diff -qu "$ORIG_SRC_DIR/$1" "$1" >/dev/null
 		RV=$?
 		if [ "$RV" != "0" ]; then
