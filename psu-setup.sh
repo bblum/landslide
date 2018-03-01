@@ -42,7 +42,7 @@ git show | head -n 1 > "$VERSION_FILE"
 # Build iterative deepening wrapper.
 
 cd id || die "couldn't cd into id"
-sed -i 's@system_cpus / 2@system_cpus@' option.c || warn "couldn't adjust default cpu number"
+sed -i 's@system_cpus / 2@system_cpus@' option.c || msg "couldn't adjust default cpu number"
 make || die "couldn't build id program"
 
 # Put config.landslide into place.
@@ -66,6 +66,14 @@ ln -s bochsrc-pebbles.txt bochsrc.txt || die "couldn't create bochsrc symlink"
 # Import and build student p2.
 
 cd p2-basecode || die "couldn't cd into p2 basecode directory"
+
+# PSU's cluster machines suck
+if grep -- "-fno-aggressive-loop-optimizations" Makefile >/dev/null; then
+	if ! gcc -c -x c -fno-aggressive-loop-optimizations /dev/null -o /dev/null 2>/dev/null; then
+		msg "gcc version is too old; disabling -fno-aggressive-loop-optimizations"
+		sed -i 's/-fno-aggressive-loop-optimizations//' Makefile || die "couldn't disable it"
+	fi
+fi
 
 P2DIR="$PWD"
 msg "Importing your project into '$P2DIR' - look there if something goes wrong..."
