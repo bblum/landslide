@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	start_time(max_time * 1000000, num_cpus);
 
 	if (!control_experiment) {
-		add_work(new_job(create_pp_set(PRIORITY_NONE), true));
+		add_work(new_job(create_pp_set(PRIORITY_NONE), false));
 		add_work(new_job(create_pp_set(PRIORITY_MUTEX_LOCK), true));
 		add_work(new_job(create_pp_set(PRIORITY_MUTEX_UNLOCK), true));
 		if (testing_pintos()) {
