@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.2"
+#define YYBISON_VERSION "3.0.4"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -331,7 +331,7 @@ extern int bxdebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE YYSTYPE;
+
 union YYSTYPE
 {
 #line 13 "parser.y" /* yacc.c:355  */
@@ -342,6 +342,8 @@ union YYSTYPE
 
 #line 344 "y.tab.c" /* yacc.c:355  */
 };
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
@@ -355,7 +357,7 @@ int bxparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 359 "y.tab.c" /* yacc.c:358  */
+#line 361 "y.tab.c" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -2110,25 +2112,25 @@ yyreduce:
 #line 195 "parser.y" /* yacc.c:1646  */
     {
       }
-#line 2114 "y.tab.c" /* yacc.c:1646  */
+#line 2116 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 55:
 #line 202 "parser.y" /* yacc.c:1646  */
     { (yyval.bval)=(yyvsp[0].bval); }
-#line 2120 "y.tab.c" /* yacc.c:1646  */
+#line 2122 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 57:
 #line 208 "parser.y" /* yacc.c:1646  */
     { (yyval.sval)=(yyvsp[0].sval); }
-#line 2126 "y.tab.c" /* yacc.c:1646  */
+#line 2128 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 63:
 #line 218 "parser.y" /* yacc.c:1646  */
     { (yyval.uval)=(yyvsp[0].uval); }
-#line 2132 "y.tab.c" /* yacc.c:1646  */
+#line 2134 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 64:
@@ -2137,7 +2139,7 @@ yyreduce:
           bx_dbg_timebp_command(0, (yyvsp[-1].uval));
           free((yyvsp[-2].sval));
       }
-#line 2141 "y.tab.c" /* yacc.c:1646  */
+#line 2143 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 65:
@@ -2146,7 +2148,7 @@ yyreduce:
           bx_dbg_timebp_command(1, (yyvsp[-1].uval));
           free((yyvsp[-2].sval));
       }
-#line 2150 "y.tab.c" /* yacc.c:1646  */
+#line 2152 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 66:
@@ -2155,7 +2157,7 @@ yyreduce:
           bx_dbg_modebp_command();
           free((yyvsp[-1].sval));
       }
-#line 2159 "y.tab.c" /* yacc.c:1646  */
+#line 2161 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 67:
@@ -2164,7 +2166,7 @@ yyreduce:
           bx_dbg_vmexitbp_command();
           free((yyvsp[-1].sval));
       }
-#line 2168 "y.tab.c" /* yacc.c:1646  */
+#line 2170 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 68:
@@ -2173,7 +2175,7 @@ yyreduce:
           bx_dbg_show_command((yyvsp[-1].sval));
           free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2177 "y.tab.c" /* yacc.c:1646  */
+#line 2179 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 69:
@@ -2182,7 +2184,7 @@ yyreduce:
           bx_dbg_show_command("all");
           free((yyvsp[-2].sval));
       }
-#line 2186 "y.tab.c" /* yacc.c:1646  */
+#line 2188 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 70:
@@ -2191,7 +2193,7 @@ yyreduce:
           bx_dbg_show_command("off");
           free((yyvsp[-2].sval));
       }
-#line 2195 "y.tab.c" /* yacc.c:1646  */
+#line 2197 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 71:
@@ -2200,7 +2202,7 @@ yyreduce:
           bx_dbg_show_param_command((yyvsp[-1].sval), 0);
           free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2204 "y.tab.c" /* yacc.c:1646  */
+#line 2206 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 72:
@@ -2209,7 +2211,7 @@ yyreduce:
           bx_dbg_show_param_command((yyvsp[-2].sval), 1);
           free((yyvsp[-3].sval)); free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2213 "y.tab.c" /* yacc.c:1646  */
+#line 2215 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 73:
@@ -2218,7 +2220,7 @@ yyreduce:
           bx_dbg_show_command(0);
           free((yyvsp[-1].sval));
       }
-#line 2222 "y.tab.c" /* yacc.c:1646  */
+#line 2224 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 74:
@@ -2227,7 +2229,7 @@ yyreduce:
           bx_dbg_xlate_address((yyvsp[-1].uval));
           free((yyvsp[-2].sval));
       }
-#line 2231 "y.tab.c" /* yacc.c:1646  */
+#line 2233 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 75:
@@ -2236,7 +2238,7 @@ yyreduce:
           bx_dbg_tlb_lookup((yyvsp[-1].uval));
           free((yyvsp[-2].sval));
       }
-#line 2240 "y.tab.c" /* yacc.c:1646  */
+#line 2242 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 76:
@@ -2245,7 +2247,7 @@ yyreduce:
           bx_dbg_ptime_command();
           free((yyvsp[-1].sval));
       }
-#line 2249 "y.tab.c" /* yacc.c:1646  */
+#line 2251 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 77:
@@ -2254,7 +2256,7 @@ yyreduce:
           bx_dbg_trace_command((yyvsp[-1].bval));
           free((yyvsp[-2].sval));
       }
-#line 2258 "y.tab.c" /* yacc.c:1646  */
+#line 2260 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 78:
@@ -2263,7 +2265,7 @@ yyreduce:
           bx_dbg_trace_reg_command((yyvsp[-1].bval));
           free((yyvsp[-2].sval));
       }
-#line 2267 "y.tab.c" /* yacc.c:1646  */
+#line 2269 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 79:
@@ -2272,7 +2274,7 @@ yyreduce:
           bx_dbg_trace_mem_command((yyvsp[-1].bval));
           free((yyvsp[-2].sval));
       }
-#line 2276 "y.tab.c" /* yacc.c:1646  */
+#line 2278 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 80:
@@ -2281,7 +2283,7 @@ yyreduce:
           bx_dbg_print_stack_command(16);
           free((yyvsp[-1].sval));
       }
-#line 2285 "y.tab.c" /* yacc.c:1646  */
+#line 2287 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 81:
@@ -2290,7 +2292,7 @@ yyreduce:
           bx_dbg_print_stack_command((yyvsp[-1].uval));
           free((yyvsp[-2].sval));
       }
-#line 2294 "y.tab.c" /* yacc.c:1646  */
+#line 2296 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 82:
@@ -2299,7 +2301,7 @@ yyreduce:
           bx_dbg_watchpoint_continue(0);
           free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2303 "y.tab.c" /* yacc.c:1646  */
+#line 2305 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 83:
@@ -2308,7 +2310,7 @@ yyreduce:
           bx_dbg_watchpoint_continue(1);
           free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2312 "y.tab.c" /* yacc.c:1646  */
+#line 2314 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 84:
@@ -2317,7 +2319,7 @@ yyreduce:
           bx_dbg_print_watchpoints();
           free((yyvsp[-1].sval));
       }
-#line 2321 "y.tab.c" /* yacc.c:1646  */
+#line 2323 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 85:
@@ -2326,7 +2328,7 @@ yyreduce:
           bx_dbg_watch(0, (yyvsp[-1].uval), 1); /* BX_READ */
           free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2330 "y.tab.c" /* yacc.c:1646  */
+#line 2332 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 86:
@@ -2335,7 +2337,7 @@ yyreduce:
           bx_dbg_watch(0, (yyvsp[-1].uval), 1); /* BX_READ */
           free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2339 "y.tab.c" /* yacc.c:1646  */
+#line 2341 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 87:
@@ -2344,7 +2346,7 @@ yyreduce:
           bx_dbg_watch(1, (yyvsp[-1].uval), 1); /* BX_WRITE */
           free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2348 "y.tab.c" /* yacc.c:1646  */
+#line 2350 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 88:
@@ -2353,7 +2355,7 @@ yyreduce:
           bx_dbg_watch(0, (yyvsp[-2].uval), (yyvsp[-1].uval)); /* BX_READ */
           free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2357 "y.tab.c" /* yacc.c:1646  */
+#line 2359 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 89:
@@ -2362,7 +2364,7 @@ yyreduce:
           bx_dbg_watch(0, (yyvsp[-2].uval), (yyvsp[-1].uval)); /* BX_READ */
           free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2366 "y.tab.c" /* yacc.c:1646  */
+#line 2368 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 90:
@@ -2371,7 +2373,7 @@ yyreduce:
           bx_dbg_watch(1, (yyvsp[-2].uval), (yyvsp[-1].uval)); /* BX_WRITE */
           free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2375 "y.tab.c" /* yacc.c:1646  */
+#line 2377 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 91:
@@ -2380,7 +2382,7 @@ yyreduce:
           bx_dbg_unwatch_all();
           free((yyvsp[-1].sval));
       }
-#line 2384 "y.tab.c" /* yacc.c:1646  */
+#line 2386 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 92:
@@ -2389,7 +2391,7 @@ yyreduce:
           bx_dbg_unwatch((yyvsp[-1].uval));
           free((yyvsp[-2].sval));
       }
-#line 2393 "y.tab.c" /* yacc.c:1646  */
+#line 2395 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 93:
@@ -2398,7 +2400,7 @@ yyreduce:
         bx_dbg_symbol_command((yyvsp[-1].sval), 0, 0);
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2402 "y.tab.c" /* yacc.c:1646  */
+#line 2404 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 94:
@@ -2407,7 +2409,7 @@ yyreduce:
         bx_dbg_symbol_command((yyvsp[-2].sval), 0, (yyvsp[-1].uval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2411 "y.tab.c" /* yacc.c:1646  */
+#line 2413 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 95:
@@ -2416,7 +2418,7 @@ yyreduce:
         bx_dbg_symbol_command((yyvsp[-1].sval), 1, 0);
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2420 "y.tab.c" /* yacc.c:1646  */
+#line 2422 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 96:
@@ -2425,7 +2427,7 @@ yyreduce:
         bx_dbg_symbol_command((yyvsp[-2].sval), 1, (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2429 "y.tab.c" /* yacc.c:1646  */
+#line 2431 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 97:
@@ -2434,7 +2436,7 @@ yyreduce:
         bx_dbg_where_command();
         free((yyvsp[-1].sval));
       }
-#line 2438 "y.tab.c" /* yacc.c:1646  */
+#line 2440 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 98:
@@ -2443,7 +2445,7 @@ yyreduce:
         bx_dbg_print_string_command((yyvsp[-1].uval));
         free((yyvsp[-2].sval));
       }
-#line 2447 "y.tab.c" /* yacc.c:1646  */
+#line 2449 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 99:
@@ -2452,7 +2454,7 @@ yyreduce:
         bx_dbg_continue_command();
         free((yyvsp[-1].sval));
       }
-#line 2456 "y.tab.c" /* yacc.c:1646  */
+#line 2458 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 100:
@@ -2461,7 +2463,7 @@ yyreduce:
         bx_dbg_stepN_command(dbg_cpu, 1);
         free((yyvsp[-1].sval));
       }
-#line 2465 "y.tab.c" /* yacc.c:1646  */
+#line 2467 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 101:
@@ -2470,7 +2472,7 @@ yyreduce:
         bx_dbg_stepN_command(dbg_cpu, (yyvsp[-1].uval));
         free((yyvsp[-2].sval));
       }
-#line 2474 "y.tab.c" /* yacc.c:1646  */
+#line 2476 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 102:
@@ -2479,7 +2481,7 @@ yyreduce:
         bx_dbg_stepN_command(-1, (yyvsp[-1].uval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2483 "y.tab.c" /* yacc.c:1646  */
+#line 2485 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 103:
@@ -2488,7 +2490,7 @@ yyreduce:
         bx_dbg_stepN_command((yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-3].sval));
       }
-#line 2492 "y.tab.c" /* yacc.c:1646  */
+#line 2494 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 104:
@@ -2497,7 +2499,7 @@ yyreduce:
         bx_dbg_step_over_command();
         free((yyvsp[-1].sval));
       }
-#line 2501 "y.tab.c" /* yacc.c:1646  */
+#line 2503 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 105:
@@ -2506,7 +2508,7 @@ yyreduce:
         bx_dbg_set_auto_disassemble((yyvsp[-1].bval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2510 "y.tab.c" /* yacc.c:1646  */
+#line 2512 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 106:
@@ -2515,7 +2517,7 @@ yyreduce:
         bx_dbg_set_symbol_command((yyvsp[-3].sval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2519 "y.tab.c" /* yacc.c:1646  */
+#line 2521 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 107:
@@ -2523,7 +2525,7 @@ yyreduce:
     { 
         bx_dbg_set_reg8l_value((yyvsp[-3].uval), (yyvsp[-1].uval));
       }
-#line 2527 "y.tab.c" /* yacc.c:1646  */
+#line 2529 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 108:
@@ -2531,7 +2533,7 @@ yyreduce:
     { 
         bx_dbg_set_reg8h_value((yyvsp[-3].uval), (yyvsp[-1].uval));
       }
-#line 2535 "y.tab.c" /* yacc.c:1646  */
+#line 2537 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 109:
@@ -2539,7 +2541,7 @@ yyreduce:
     { 
         bx_dbg_set_reg16_value((yyvsp[-3].uval), (yyvsp[-1].uval));
       }
-#line 2543 "y.tab.c" /* yacc.c:1646  */
+#line 2545 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 110:
@@ -2547,7 +2549,7 @@ yyreduce:
     { 
         bx_dbg_set_reg32_value((yyvsp[-3].uval), (yyvsp[-1].uval));
       }
-#line 2551 "y.tab.c" /* yacc.c:1646  */
+#line 2553 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 111:
@@ -2555,7 +2557,7 @@ yyreduce:
     { 
         bx_dbg_set_reg64_value((yyvsp[-3].uval), (yyvsp[-1].uval));
       }
-#line 2559 "y.tab.c" /* yacc.c:1646  */
+#line 2561 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 112:
@@ -2563,7 +2565,7 @@ yyreduce:
     { 
         bx_dbg_set_rip_value((yyvsp[-1].uval));
       }
-#line 2567 "y.tab.c" /* yacc.c:1646  */
+#line 2569 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 113:
@@ -2571,7 +2573,7 @@ yyreduce:
     { 
         bx_dbg_set_rip_value((yyvsp[-1].uval));
       }
-#line 2575 "y.tab.c" /* yacc.c:1646  */
+#line 2577 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 114:
@@ -2579,7 +2581,7 @@ yyreduce:
     { 
         bx_dbg_load_segreg((yyvsp[-3].uval), (yyvsp[-1].uval));
       }
-#line 2583 "y.tab.c" /* yacc.c:1646  */
+#line 2585 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 115:
@@ -2588,7 +2590,7 @@ yyreduce:
         bx_dbg_vbreakpoint_command(bkAtIP, 0, 0);
         free((yyvsp[-1].sval));
       }
-#line 2592 "y.tab.c" /* yacc.c:1646  */
+#line 2594 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 116:
@@ -2597,7 +2599,7 @@ yyreduce:
         bx_dbg_vbreakpoint_command(bkRegular, (yyvsp[-3].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval));
       }
-#line 2601 "y.tab.c" /* yacc.c:1646  */
+#line 2603 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 117:
@@ -2606,7 +2608,7 @@ yyreduce:
         bx_dbg_lbreakpoint_command(bkAtIP, 0);
         free((yyvsp[-1].sval));
       }
-#line 2610 "y.tab.c" /* yacc.c:1646  */
+#line 2612 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 118:
@@ -2615,7 +2617,7 @@ yyreduce:
         bx_dbg_lbreakpoint_command(bkRegular, (yyvsp[-1].uval));
         free((yyvsp[-2].sval));
       }
-#line 2619 "y.tab.c" /* yacc.c:1646  */
+#line 2621 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 119:
@@ -2624,7 +2626,7 @@ yyreduce:
         bx_dbg_lbreakpoint_symbol_command((yyvsp[-1].sval));
         free((yyvsp[-2].sval));free((yyvsp[-1].sval));
       }
-#line 2628 "y.tab.c" /* yacc.c:1646  */
+#line 2630 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 120:
@@ -2633,7 +2635,7 @@ yyreduce:
         bx_dbg_pbreakpoint_command(bkAtIP, 0);
         free((yyvsp[-1].sval));
       }
-#line 2637 "y.tab.c" /* yacc.c:1646  */
+#line 2639 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 121:
@@ -2642,7 +2644,7 @@ yyreduce:
         bx_dbg_pbreakpoint_command(bkRegular, (yyvsp[-1].uval));
         free((yyvsp[-2].sval));
       }
-#line 2646 "y.tab.c" /* yacc.c:1646  */
+#line 2648 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 122:
@@ -2651,7 +2653,7 @@ yyreduce:
         bx_dbg_pbreakpoint_command(bkRegular, (yyvsp[-1].uval));
         free((yyvsp[-3].sval));
       }
-#line 2655 "y.tab.c" /* yacc.c:1646  */
+#line 2657 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 123:
@@ -2660,7 +2662,7 @@ yyreduce:
         bx_dbg_info_bpoints_command();
         free((yyvsp[-1].sval));
       }
-#line 2664 "y.tab.c" /* yacc.c:1646  */
+#line 2666 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 124:
@@ -2669,7 +2671,7 @@ yyreduce:
         bx_dbg_info_symbols_command(0);
         free((yyvsp[-1].sval));
       }
-#line 2673 "y.tab.c" /* yacc.c:1646  */
+#line 2675 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 125:
@@ -2678,7 +2680,7 @@ yyreduce:
         bx_dbg_info_symbols_command((yyvsp[-1].sval));
         free((yyvsp[-2].sval));free((yyvsp[-1].sval));
       }
-#line 2682 "y.tab.c" /* yacc.c:1646  */
+#line 2684 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 126:
@@ -2687,7 +2689,7 @@ yyreduce:
         bx_dbg_info_bpoints_command();
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2691 "y.tab.c" /* yacc.c:1646  */
+#line 2693 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 127:
@@ -2696,7 +2698,7 @@ yyreduce:
         bx_dbg_info_registers_command(-1);
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2700 "y.tab.c" /* yacc.c:1646  */
+#line 2702 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 128:
@@ -2705,7 +2707,7 @@ yyreduce:
         bx_dbg_info_idt_command((yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2709 "y.tab.c" /* yacc.c:1646  */
+#line 2711 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 129:
@@ -2714,7 +2716,7 @@ yyreduce:
         bx_dbg_info_ivt_command((yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2718 "y.tab.c" /* yacc.c:1646  */
+#line 2720 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 130:
@@ -2723,7 +2725,7 @@ yyreduce:
         bx_dbg_info_gdt_command((yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2727 "y.tab.c" /* yacc.c:1646  */
+#line 2729 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 131:
@@ -2732,7 +2734,7 @@ yyreduce:
         bx_dbg_info_ldt_command((yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2736 "y.tab.c" /* yacc.c:1646  */
+#line 2738 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 132:
@@ -2741,7 +2743,7 @@ yyreduce:
         bx_dbg_dump_table();
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2745 "y.tab.c" /* yacc.c:1646  */
+#line 2747 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 133:
@@ -2750,7 +2752,7 @@ yyreduce:
         bx_dbg_info_tss_command();
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2754 "y.tab.c" /* yacc.c:1646  */
+#line 2756 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 134:
@@ -2759,7 +2761,7 @@ yyreduce:
         bx_dbg_info_flags();
         free((yyvsp[-2].sval));
       }
-#line 2763 "y.tab.c" /* yacc.c:1646  */
+#line 2765 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 135:
@@ -2768,7 +2770,7 @@ yyreduce:
         bx_dbg_info_linux_command();
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2772 "y.tab.c" /* yacc.c:1646  */
+#line 2774 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 136:
@@ -2777,7 +2779,7 @@ yyreduce:
         bx_dbg_info_symbols_command(0);
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2781 "y.tab.c" /* yacc.c:1646  */
+#line 2783 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 137:
@@ -2786,7 +2788,7 @@ yyreduce:
         bx_dbg_info_symbols_command((yyvsp[-1].sval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2790 "y.tab.c" /* yacc.c:1646  */
+#line 2792 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 138:
@@ -2795,7 +2797,7 @@ yyreduce:
         bx_dbg_info_device("", "");
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2799 "y.tab.c" /* yacc.c:1646  */
+#line 2801 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 139:
@@ -2804,7 +2806,7 @@ yyreduce:
         bx_dbg_info_device((yyvsp[-1].sval), "");
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2808 "y.tab.c" /* yacc.c:1646  */
+#line 2810 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 140:
@@ -2813,7 +2815,7 @@ yyreduce:
         bx_dbg_info_device((yyvsp[-2].sval), (yyvsp[-1].sval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2817 "y.tab.c" /* yacc.c:1646  */
+#line 2819 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 141:
@@ -2822,7 +2824,7 @@ yyreduce:
         bx_dbg_info_device((yyvsp[-1].sval), "");
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2826 "y.tab.c" /* yacc.c:1646  */
+#line 2828 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 142:
@@ -2831,13 +2833,13 @@ yyreduce:
         bx_dbg_info_device((yyvsp[-2].sval), (yyvsp[-1].sval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 2835 "y.tab.c" /* yacc.c:1646  */
+#line 2837 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 143:
 #line 678 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = EMPTY_ARG; }
-#line 2841 "y.tab.c" /* yacc.c:1646  */
+#line 2843 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 145:
@@ -2846,7 +2848,7 @@ yyreduce:
         bx_dbg_info_registers_command(BX_INFO_GENERAL_PURPOSE_REGS);
         free((yyvsp[-1].sval));
       }
-#line 2850 "y.tab.c" /* yacc.c:1646  */
+#line 2852 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 146:
@@ -2855,7 +2857,7 @@ yyreduce:
         bx_dbg_info_registers_command(BX_INFO_FPU_REGS);
         free((yyvsp[-1].sval));
       }
-#line 2859 "y.tab.c" /* yacc.c:1646  */
+#line 2861 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 147:
@@ -2864,7 +2866,7 @@ yyreduce:
         bx_dbg_info_registers_command(BX_INFO_MMX_REGS);
         free((yyvsp[-1].sval));
       }
-#line 2868 "y.tab.c" /* yacc.c:1646  */
+#line 2870 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 148:
@@ -2873,7 +2875,7 @@ yyreduce:
         bx_dbg_info_registers_command(BX_INFO_SSE_REGS);
         free((yyvsp[-1].sval));
       }
-#line 2877 "y.tab.c" /* yacc.c:1646  */
+#line 2879 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 149:
@@ -2882,7 +2884,7 @@ yyreduce:
         bx_dbg_info_registers_command(BX_INFO_YMM_REGS);
         free((yyvsp[-1].sval));
       }
-#line 2886 "y.tab.c" /* yacc.c:1646  */
+#line 2888 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 150:
@@ -2891,7 +2893,7 @@ yyreduce:
         bx_dbg_info_registers_command(BX_INFO_ZMM_REGS);
         free((yyvsp[-1].sval));
       }
-#line 2895 "y.tab.c" /* yacc.c:1646  */
+#line 2897 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 151:
@@ -2900,7 +2902,7 @@ yyreduce:
         bx_dbg_info_segment_regs_command();
         free((yyvsp[-1].sval));
       }
-#line 2904 "y.tab.c" /* yacc.c:1646  */
+#line 2906 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 152:
@@ -2909,7 +2911,7 @@ yyreduce:
         bx_dbg_info_control_regs_command();
         free((yyvsp[-1].sval));
       }
-#line 2913 "y.tab.c" /* yacc.c:1646  */
+#line 2915 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 153:
@@ -2918,7 +2920,7 @@ yyreduce:
         bx_dbg_info_debug_regs_command();
         free((yyvsp[-1].sval));
       }
-#line 2922 "y.tab.c" /* yacc.c:1646  */
+#line 2924 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 154:
@@ -2927,7 +2929,7 @@ yyreduce:
         bx_dbg_del_breakpoint_command((yyvsp[-1].uval));
         free((yyvsp[-2].sval));
       }
-#line 2931 "y.tab.c" /* yacc.c:1646  */
+#line 2933 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 155:
@@ -2936,7 +2938,7 @@ yyreduce:
         bx_dbg_en_dis_breakpoint_command((yyvsp[-1].uval), 1);
         free((yyvsp[-2].sval));
       }
-#line 2940 "y.tab.c" /* yacc.c:1646  */
+#line 2942 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 156:
@@ -2945,7 +2947,7 @@ yyreduce:
         bx_dbg_en_dis_breakpoint_command((yyvsp[-1].uval), 0);
         free((yyvsp[-2].sval));
       }
-#line 2949 "y.tab.c" /* yacc.c:1646  */
+#line 2951 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 157:
@@ -2954,7 +2956,7 @@ yyreduce:
         bx_dbg_quit_command();
         free((yyvsp[-1].sval));
       }
-#line 2958 "y.tab.c" /* yacc.c:1646  */
+#line 2960 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 158:
@@ -2963,7 +2965,7 @@ yyreduce:
         bx_dbg_examine_command((yyvsp[-3].sval), (yyvsp[-2].sval),1, (yyvsp[-1].uval), 1);
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 2967 "y.tab.c" /* yacc.c:1646  */
+#line 2969 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 159:
@@ -2972,7 +2974,7 @@ yyreduce:
         bx_dbg_examine_command((yyvsp[-2].sval), (yyvsp[-1].sval),1, 0, 0);
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 2976 "y.tab.c" /* yacc.c:1646  */
+#line 2978 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 160:
@@ -2981,7 +2983,7 @@ yyreduce:
         bx_dbg_examine_command((yyvsp[-2].sval), NULL,0, (yyvsp[-1].uval), 1);
         free((yyvsp[-2].sval));
       }
-#line 2985 "y.tab.c" /* yacc.c:1646  */
+#line 2987 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 161:
@@ -2990,7 +2992,7 @@ yyreduce:
         bx_dbg_examine_command((yyvsp[-1].sval), NULL,0, 0, 0);
         free((yyvsp[-1].sval));
       }
-#line 2994 "y.tab.c" /* yacc.c:1646  */
+#line 2996 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 162:
@@ -2999,7 +3001,7 @@ yyreduce:
         bx_dbg_restore_command((yyvsp[-2].sval), (yyvsp[-1].sval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3003 "y.tab.c" /* yacc.c:1646  */
+#line 3005 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 163:
@@ -3008,7 +3010,7 @@ yyreduce:
         bx_dbg_writemem_command((yyvsp[-3].sval), (yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 3012 "y.tab.c" /* yacc.c:1646  */
+#line 3014 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 164:
@@ -3017,7 +3019,7 @@ yyreduce:
         bx_dbg_setpmem_command((yyvsp[-3].uval), (yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval));
       }
-#line 3021 "y.tab.c" /* yacc.c:1646  */
+#line 3023 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 165:
@@ -3026,7 +3028,7 @@ yyreduce:
         bx_dbg_query_command((yyvsp[-1].sval));
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3030 "y.tab.c" /* yacc.c:1646  */
+#line 3032 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 166:
@@ -3035,7 +3037,7 @@ yyreduce:
         bx_dbg_take_command((yyvsp[-1].sval), 1);
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3039 "y.tab.c" /* yacc.c:1646  */
+#line 3041 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 167:
@@ -3044,7 +3046,7 @@ yyreduce:
         bx_dbg_take_command((yyvsp[-2].sval), (yyvsp[-1].uval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 3048 "y.tab.c" /* yacc.c:1646  */
+#line 3050 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 168:
@@ -3053,7 +3055,7 @@ yyreduce:
         bx_dbg_take_command((yyvsp[-1].sval), 1);
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3057 "y.tab.c" /* yacc.c:1646  */
+#line 3059 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 169:
@@ -3062,7 +3064,7 @@ yyreduce:
         bx_dbg_disassemble_current(NULL);
         free((yyvsp[-1].sval));
       }
-#line 3066 "y.tab.c" /* yacc.c:1646  */
+#line 3068 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 170:
@@ -3071,7 +3073,7 @@ yyreduce:
         bx_dbg_disassemble_command(NULL, (yyvsp[-1].uval), (yyvsp[-1].uval));
         free((yyvsp[-2].sval));
       }
-#line 3075 "y.tab.c" /* yacc.c:1646  */
+#line 3077 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 171:
@@ -3080,7 +3082,7 @@ yyreduce:
         bx_dbg_disassemble_command(NULL, (yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-3].sval));
       }
-#line 3084 "y.tab.c" /* yacc.c:1646  */
+#line 3086 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 172:
@@ -3089,7 +3091,7 @@ yyreduce:
         bx_dbg_disassemble_current((yyvsp[-1].sval));
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3093 "y.tab.c" /* yacc.c:1646  */
+#line 3095 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 173:
@@ -3098,7 +3100,7 @@ yyreduce:
         bx_dbg_disassemble_command((yyvsp[-2].sval), (yyvsp[-1].uval), (yyvsp[-1].uval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 3102 "y.tab.c" /* yacc.c:1646  */
+#line 3104 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 174:
@@ -3107,7 +3109,7 @@ yyreduce:
         bx_dbg_disassemble_command((yyvsp[-3].sval), (yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 3111 "y.tab.c" /* yacc.c:1646  */
+#line 3113 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 175:
@@ -3116,7 +3118,7 @@ yyreduce:
         bx_dbg_disassemble_switch_mode();
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3120 "y.tab.c" /* yacc.c:1646  */
+#line 3122 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 176:
@@ -3125,7 +3127,7 @@ yyreduce:
         bx_dbg_disassemble_hex_mode_switch((yyvsp[-1].bval));
         free((yyvsp[-3].sval)); free((yyvsp[-2].sval));
       }
-#line 3129 "y.tab.c" /* yacc.c:1646  */
+#line 3131 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 177:
@@ -3134,7 +3136,7 @@ yyreduce:
         bx_dbg_set_disassemble_size((yyvsp[-1].uval));
         free((yyvsp[-4].sval)); free((yyvsp[-3].sval));
       }
-#line 3138 "y.tab.c" /* yacc.c:1646  */
+#line 3140 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 178:
@@ -3143,7 +3145,7 @@ yyreduce:
         bx_dbg_instrument_command((yyvsp[-1].sval));
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3147 "y.tab.c" /* yacc.c:1646  */
+#line 3149 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 179:
@@ -3152,7 +3154,7 @@ yyreduce:
         bx_dbg_instrument_command((yyvsp[-1].sval));
         free((yyvsp[-2].sval)); free((yyvsp[-1].sval));
       }
-#line 3156 "y.tab.c" /* yacc.c:1646  */
+#line 3158 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 180:
@@ -3161,7 +3163,7 @@ yyreduce:
         bx_dbg_doit_command((yyvsp[-1].uval));
         free((yyvsp[-2].sval));
       }
-#line 3165 "y.tab.c" /* yacc.c:1646  */
+#line 3167 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 181:
@@ -3170,7 +3172,7 @@ yyreduce:
         bx_dbg_crc_command((yyvsp[-2].uval), (yyvsp[-1].uval));
         free((yyvsp[-3].sval));
       }
-#line 3174 "y.tab.c" /* yacc.c:1646  */
+#line 3176 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 182:
@@ -3179,7 +3181,7 @@ yyreduce:
          dbg_printf("q|quit|exit - quit debugger and emulator execution\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3183 "y.tab.c" /* yacc.c:1646  */
+#line 3185 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 183:
@@ -3188,7 +3190,7 @@ yyreduce:
          dbg_printf("c|cont|continue - continue executing\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3192 "y.tab.c" /* yacc.c:1646  */
+#line 3194 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 184:
@@ -3199,7 +3201,7 @@ yyreduce:
          dbg_printf("s|step all <count> - execute #count instructions on all the processors\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3203 "y.tab.c" /* yacc.c:1646  */
+#line 3205 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 185:
@@ -3208,7 +3210,7 @@ yyreduce:
          dbg_printf("n|next|p - execute instruction stepping over subroutines\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3212 "y.tab.c" /* yacc.c:1646  */
+#line 3214 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 186:
@@ -3217,7 +3219,7 @@ yyreduce:
          dbg_printf("vb|vbreak <seg:offset> - set a virtual address instruction breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3221 "y.tab.c" /* yacc.c:1646  */
+#line 3223 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 187:
@@ -3226,7 +3228,7 @@ yyreduce:
          dbg_printf("lb|lbreak <addr> - set a linear address instruction breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3230 "y.tab.c" /* yacc.c:1646  */
+#line 3232 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 188:
@@ -3235,7 +3237,7 @@ yyreduce:
          dbg_printf("p|pb|break|pbreak <addr> - set a physical address instruction breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3239 "y.tab.c" /* yacc.c:1646  */
+#line 3241 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 189:
@@ -3244,7 +3246,7 @@ yyreduce:
          dbg_printf("d|del|delete <n> - delete a breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3248 "y.tab.c" /* yacc.c:1646  */
+#line 3250 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 190:
@@ -3253,7 +3255,7 @@ yyreduce:
          dbg_printf("bpe <n> - enable a breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3257 "y.tab.c" /* yacc.c:1646  */
+#line 3259 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 191:
@@ -3262,7 +3264,7 @@ yyreduce:
          dbg_printf("bpd <n> - disable a breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3266 "y.tab.c" /* yacc.c:1646  */
+#line 3268 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 192:
@@ -3271,7 +3273,7 @@ yyreduce:
          dbg_printf("blist - list all breakpoints (same as 'info break')\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3275 "y.tab.c" /* yacc.c:1646  */
+#line 3277 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 193:
@@ -3280,7 +3282,7 @@ yyreduce:
          dbg_printf("modebp - toggles mode switch breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3284 "y.tab.c" /* yacc.c:1646  */
+#line 3286 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 194:
@@ -3289,7 +3291,7 @@ yyreduce:
          dbg_printf("vmexitbp - toggles VMEXIT switch breakpoint\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3293 "y.tab.c" /* yacc.c:1646  */
+#line 3295 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 195:
@@ -3298,7 +3300,7 @@ yyreduce:
          dbg_printf("crc <addr1> <addr2> - show CRC32 for physical memory range addr1..addr2\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3302 "y.tab.c" /* yacc.c:1646  */
+#line 3304 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 196:
@@ -3308,7 +3310,7 @@ yyreduce:
          dbg_printf("trace off - disable instruction tracing\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3312 "y.tab.c" /* yacc.c:1646  */
+#line 3314 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 197:
@@ -3318,7 +3320,7 @@ yyreduce:
          dbg_printf("trace-reg off - disable registers state tracing\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3322 "y.tab.c" /* yacc.c:1646  */
+#line 3324 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 198:
@@ -3328,7 +3330,7 @@ yyreduce:
          dbg_printf("trace-mem off - disable memory accesses tracing\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3332 "y.tab.c" /* yacc.c:1646  */
+#line 3334 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 199:
@@ -3340,7 +3342,7 @@ yyreduce:
          dbg_printf("restore \"cpu0\" \"/save\" - restore CPU #0 from file \"cpu0\" located in directory \"/save\"\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3344 "y.tab.c" /* yacc.c:1646  */
+#line 3346 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 200:
@@ -3349,7 +3351,7 @@ yyreduce:
          dbg_printf("ptime - print current time (number of ticks since start of simulation)\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3353 "y.tab.c" /* yacc.c:1646  */
+#line 3355 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 201:
@@ -3358,7 +3360,7 @@ yyreduce:
          dbg_printf("sb <delta> - insert a time breakpoint delta instructions into the future\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3362 "y.tab.c" /* yacc.c:1646  */
+#line 3364 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 202:
@@ -3367,7 +3369,7 @@ yyreduce:
          dbg_printf("sba <time> - insert breakpoint at specific time\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3371 "y.tab.c" /* yacc.c:1646  */
+#line 3373 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 203:
@@ -3376,7 +3378,7 @@ yyreduce:
          dbg_printf("print-stack [num_words] - print the num_words top 16 bit words on the stack\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3380 "y.tab.c" /* yacc.c:1646  */
+#line 3382 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 204:
@@ -3385,7 +3387,7 @@ yyreduce:
          dbg_printf("ldsym [global] <filename> [offset] - load symbols from file\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3389 "y.tab.c" /* yacc.c:1646  */
+#line 3391 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 205:
@@ -3394,7 +3396,7 @@ yyreduce:
          dbg_printf("slist [string] - list symbols whose preffix is string (same as 'info symbols')\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3398 "y.tab.c" /* yacc.c:1646  */
+#line 3400 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 206:
@@ -3403,7 +3405,7 @@ yyreduce:
          dbg_printf("r|reg|regs|registers - list of CPU registers and their contents (same as 'info registers')\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3407 "y.tab.c" /* yacc.c:1646  */
+#line 3409 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 207:
@@ -3412,7 +3414,7 @@ yyreduce:
          dbg_printf("fp|fpu - print FPU state\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3416 "y.tab.c" /* yacc.c:1646  */
+#line 3418 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 208:
@@ -3421,7 +3423,7 @@ yyreduce:
          dbg_printf("mmx - print MMX state\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3425 "y.tab.c" /* yacc.c:1646  */
+#line 3427 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 209:
@@ -3430,7 +3432,7 @@ yyreduce:
          dbg_printf("xmm|sse - print SSE state\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3434 "y.tab.c" /* yacc.c:1646  */
+#line 3436 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 210:
@@ -3439,7 +3441,7 @@ yyreduce:
          dbg_printf("ymm - print AVX state\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3443 "y.tab.c" /* yacc.c:1646  */
+#line 3445 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 211:
@@ -3448,7 +3450,7 @@ yyreduce:
          dbg_printf("zmm - print AVX-512 state\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3452 "y.tab.c" /* yacc.c:1646  */
+#line 3454 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 212:
@@ -3457,7 +3459,7 @@ yyreduce:
          dbg_printf("sreg - show segment registers\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3461 "y.tab.c" /* yacc.c:1646  */
+#line 3463 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 213:
@@ -3466,7 +3468,7 @@ yyreduce:
          dbg_printf("creg - show control registers\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3470 "y.tab.c" /* yacc.c:1646  */
+#line 3472 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 214:
@@ -3475,7 +3477,7 @@ yyreduce:
          dbg_printf("dreg - show debug registers\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3479 "y.tab.c" /* yacc.c:1646  */
+#line 3481 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 215:
@@ -3484,7 +3486,7 @@ yyreduce:
          dbg_printf("writemem <filename> <laddr> <len> - dump 'len' bytes of virtual memory starting from the linear address 'laddr' into the file\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3488 "y.tab.c" /* yacc.c:1646  */
+#line 3490 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 216:
@@ -3493,7 +3495,7 @@ yyreduce:
          dbg_printf("setpmem <addr> <datasize> <val> - set physical memory location of size 'datasize' to value 'val'\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3497 "y.tab.c" /* yacc.c:1646  */
+#line 3499 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 217:
@@ -3507,7 +3509,7 @@ yyreduce:
          dbg_printf("       when \"disassemble\" command is used.\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3511 "y.tab.c" /* yacc.c:1646  */
+#line 3513 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 218:
@@ -3522,7 +3524,7 @@ yyreduce:
          dbg_printf("watch w|write addr <len> - insert a write watch point at physical address addr with range <len>\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3526 "y.tab.c" /* yacc.c:1646  */
+#line 3528 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 219:
@@ -3532,7 +3534,7 @@ yyreduce:
          dbg_printf("unwatch addr - remove a watch point\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3536 "y.tab.c" /* yacc.c:1646  */
+#line 3538 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 220:
@@ -3549,7 +3551,7 @@ yyreduce:
          dbg_printf("    m selects an alternative output format (memory dump)\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3553 "y.tab.c" /* yacc.c:1646  */
+#line 3555 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 221:
@@ -3558,7 +3560,7 @@ yyreduce:
          dbg_printf("instrument <command> - calls BX_INSTR_DEBUG_CMD instrumentation callback with <command>\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3562 "y.tab.c" /* yacc.c:1646  */
+#line 3564 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 222:
@@ -3573,7 +3575,7 @@ yyreduce:
          dbg_printf("set u|disasm|disassemble off - same as 'set $auto_disassemble = 0'\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3577 "y.tab.c" /* yacc.c:1646  */
+#line 3579 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 223:
@@ -3582,7 +3584,7 @@ yyreduce:
          dbg_printf("page <laddr> - show linear to physical xlation for linear address laddr\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3586 "y.tab.c" /* yacc.c:1646  */
+#line 3588 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 224:
@@ -3602,7 +3604,7 @@ yyreduce:
          dbg_printf("info device [string] [string] - show state of device with options\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3606 "y.tab.c" /* yacc.c:1646  */
+#line 3608 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 225:
@@ -3622,7 +3624,7 @@ yyreduce:
          dbg_printf("show dbg_none - turn off all bx_dbg flags\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3626 "y.tab.c" /* yacc.c:1646  */
+#line 3628 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 226:
@@ -3636,7 +3638,7 @@ yyreduce:
          dbg_printf("    a selector:offset (in protected mode) pair.\n");
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3640 "y.tab.c" /* yacc.c:1646  */
+#line 3642 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 227:
@@ -3645,7 +3647,7 @@ yyreduce:
          bx_dbg_print_help();
          free((yyvsp[-2].sval));free((yyvsp[-1].sval));
        }
-#line 3649 "y.tab.c" /* yacc.c:1646  */
+#line 3651 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 228:
@@ -3654,7 +3656,7 @@ yyreduce:
          bx_dbg_print_help();
          free((yyvsp[-1].sval));
        }
-#line 3658 "y.tab.c" /* yacc.c:1646  */
+#line 3660 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 229:
@@ -3663,317 +3665,317 @@ yyreduce:
      bx_dbg_calc_command((yyvsp[-1].uval));
      free((yyvsp[-2].sval));
    }
-#line 3667 "y.tab.c" /* yacc.c:1646  */
+#line 3669 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 230:
 #line 1253 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[0].uval); }
-#line 3673 "y.tab.c" /* yacc.c:1646  */
+#line 3675 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 231:
 #line 1254 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_symbol_value((yyvsp[0].sval)); free((yyvsp[0].sval));}
-#line 3679 "y.tab.c" /* yacc.c:1646  */
+#line 3681 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 232:
 #line 1255 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg8l_value((yyvsp[0].uval)); }
-#line 3685 "y.tab.c" /* yacc.c:1646  */
+#line 3687 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 233:
 #line 1256 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg8h_value((yyvsp[0].uval)); }
-#line 3691 "y.tab.c" /* yacc.c:1646  */
+#line 3693 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 234:
 #line 1257 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg16_value((yyvsp[0].uval)); }
-#line 3697 "y.tab.c" /* yacc.c:1646  */
+#line 3699 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 235:
 #line 1258 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg32_value((yyvsp[0].uval)); }
-#line 3703 "y.tab.c" /* yacc.c:1646  */
+#line 3705 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 236:
 #line 1259 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg64_value((yyvsp[0].uval)); }
-#line 3709 "y.tab.c" /* yacc.c:1646  */
+#line 3711 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 237:
 #line 1260 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_opmask_value((yyvsp[0].uval)); }
-#line 3715 "y.tab.c" /* yacc.c:1646  */
+#line 3717 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 238:
 #line 1261 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_selector_value((yyvsp[0].uval)); }
-#line 3721 "y.tab.c" /* yacc.c:1646  */
+#line 3723 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 239:
 #line 1262 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_ip (); }
-#line 3727 "y.tab.c" /* yacc.c:1646  */
+#line 3729 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 240:
 #line 1263 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_eip(); }
-#line 3733 "y.tab.c" /* yacc.c:1646  */
+#line 3735 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 241:
 #line 1264 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_instruction_pointer(); }
-#line 3739 "y.tab.c" /* yacc.c:1646  */
+#line 3741 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 242:
 #line 1265 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) + (yyvsp[0].uval); }
-#line 3745 "y.tab.c" /* yacc.c:1646  */
+#line 3747 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 243:
 #line 1266 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) - (yyvsp[0].uval); }
-#line 3751 "y.tab.c" /* yacc.c:1646  */
+#line 3753 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 244:
 #line 1267 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) * (yyvsp[0].uval); }
-#line 3757 "y.tab.c" /* yacc.c:1646  */
+#line 3759 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 245:
 #line 1268 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) / (yyvsp[0].uval); }
-#line 3763 "y.tab.c" /* yacc.c:1646  */
+#line 3765 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 246:
 #line 1269 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) >> (yyvsp[0].uval); }
-#line 3769 "y.tab.c" /* yacc.c:1646  */
+#line 3771 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 247:
 #line 1270 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) << (yyvsp[0].uval); }
-#line 3775 "y.tab.c" /* yacc.c:1646  */
+#line 3777 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 248:
 #line 1271 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) | (yyvsp[0].uval); }
-#line 3781 "y.tab.c" /* yacc.c:1646  */
+#line 3783 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 249:
 #line 1272 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) ^ (yyvsp[0].uval); }
-#line 3787 "y.tab.c" /* yacc.c:1646  */
+#line 3789 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 250:
 #line 1273 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) & (yyvsp[0].uval); }
-#line 3793 "y.tab.c" /* yacc.c:1646  */
+#line 3795 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 251:
 #line 1274 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = !(yyvsp[0].uval); }
-#line 3799 "y.tab.c" /* yacc.c:1646  */
+#line 3801 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 252:
 #line 1275 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = -(yyvsp[0].uval); }
-#line 3805 "y.tab.c" /* yacc.c:1646  */
+#line 3807 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 253:
 #line 1276 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-1].uval); }
-#line 3811 "y.tab.c" /* yacc.c:1646  */
+#line 3813 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 254:
 #line 1282 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[0].uval); }
-#line 3817 "y.tab.c" /* yacc.c:1646  */
+#line 3819 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 255:
 #line 1283 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_symbol_value((yyvsp[0].sval)); free((yyvsp[0].sval));}
-#line 3823 "y.tab.c" /* yacc.c:1646  */
+#line 3825 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 256:
 #line 1284 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg8l_value((yyvsp[0].uval)); }
-#line 3829 "y.tab.c" /* yacc.c:1646  */
+#line 3831 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 257:
 #line 1285 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg8h_value((yyvsp[0].uval)); }
-#line 3835 "y.tab.c" /* yacc.c:1646  */
+#line 3837 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 258:
 #line 1286 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg16_value((yyvsp[0].uval)); }
-#line 3841 "y.tab.c" /* yacc.c:1646  */
+#line 3843 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 259:
 #line 1287 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg32_value((yyvsp[0].uval)); }
-#line 3847 "y.tab.c" /* yacc.c:1646  */
+#line 3849 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 260:
 #line 1288 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_reg64_value((yyvsp[0].uval)); }
-#line 3853 "y.tab.c" /* yacc.c:1646  */
+#line 3855 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 261:
 #line 1289 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_opmask_value((yyvsp[0].uval)); }
-#line 3859 "y.tab.c" /* yacc.c:1646  */
+#line 3861 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 262:
 #line 1290 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_selector_value((yyvsp[0].uval)); }
-#line 3865 "y.tab.c" /* yacc.c:1646  */
+#line 3867 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 263:
 #line 1291 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_ip (); }
-#line 3871 "y.tab.c" /* yacc.c:1646  */
+#line 3873 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 264:
 #line 1292 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_eip(); }
-#line 3877 "y.tab.c" /* yacc.c:1646  */
+#line 3879 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 265:
 #line 1293 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_instruction_pointer(); }
-#line 3883 "y.tab.c" /* yacc.c:1646  */
+#line 3885 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 266:
 #line 1294 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_get_laddr ((yyvsp[-2].uval), (yyvsp[0].uval)); }
-#line 3889 "y.tab.c" /* yacc.c:1646  */
+#line 3891 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 267:
 #line 1295 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) + (yyvsp[0].uval); }
-#line 3895 "y.tab.c" /* yacc.c:1646  */
+#line 3897 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 268:
 #line 1296 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) - (yyvsp[0].uval); }
-#line 3901 "y.tab.c" /* yacc.c:1646  */
+#line 3903 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 269:
 #line 1297 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) * (yyvsp[0].uval); }
-#line 3907 "y.tab.c" /* yacc.c:1646  */
+#line 3909 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 270:
 #line 1298 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = ((yyvsp[0].uval) != 0) ? (yyvsp[-2].uval) / (yyvsp[0].uval) : 0; }
-#line 3913 "y.tab.c" /* yacc.c:1646  */
+#line 3915 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 271:
 #line 1299 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) >> (yyvsp[0].uval); }
-#line 3919 "y.tab.c" /* yacc.c:1646  */
+#line 3921 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 272:
 #line 1300 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) << (yyvsp[0].uval); }
-#line 3925 "y.tab.c" /* yacc.c:1646  */
+#line 3927 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 273:
 #line 1301 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) | (yyvsp[0].uval); }
-#line 3931 "y.tab.c" /* yacc.c:1646  */
+#line 3933 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 274:
 #line 1302 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) ^ (yyvsp[0].uval); }
-#line 3937 "y.tab.c" /* yacc.c:1646  */
+#line 3939 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 275:
 #line 1303 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-2].uval) & (yyvsp[0].uval); }
-#line 3943 "y.tab.c" /* yacc.c:1646  */
+#line 3945 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 276:
 #line 1304 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = !(yyvsp[0].uval); }
-#line 3949 "y.tab.c" /* yacc.c:1646  */
+#line 3951 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 277:
 #line 1305 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = -(yyvsp[0].uval); }
-#line 3955 "y.tab.c" /* yacc.c:1646  */
+#line 3957 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 278:
 #line 1306 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_lin_indirect((yyvsp[0].uval)); }
-#line 3961 "y.tab.c" /* yacc.c:1646  */
+#line 3963 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 279:
 #line 1307 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = bx_dbg_phy_indirect((yyvsp[0].uval)); }
-#line 3967 "y.tab.c" /* yacc.c:1646  */
+#line 3969 "y.tab.c" /* yacc.c:1646  */
     break;
 
   case 280:
 #line 1308 "parser.y" /* yacc.c:1646  */
     { (yyval.uval) = (yyvsp[-1].uval); }
-#line 3973 "y.tab.c" /* yacc.c:1646  */
+#line 3975 "y.tab.c" /* yacc.c:1646  */
     break;
 
 
-#line 3977 "y.tab.c" /* yacc.c:1646  */
+#line 3979 "y.tab.c" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
