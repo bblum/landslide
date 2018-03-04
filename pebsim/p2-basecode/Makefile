@@ -178,15 +178,16 @@ KINCLUDES = -I$(410KDIR) -I$(410KDIR)/inc \
 			-I$(STUKDIR) -I$(STUKDIR)/inc \
 			$(patsubst lib%.a,-I$(410KDIR)/%,$(410KERNEL_LIBS))
 
-UCFLAGS = -nostdinc \
+UCCPPFLAGS = -nostdinc \
 	-fno-strict-aliasing -fno-builtin -fno-stack-protector -fno-omit-frame-pointer \
 	-fno-aggressive-loop-optimizations \
-	--std=gnu99 \
 	-Wall -gstabs+ -Werror -O0 -m32
 # This prevents the gcc4 "hurr durr I'm aligning main()'s stack"
-UCFLAGS += -mpreferred-stack-boundary=2
+UCCPPFLAGS += -mpreferred-stack-boundary=2
 # bblum wuz hear
-UCFLAGS += -Wno-error=address -Wno-error=unused-but-set-variable
+UCCPPFLAGS += -Wno-error=address -Wno-error=unused-but-set-variable
+UCFLAGS = $(UCCPPFLAGS) --std=gnu99
+UCPPFLAGS = $(UCCPPFLAGS)
 ULDFLAGS = -static -Ttext 1000000 --fatal-warnings -melf_i386 --entry=_main
 UINCLUDES = -I$(410SDIR) -I$(410UDIR) -I$(410UDIR)/inc \
 						-I$(STUUDIR)/inc \
@@ -249,6 +250,15 @@ query_update:
 	$(CC) $(CFLAGS) $(INCLUDES) -c -MD -MP -MF $(@:.o=.$(DEP_SUFFIX)) -MT $@ -o $@ $<
 	$(OBJCOPY) -R .comment -R .note $@ $@
 
+%.o: %.cpp
+	@expand -t $(TABSTOP) $< | awk 'length > 80 \
+	  { err++; \
+	    errs[err] = "Warning: line " NR " in $< is longer than 80 characters"; \
+	  } END { \
+	    if (err > 2 && err < 1000) for (i = 1; i <= err; i++) print errs[i];\
+	    exit(err > 10 && err < 1000) }'
+	$(CC) $(CPPFLAGS) $(INCLUDES) -c -MD -MP -MF $(@:.o=.$(DEP_SUFFIX)) -MT $@ -o $@ $<
+	$(OBJCOPY) -R .comment -R .note $@ $@
 %.a:
 	rm -f $@
 	$(AR) rc $@ $^
@@ -261,6 +271,7 @@ $(STUKDIR)/%: CFLAGS=$(KCFLAGS)
 $(STUKDIR)/%: INCLUDES=$(KINCLUDES)
 $(STUKDIR)/%: LDFLAGS=$(KLDFLAGS)
 $(410UDIR)/%: CFLAGS=$(UCFLAGS)
+$(410UDIR)/%: CPPFLAGS=$(UCPPFLAGS) # added for htm tests
 $(410UDIR)/%: INCLUDES=$(UINCLUDES)
 $(410UDIR)/%: LDFLAGS=$(ULDFLAGS)
 $(STUUDIR)/%: CFLAGS=$(UCFLAGS)
