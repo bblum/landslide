@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -Werror -std=c99 -g
+CFLAGS=-Wall -Wextra -Werror -Wno-implicit-fallthrough -std=c99 -g
 LDFLAGS=-lpthread
 
 DEPS = common.h sync.h io.h pp.h job.h messaging.h xcalls.h time.h option.h array_list.h bug.h work.h signals.h
