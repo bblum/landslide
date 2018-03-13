@@ -47,6 +47,7 @@ struct pp *pp_new(char *config_str, char *short_str, char *long_str,
 		  unsigned int priority, bool deterministic, bool free_re_malloc,
 		  unsigned int generation, bool *duplicate);
 struct pp *pp_get(unsigned int id);
+unsigned int pp_population(); /* may concurrently increase, but never decrease */
 
 void print_live_data_race_pps();
 void try_print_live_data_race_pps(); /* signal handler safe; may do nothing. */

@@ -64,7 +64,7 @@ struct job {
 void set_job_options(char *test_name, char *trace_dir, bool verbose,
 		     bool leave_logs, bool pintos, bool use_icb,
 		     bool preempt_everywhere, bool pure_hb,
-		     bool txn, bool txn_abort_codes, bool pathos);
+		     bool txn, bool txn_abort_codes, bool veirf_mode, bool pathos);
 bool testing_pintos();
 bool testing_pathos();
 

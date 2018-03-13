@@ -107,6 +107,7 @@ static bool recv(int input_fd, struct input_message *m)
 extern bool control_experiment;
 extern bool use_icb;
 extern bool verbose;
+extern bool verif_mode;
 
 static void handle_data_race(struct job *j, struct pp_set **discovered_pps,
 			     unsigned int eip, unsigned int tid, bool confirmed,
@@ -163,7 +164,7 @@ static void handle_data_race(struct job *j, struct pp_set **discovered_pps,
 		struct pp_set *new_set;
 		bool added = false;
 		/* Add a little job. */
-		if (!duplicate && j->config->size > 0) {
+		if (!duplicate && j->config->size > 0 && !verif_mode) {
 			struct pp_set *empty = create_pp_set(PRIORITY_NONE);
 			new_set = add_pp_to_set(empty, pp);
 			free_pp_set(empty);
@@ -177,7 +178,7 @@ static void handle_data_race(struct job *j, struct pp_set **discovered_pps,
 			}
 		}
 		/* Add a big job. */
-		new_set = add_pp_to_set(j->config, pp);
+		new_set = verif_mode ? create_pp_set(~0) : add_pp_to_set(j->config, pp);
 		if (work_already_exists(new_set) || bug_already_found(new_set)) {
 			free_pp_set(new_set);
 		} else {
@@ -277,6 +278,12 @@ static bool handle_should_continue(struct job *j)
 		DBG("Aborting -- time up!\n");
 		WRITE_LOCK(&j->stats_lock);
 		j->timed_out = true;
+		RW_UNLOCK(&j->stats_lock);
+		return false;
+	} else if (verif_mode && j->config->size < pp_population()) {
+		WARN("Abandoning this job for greener pastures.\n");
+		WRITE_LOCK(&j->stats_lock);
+		j->cancelled = true;
 		RW_UNLOCK(&j->stats_lock);
 		return false;
 	} else {

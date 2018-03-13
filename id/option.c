@@ -122,7 +122,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		 bool *leave_logs, bool *control_experiment, bool *use_wrapper_log,
 		 char *wrapper_log, unsigned int wrapper_log_len, bool *pintos,
 		 bool *use_icb, bool *preempt_everywhere, bool *pure_hb,
-		 bool *txn, bool *txn_abort_codes,
+		 bool *txn, bool *txn_abort_codes, bool *verif_mode,
 		 bool *pathos, unsigned long *progress_report_interval,
 		 char *trace_dir, unsigned int trace_dir_len,
 		 unsigned long *eta_factor, unsigned long *eta_thresh)
@@ -172,6 +172,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	DEF_CMDLINE_FLAG('V', true, pure_hb, "Use vector clocks for \"pure\" happens-before data-races");
 	DEF_CMDLINE_FLAG('X', true, txn, "Enable transactional-memory testing options");
 	DEF_CMDLINE_FLAG('A', true, txn_abort_codes, "Support multiple xabort failure codes (warning: exponential)");
+	DEF_CMDLINE_FLAG('M', false, verif_mode, "Optimize for faster verification (maximal state space only)");
 #undef DEF_CMDLINE_FLAG
 
 #define DEF_CMDLINE_OPTION(flagname, secret, varname, descr, value)	\
@@ -310,6 +311,10 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		ERR("Iterative Deepening & Preempt-Everywhere mode not supported at same time.\n");
 		options_valid = false;
 	}
+	if (arg_verif_mode && arg_control_experiment) {
+		ERR("Verification mode not supported without iterative deepening.\n");
+		options_valid = false;
+	}
 	if (arg_pintos && arg_pathos) {
 		ERR("Make up your mind (pintos/pathos)!\n");
 		options_valid = false;
@@ -379,6 +384,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	*pure_hb = (!arg_pathos && !arg_limited_hb) || arg_pure_hb;
 	*txn = arg_txn;
 	*txn_abort_codes = arg_txn_abort_codes;
+	*verif_mode = arg_verif_mode;
 
 	return options_valid;
 }

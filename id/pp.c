@@ -187,6 +187,14 @@ struct pp *pp_get(unsigned int id)
 	return result;
 }
 
+unsigned int pp_population()
+{
+	READ_LOCK(&pp_registry_lock);
+	unsigned int how_many = next_id;
+	RW_UNLOCK(&pp_registry_lock);
+	return how_many;
+}
+
 static void _print_live_data_race_pps_unlocked()
 {
 	bool any_exist = false;

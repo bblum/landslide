@@ -46,11 +46,13 @@ bool preempt_everywhere = false;
 bool pure_hb = false;
 bool transactions = false;
 bool abort_codes = false;
+bool verif_mode = false;
 
 void set_job_options(char *arg_test_name, char *arg_trace_dir,
 		     bool arg_verbose, bool arg_leave_logs,
 		     bool arg_pintos, bool arg_use_icb, bool arg_preempt_everywhere,
 		     bool arg_pure_hb, bool arg_txn, bool arg_txn_abort_codes,
+		     bool arg_verif_mode,
 		     bool arg_pathos)
 {
 	test_name = XSTRDUP(arg_test_name);
@@ -64,6 +66,7 @@ void set_job_options(char *arg_test_name, char *arg_trace_dir,
 	pure_hb = arg_pure_hb;
 	transactions = arg_txn;
 	abort_codes = arg_txn_abort_codes;
+	verif_mode = arg_verif_mode;
 }
 
 bool testing_pintos() { return pintos; }
