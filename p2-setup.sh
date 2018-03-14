@@ -65,7 +65,7 @@ PATH=/afs/cs.cmu.edu/academic/class/15410-f17/bin/:$PATH make || die "import p2 
 
 cp bootfd.img ../../pebsim/ || die "couldn't move floppy disk image (from '$PWD')"
 cp kernel ../../pebsim/ || die "couldn't move kernel binary (from '$PWD')"
-# TODO: make line numbers file and symbol tabble
+# symbol table and line numbers files are generated per-test-case in pebsim/build.sh
 rm -f ../../src/bochs-2.6.8/instrument/landslide/line_numbers.h || die "couldn't clear linenrs"
 touch ../../src/bochs-2.6.8/instrument/landslide/line_numbers.h || die "couldn't make linenrs"
 

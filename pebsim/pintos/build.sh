@@ -59,6 +59,7 @@ cp pintos/src/$PROJECT/build/loader.bin loader.bin || die "failed cp loader.bin"
 
 ./make-bootfd.sh || die "couldn't make boot disk image"
 
+# XXX: following code duplicated with pebsim/build.sh
 # make symbol table file for function names
 nm kernel.o | sed 's/ . / /' > kernel.sym || die "failed nm symbol table"
 

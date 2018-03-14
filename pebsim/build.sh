@@ -272,6 +272,29 @@ fi
 if [ -z "$SKIP_HEADER" ]; then
 	msg "Generating header file..."
 	./definegen.sh > $HEADER || (rm -f $HEADER; die "definegen.sh failed.")
+	if [ -z "$PINTOS_KERNEL" ]; then
+		# Make the symbol table here
+		# (for pintos it's made during setup.sh, but userspace tests change)
+		msg "Generating symbol table..."
+		TEST_FILE=`get_test_file`
+		[ -f "$TEST_FILE" ] || die "test case file misisng (exp'd $TEST_FILE)"
+		# XXX: following code duplicated with pintos/build.sh
+		nm "$KERNEL_IMG" | sed 's/ . / /' > kernel.sym || die "failed nm kernel symbols"
+		nm "$TEST_FILE" | sed 's/ . / /' >> kernel.sym || die "failed nm user symbols"
+		# make header file for filenames and line numbers
+		# TODO: kernel space line numbers for P3 testing... haha never(?)
+		ADDRS_FILE=`mktemp user-code-addrs.XXXXXXXX.txt`
+		LINES_FILE=line_numbers.h
+		[ -f "$ADDRS_FILE" ] || die "failed make temp file for code addrs"
+		rm -f "$LINES_FILE" || die "failed rm old line numbers header"
+		# generates a file of lines each with e.g. "c002abcd"
+		objdump -d "$TEST_FILE" | sed 's/^ *//' | grep '^\S*:' | sed 's/:.*//' | grep -v "$TEST_FILE" | sort > "$ADDRS_FILE" || die "failed make code addrs list"
+		# generates a file of e.g. "{ .eip = 0xc002abcd, .filename = "c.c", .line = 42 },"
+		# see symtable.c for the expected format / usage context
+		cat "$ADDRS_FILE" | addr2line -e "$TEST_FILE" | sed 's@.*p2-basecode/@@' | sed 's/ (discriminator.*//' | sed 's/^??:/unknown:/' | sed 's/:?$/:0/' | sed 's/^/.filename = "/' | sed 's/:/", .line = /' | sed 's/$/ },/' | paste "$ADDRS_FILE" - | sed 's/^/{ .eip = 0x/' | sed 's/\t/, /' > "$LINES_FILE" || die "failed generate line numbers header"
+		rm "$ADDRS_FILE" || msg "warning: couldnt remove temp file of code noobs"
+		mv "$LINES_FILE" ../src/bochs-2.6.8/instrument/landslide/ || die "failed mv linenrs"
+	fi
 else
 	msg "Header already generated; skipping."
 fi

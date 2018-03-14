@@ -23,6 +23,7 @@ cpuid: aes=0, sha=0, xsave=0, xsaveopt=0, x86_64=1, 1g_pages=0, pcid=0, fsgsbase
 cpuid: smep=0, smap=0, mwait=1
 print_timestamps: enabled=0
 debugger_log: -
+debug_symbols: file=kernel.sym
 magic_break: enabled=0
 port_e9_hack: enabled=0
 private_colormap: enabled=0
