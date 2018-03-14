@@ -92,7 +92,7 @@ class SepChainMap : public Map<Value> {
         ChainNode** new_table = new ChainNode*[new_capacity];
         if (new_table == nullptr) return Error::LOGIC_ERR;
         // Wait until we can move forward, so the global lock is unlocked.
-        while(_stop) { thr_yield(-1); } // made landslide-friendly instead of tight loop
+        // while(_stop) { thr_yield(-1); } // made landslide-friendly instead of tight loop
 
          // Lock ////////////////////////////////
         mutex_lock(&_table_lock);
@@ -199,7 +199,7 @@ class SepChainMap : public Map<Value> {
 
         Error err;
         // Wait until we can move forward, so the global lock is unlocked.
-        while(_stop);
+        // while(_stop);
 
         Result status = _xbegin();
         if (status == SUCCESS) {
@@ -233,7 +233,7 @@ class SepChainMap : public Map<Value> {
 
         Error err;
         // Wait until we can move forward, so the global lock is unlocked.
-        while(_stop) { thr_yield(-1); }
+        // while(_stop) { thr_yield(-1); }
 
         Result status = _xbegin();
         if (status == SUCCESS) {
@@ -275,7 +275,7 @@ class SepChainMap : public Map<Value> {
         assert(false && "Not ready yet, must delete outside of transaction");
         Error err;
         // Wait until we can move forward, so the global lock is unlocked.
-        while(_stop) { thr_yield(-1); }
+        //while(_stop) { thr_yield(-1); }
 
         Result status = _xbegin();
         if (status == SUCCESS) {
