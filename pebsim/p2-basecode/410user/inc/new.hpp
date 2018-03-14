@@ -7,10 +7,16 @@
 
 extern "C" {
 #include <malloc.h>
+#include <assert.h>
 }
 
 void* operator new (size_t size) { return malloc(size); }
 
 void operator delete(void *p, unsigned int) { free(p); }
+
+void* operator new[](unsigned int size) { return malloc(size); }
+void operator delete[](void*p) { free(p); }
+
+void __cxa_throw_bad_array_new_length() { assert(0 && "bad array length"); }
 
 #endif /* __NEW_HPP */
