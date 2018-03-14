@@ -185,7 +185,7 @@ UCCPPFLAGS = -nostdinc \
 # This prevents the gcc4 "hurr durr I'm aligning main()'s stack"
 UCCPPFLAGS += -mpreferred-stack-boundary=2
 # bblum wuz hear
-UCCPPFLAGS += -Wno-error=address -Wno-error=unused-but-set-variable
+UCCPPFLAGS += -Wno-error=address -Wno-error=unused-but-set-variable -fno-exceptions
 UCFLAGS = $(UCCPPFLAGS) --std=gnu99
 UCPPFLAGS = $(UCCPPFLAGS)
 ULDFLAGS = -static -Ttext 1000000 --fatal-warnings -melf_i386 --entry=_main
