@@ -278,9 +278,10 @@ if [ -z "$SKIP_HEADER" ]; then
 		msg "Generating symbol table..."
 		TEST_FILE=`get_test_file`
 		[ -f "$TEST_FILE" ] || die "test case file misisng (exp'd $TEST_FILE)"
+		CPPFILT=`which "c++filt" || echo "cat"`
 		# XXX: following code duplicated with pintos/build.sh
-		nm "$KERNEL_IMG" | sed 's/ . / /' > kernel.sym || die "failed nm kernel symbols"
-		nm "$TEST_FILE" | sed 's/ . / /' >> kernel.sym || die "failed nm user symbols"
+		nm "$KERNEL_IMG" | $CPPFILT | sed 's/ . / /' > kernel.sym || die "failed nm kernel symbols"
+		nm "$TEST_FILE" | $CPPFILT | sed 's/ . / /' >> kernel.sym || die "failed nm user symbols"
 		# make header file for filenames and line numbers
 		# TODO: kernel space line numbers for P3 testing... haha never(?)
 		ADDRS_FILE=`mktemp user-code-addrs.XXXXXXXX.txt`
