@@ -11,6 +11,7 @@ extern "C" {
 
 // #define ITERS (1 << 25)
 #define ITERS 2
+#define NTHREADS 2
 
 /* This file increments a counter under high contention with
  * many different threads. First it does so locklessly and then with
@@ -102,7 +103,7 @@ main() {
     int time = 0;
 
     // for (unsigned int num_threads = 1; num_threads <= 4; num_threads *= 2) {
-    { unsigned int num_threads = 2;
+    { unsigned int num_threads = NTHREADS;
 
         // run_incr_job(locklessIncr, num_threads, ITERS);
         // printf("Ran lockless job with %d threads in %d\n", num_threads, time);

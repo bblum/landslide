@@ -27,6 +27,9 @@ volatile static int count = 0;
 /* http://www.contrib.andrew.cmu.edu/~mdehesaa/ */
 volatile int stop_the_world = 0;
 
+#define NITERS 3
+#define NTHREADS 2
+
 void txn()
 {
 	int status;
@@ -47,7 +50,9 @@ void txn()
 
 void *child(void *dummy)
 {
-	txn();
+	for (int i = 0; i < NITERS; i++) {
+		txn();
+	}
 	return NULL;
 }
 
@@ -59,12 +64,17 @@ int main(void)
 	ERR(mutex_init(&lock));
 	misbehave(BGND_BRWN >> FGND_CYAN); // for landslide
 
-	int tid = thr_create(child, NULL);
-	ERR(tid);
+	int tid[NTHREADS];
+	for (int i = 0; i < NTHREADS - 1; i++) {
+		tid[i] = thr_create(child, NULL);
+		ERR(tid[i]);
+	}
 
-	txn();
-	ERR(thr_join(tid, NULL));
-	assert(count == 2);
+	child(NULL);
+	for (int i = 0; i < NTHREADS - 1; i++) {
+		ERR(thr_join(tid[i], NULL));
+	}
+	assert(count == NITERS * NTHREADS);
 
 
 	return 0;
