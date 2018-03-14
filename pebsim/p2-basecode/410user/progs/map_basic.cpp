@@ -87,7 +87,8 @@ int main() {
         // Run transactional map benchmark
         SepChainMap<int> map;
         // Ensure we're big enough.
-        map.initialize(ITERS / 2);
+        // map.initialize((ITERS + 1) / 2); // dont divide by zero idiot
+        map.initialize((ITERS * NUM_THREADS)); // make the map not have to regrow?
         run_job((void *)&map, tsxWork, mult*NUM_THREADS);
 
         //printf("%d-threaded runtime: %lf\n", mult*NUM_THREADS,
