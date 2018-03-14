@@ -16,6 +16,7 @@ struct ls_state;
 
 bool testing_userspace();
 bool ignore_dr_function(unsigned int eip);
+bool ignore_thrlib_function(unsigned int eip);
 /* syscalls / misc */
 bool user_report_end_fail(cpu_t *cpu, unsigned int eip);
 bool user_yielding(struct ls_state *ls);

@@ -212,6 +212,41 @@ static void *run_job(void *arg)
 		if (abort_codes) {
 			XWRITE(&j->config_static, "HTM_ABORT_CODES=1\n");
 		}
+#if 1
+		/* ignore all thrlib's accesses even in DPOR */
+		// NB. for SIGBOVIK'18, this feature was added for the
+		// verification experiment on htmavl/htmsepchain/swap, but
+		// *after* running the experiments on htm1/2, counter, and
+		// swapbug. to reproduce those expts, toggle to "if 0" above.
+		XWRITE(&j->config_static, "thrlib_function thr_create\n");
+		XWRITE(&j->config_static, "thrlib_function thr_exit\n");
+		XWRITE(&j->config_static, "thrlib_function thr_join\n");
+		XWRITE(&j->config_static, "thrlib_function cond_wait\n");
+		XWRITE(&j->config_static, "thrlib_function cond_signal\n");
+		XWRITE(&j->config_static, "thrlib_function cond_broadcast\n");
+		XWRITE(&j->config_static, "thrlib_function cond_init\n");
+		XWRITE(&j->config_static, "thrlib_function cond_destroy\n");
+		XWRITE(&j->config_static, "thrlib_function mutex_lock\n");
+		XWRITE(&j->config_static, "thrlib_function mutex_unlock\n");
+		XWRITE(&j->config_static, "thrlib_function mutex_init\n");
+		XWRITE(&j->config_static, "thrlib_function mutex_destroy\n");
+		XWRITE(&j->config_static, "thrlib_function sem_wait\n");
+		XWRITE(&j->config_static, "thrlib_function sem_signal\n");
+		XWRITE(&j->config_static, "thrlib_function sem_init\n");
+		XWRITE(&j->config_static, "thrlib_function sem_destroy\n");
+		// XXX: assumes sully ref p2 :(
+		XWRITE(&j->config_static, "thrlib_function thr_bottom\n");
+		XWRITE(&j->config_static, "thrlib_function thr_getid\n");
+		XWRITE(&j->config_static, "thrlib_function get_stack\n");
+		XWRITE(&j->config_static, "thrlib_function remove_thread\n");
+		XWRITE(&j->config_static, "thrlib_function new_thread\n");
+		XWRITE(&j->config_static, "thrlib_function get_thread\n");
+		XWRITE(&j->config_static, "thrlib_function child_swexn_init\n");
+		XWRITE(&j->config_static, "thrlib_function wakeup_thread\n");
+		XWRITE(&j->config_static, "thrlib_function remove_thread\n");
+#else
+		// thrlib_function above subsumes this functionality; this
+		// just ignores their DRs while counting as conflicts in DPOR.
 		XWRITE(&j->config_static, "ignore_dr_function thr_create 1\n");
 		XWRITE(&j->config_static, "ignore_dr_function thr_exit 1\n");
 		XWRITE(&j->config_static, "ignore_dr_function thr_join 1\n");
@@ -220,6 +255,8 @@ static void *run_job(void *arg)
 		XWRITE(&j->config_static, "ignore_dr_function wakeup_thread 1\n");
 		XWRITE(&j->config_static, "ignore_dr_function remove_thread 1\n");
 		XWRITE(&j->config_static, "ignore_dr_function cond_wait 1\n");
+#endif
+		/* don't preempt on mutex use arising from the thrlib */
 		XWRITE(&j->config_dynamic, "%s thr_init\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_create\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_exit\n", without);

@@ -948,6 +948,11 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 			 * idle, or shell-post-fork-pre-exec. Or ignore accesses
 			 * if we're in a kernel test (esp. vanish_vanish!). */
 			return;
+		} else if (ignore_thrlib_function(ls->eip)) {
+			/* Ignore accesses from specified "trusted" functions
+			 * in the thread library (when testing client programs
+			 * thereof, such as HTM). Analogous to sched_funcs. */
+			return;
 		} else if (virt_addr == 0) {
 			/* Read from page table. */
 			assert(!write && "userspace write to page table??");

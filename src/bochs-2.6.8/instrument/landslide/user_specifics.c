@@ -32,6 +32,17 @@ bool ignore_dr_function(unsigned int eip)
 	return false;
 }
 
+bool ignore_thrlib_function(unsigned int eip)
+{
+	static const unsigned int ignore_thrlib_fns[][2] = IGNORE_THRLIB_FUNCTIONS;
+	for (int i = 0; i < ARRAY_SIZE(ignore_thrlib_fns); i++) {
+		if (eip >= ignore_thrlib_fns[i][0] && eip <= ignore_thrlib_fns[i][1]) {
+			return true;
+		}
+	}
+	return false;
+}
+
 /******************************************************************************
  * Syscall wrappers / misc
  ******************************************************************************/

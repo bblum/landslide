@@ -55,6 +55,11 @@ function ignore_dr_function {
 	fi
 }
 
+IGNORE_THRLIB_FUNCTIONS=
+function thrlib_function {
+	IGNORE_THRLIB_FUNCTIONS="${IGNORE_THRLIB_FUNCTIONS}\\\\\n\t{ 0x`get_user_func $1`, 0x`get_user_func_end $1` },"
+}
+
 DATA_RACE_INFO=
 function data_race {
 	# 1 = racing eip value
@@ -652,6 +657,7 @@ echo -e "#define SOURCE_PATH \"$SOURCE_PATH\""
 echo -e "#define KERN_WITHIN_FUNCTIONS { $WITHIN_KERN_FUNCTIONS }"
 echo -e "#define USER_WITHIN_FUNCTIONS { $WITHIN_USER_FUNCTIONS }"
 echo -e "#define IGNORE_DR_FUNCTIONS   { $IGNORE_DR_FUNCTIONS   }"
+echo -e "#define IGNORE_THRLIB_FUNCTIONS { $IGNORE_THRLIB_FUNCTIONS }"
 
 echo "#define DATA_RACE_INFO { $DATA_RACE_INFO }"
 echo "#define DISK_IO_FNS { $DISK_IO_FNS }"

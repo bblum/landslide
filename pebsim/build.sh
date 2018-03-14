@@ -29,6 +29,9 @@ function without_user_function {
 function ignore_dr_function {
 	echo -n
 }
+function thrlib_function {
+	echo -n
+}
 function data_race {
 	echo -n
 }
