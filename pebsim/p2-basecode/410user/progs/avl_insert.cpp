@@ -12,7 +12,7 @@ extern "C" {
 #include <htm/htmavl.hpp>
 // #include <htmtree.hpp> // provides fgt/treap, locking, not needed
 
-#define ITERS 1
+#define ITERS 2
 #define NUM_THREADS 2
 
 int tsx_inserts = ITERS;
