@@ -592,6 +592,10 @@ static void add_xabort_code(struct hax *h, unsigned int *code)
 	assert(h->xbegin);
 	unsigned int i;
 	unsigned int *existing_code;
+	// this can be done for mario's htm data structures;
+	// or any program you trust that no txn branches on the failure code.
+	// // merge conflict and explicit together for marios
+	// *code = _XABORT_CONFLICT;
 	ARRAY_LIST_FOREACH(mutable_xabort_codes_ever(h), i, existing_code) {
 		if (*existing_code == *code) {
 			return;
@@ -829,6 +833,9 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		if ((h->xbegin = xbegin)) {
 			ARRAY_LIST_INIT(&h->xabort_codes_ever, 8);
 			ARRAY_LIST_INIT(&h->xabort_codes_todo, 8);
+			// mario's htm data structures may comment this out,
+			// provided you use -A to insert DPOR conflict aborts,
+			// manually trusting the retry-loop abstraction.
 			unsigned int retry_code = _XABORT_RETRY;
 			add_xabort_code(h, &retry_code);
 		}
