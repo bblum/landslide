@@ -67,6 +67,25 @@ ln -s bochsrc-pebbles.txt bochsrc.txt || die "couldn't create bochsrc symlink"
 
 cd p2-basecode || die "couldn't cd into p2 basecode directory"
 
+# update makefile for different userspace library requiremence, if necessary
+# but also supports cmu projecce
+if [ ! -d "$1/user/libautostack" ]; then
+	msg "setting up PSU-compatible (no libautostack) build"
+	if grep "^STUDENT_LIBS_EARLY *=.*libautostack.a" Makefile >/dev/null; then
+		sed -i 's/\(^STUDENT_LIBS_EARLY *=.*\) libautostack.a/\1/' Makefile || die "couldn't remove libautostack from libs-early"
+	fi
+else
+	msg "setting up CMU-compatible (yes libautostack) build"
+fi
+if [ -d "$1/user/libatomic" ]; then
+	msg "setting up PSU-compatible (libatomic) build"
+	if ! grep "^STUDENT_LIBS_LATE *=.*libatomic.a" Makefile >/dev/null; then
+		sed -i 's/\(^STUDENT_LIBS_LATE *=.*\)/\1 libatomic.a/' Makefile || die "couldn't add libatomic to libs-late"
+	fi
+else
+	msg "setting up CMU-compatible (no libatomic) build"
+fi
+
 # PSU's cluster machines suck
 if grep -- "-fno-aggressive-loop-optimizations" Makefile >/dev/null; then
 	if ! gcc -c -x c -fno-aggressive-loop-optimizations /dev/null -o /dev/null 2>/dev/null; then
