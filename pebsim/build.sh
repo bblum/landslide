@@ -295,7 +295,9 @@ if [ -z "$SKIP_HEADER" ]; then
 		objdump -d "$TEST_FILE" | sed 's/^ *//' | grep '^\S*:' | sed 's/:.*//' | grep -v "$TEST_FILE" | sort > "$ADDRS_FILE" || die "failed make code addrs list"
 		# generates a file of e.g. "{ .eip = 0xc002abcd, .filename = "c.c", .line = 42 },"
 		# see symtable.c for the expected format / usage context
-		cat "$ADDRS_FILE" | addr2line -e "$TEST_FILE" | sed 's@.*p2-basecode/@@' | sed 's/ (discriminator.*//' | sed 's/^??:/unknown:/' | sed 's/:?$/:0/' | sed 's/^/.filename = "/' | sed 's/:/", .line = /' | sed 's/$/ },/' | paste "$ADDRS_FILE" - | sed 's/^/{ .eip = 0x/' | sed 's/\t/, /' > "$LINES_FILE" || die "failed generate line numbers header"
+		cat "$ADDRS_FILE" | addr2line -e "$TEST_FILE" | sed 's@.*p2-basecode/@@' | sed 's/ (discriminator.*//' | sed 's/^??:/unknown:/' | sed 's/:?$/:0/' | sed 's/^/"/' | sed 's/:/", /' | sed 's/$/ },/' | paste "$ADDRS_FILE" - | sed 's/^/{ 0x/' | sed 's/\t/, /' > "$LINES_FILE" || die "failed generate line numbers header"
+		# ".field =" initializer syntax not supported by PSU's stupid cluster machines which have no gcc younger than 4.4 but below is what it should be
+		# cat "$ADDRS_FILE" | addr2line -e "$TEST_FILE" | sed 's@.*p2-basecode/@@' | sed 's/ (discriminator.*//' | sed 's/^??:/unknown:/' | sed 's/:?$/:0/' | sed 's/^/.filename = "/' | sed 's/:/", .line = /' | sed 's/$/ },/' | paste "$ADDRS_FILE" - | sed 's/^/{ .eip = 0x/' | sed 's/\t/, /' > "$LINES_FILE" || die "failed generate line numbers header"
 		rm "$ADDRS_FILE" || msg "warning: couldnt remove temp file of code noobs"
 		mv "$LINES_FILE" ../src/bochs-2.6.8/instrument/landslide/ || die "failed mv linenrs"
 	fi

@@ -23,6 +23,8 @@
 
 #ifdef BOCHS
 
+/* don't change the order or names or add/remove any fields without editing the
+ * corresponding header autogen code in pebsim/build.sh */
 struct line_number {
 	unsigned int eip;
 	const char *filename;
