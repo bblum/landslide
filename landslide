@@ -26,6 +26,17 @@ else
 	exit 1
 fi
 
+MIN_ULIMIT=4095
+CUR_ULIMIT="`ulimit -u`"
+ULIMIT_DIFF="$(($CUR_ULIMIT-$MIN_ULIMIT))"
+if [ "`echo $ULIMIT_DIFF | cut -c1`" = "-" ]; then
+	ulimit -u "$MIN_ULIMIT"
+	if [ "$?" != 0 ]; then
+		echo -e "\033[01;33mwarning: current ulimit $CUR_ULIMIT is too low, but failed to modify it\033[00m"
+		echo -e "\033[01;33mdon't be surprised if landslide crashes with 'fork() failed' errors\033[00m"
+	fi
+fi
+
 SUFFIX=`date +%Y%m%d%H%M%S`
 
 CMDLINE_OPTION_FILE=`mktemp "ls-id-options-$SUFFIX.cfg.XXXXXXXX"`
