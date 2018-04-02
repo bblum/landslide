@@ -16,7 +16,7 @@ FINALCLEANS=$(FINALTARGETS:%=%.gz) $(FINALTARGETS:%=%.strip)
 # when REFK had a diferent value.  So we do one copy per change of REFK.
 # This kind of gamesmanship is NOT necessary with cons and derivatives.
 #
-$(FINALTARGETS) : % : $(BUILDDIR)/user_apps.o $(BUILDDIR)/%__$(REFK).o
+$(FINALTARGETS) : % : $(BUILDDIR)/%__$(REFK).o $(BUILDDIR)/user_apps.o
 	$(LD) $(KLDFLAGS) -o $@ $^
 #	$(LD) -T $(410KDIR)/kernel.lds $(KLDFLAGS) -o $@ $^
 $(BUILDDIR)/%__$(REFK).o : $(410KDIR)/%_$(REFK).o
