@@ -72,18 +72,28 @@ cd p2-basecode || die "couldn't cd into p2 basecode directory"
 if [ ! -d "$1/user/libautostack" ]; then
 	msg "setting up PSU-compatible (no libautostack) build"
 	if grep "^STUDENT_LIBS_EARLY *=.*libautostack.a" Makefile >/dev/null; then
+		# libautostack present; remove it
 		sed -i 's/\(^STUDENT_LIBS_EARLY *=.*\) libautostack.a/\1/' Makefile || die "couldn't remove libautostack from libs-early"
 	fi
 else
 	msg "setting up CMU-compatible (yes libautostack) build"
+	if ! grep "^STUDENT_LIBS_EARLY *=.*libautostack.a" Makefile >/dev/null; then
+		# libautostack missing; add it back
+		sed -i 's/\(^STUDENT_LIBS_EARLY *=.*\)/\1 libautostack.a/' Makefile || die "couldn't add libauto to libs-early"
+	fi
 fi
 if [ -d "$1/user/libatomic" ]; then
 	msg "setting up PSU-compatible (libatomic) build"
 	if ! grep "^STUDENT_LIBS_LATE *=.*libatomic.a" Makefile >/dev/null; then
+		# libatomic missing; add it
 		sed -i 's/\(^STUDENT_LIBS_LATE *=.*\)/\1 libatomic.a/' Makefile || die "couldn't add libatomic to libs-late"
 	fi
 else
 	msg "setting up CMU-compatible (no libatomic) build"
+	if grep "^STUDENT_LIBS_LATE *=.*libatomic.a" Makefile >/dev/null; then
+		# libatomic present; remove it again
+		sed -i 's/\(^STUDENT_LIBS_LATE *=.*\) libatomic.a/\1/' Makefile || die "couldn't remove libatomic from libs-late"
+	fi
 fi
 
 # PSU's cluster machines suck
