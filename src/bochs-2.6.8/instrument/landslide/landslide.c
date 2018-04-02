@@ -353,7 +353,9 @@ static bool ensure_progress(struct ls_state *ls)
 		}
 		MM_FREE(buf);
 		return false;
-	} else if (user_report_end_fail(ls->cpu0, ls->eip)) {
+	} else if (user_report_end_fail(ls->cpu0, ls->eip) &&
+		   check_user_address_space(ls) &&
+		   !(TID_IS_INIT(tid) || TID_IS_SHELL(tid) || TID_IS_IDLE(tid))) {
 		FOUND_A_BUG(ls, "User test program reported failure!");
 		return false;
 	} else if (kern_page_fault_handler_entering(ls->eip)) {
