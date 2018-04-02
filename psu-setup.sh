@@ -109,6 +109,7 @@ msg "Importing your project into '$P2DIR' - look there if something goes wrong..
 
 ./import-p2.sh "$1" || die "could not import your p2"
 
+make veryclean # i have no idea why i need this but you get some real twilight zone looking builds without it
 make || die "source code import was successful, but build failed (from '$PWD')"
 
 cp bootfd.img ../../pebsim/ || die "couldn't move floppy disk image (from '$PWD')"
