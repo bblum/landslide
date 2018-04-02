@@ -15,6 +15,15 @@ function check_subdir() {
 	fi
 }
 
+ARCH="`cat ../current-architecture.txt`"
+if [ "$ARCH" = "psu" ]; then
+	PSU=1
+elif [ "$ARCH" = "p2" ]; then
+	PSU=0
+else
+	die "unknown architecture $ARCH in current-architecture?"
+fi
+
 if [ -z "$DIR" ]; then
 	die "usage: $0 <absolute-path-to-p2-directory>"
 fi
@@ -27,7 +36,9 @@ check_subdir spec
 check_subdir user
 check_subdir user/libthread
 check_subdir user/libsyscall
-check_subdir user/libautostack
+if [ "$PSU" = 0 ]; then
+	check_subdir user/libautostack
+fi
 check_subdir user/inc
 # check_subdir vq_challenge
 
@@ -46,7 +57,7 @@ function sync_optional_subdir() {
 	fi
 }
 function sync_optional_file() {
-	if -f [ "$DIR/$1" ]; then
+	if [ -f "$DIR/$1" ]; then
 		mkdir -p "`dirname $1`"
 		cp "$DIR/$1" "./$1" || die "couldn't copy $1"
 	fi
@@ -55,7 +66,21 @@ function sync_optional_file() {
 # note: if you update this you need to update check-for...sh too
 sync_optional_subdir vq_challenge
 sync_subdir user/inc
-sync_subdir user/libautostack
+if [ "$PSU" = 0 ]; then
+	# allow only cmu implementations
+	sync_subdir user/libautostack
+else
+	# allow either implementation
+	sync_optional_subdir user/libautostack
+	sync_optional_subdir user/libatomic
+	# i'm not sure why timmy needed these
+	sync_optional_file 410user/crt0.c
+	sync_optional_file 410user/user.mk
+	sync_optional_file 410user/inc/atomic.h
+	sync_optional_file 410user/inc/rwlock.h
+	sync_optional_file 410user/libstdlib/panic.c
+	sync_optional_file 410user/libstdlib/user.mk
+fi
 sync_subdir user/libsyscall
 sync_subdir user/libthread
 sync_optional_file user/config.mk # e.g. refp2 has this
@@ -68,6 +93,9 @@ fi
 # Merge student config.mk targets into ours
 
 CONFIG_MK_PATTERN="THREAD_OBJS\|SYSCALL_OBJS\|AUTOSTACK_OBJS"
+if [ "$PSU" = 1 ]; then
+	CONFIG_MK_PATTERN="$CONFIG_MK_PATTERN\|ATOMIC_OBJS"
+fi
 
 rm -f config.mk
 grep -v "$CONFIG_MK_PATTERN" config-incomplete.mk >> config.mk

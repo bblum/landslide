@@ -1,10 +1,16 @@
 #!/bin/bash
 
-FILE="../current-p2-group.txt"
-SETUP_SCRIPT="./p2-setup.sh"
-if [ ! -f "$FILE" ]; then
+ARCH="`cat ../current-architecture.txt`"
+if [ "$ARCH" = "psu" ]; then
 	FILE="../current-psu-group.txt"
 	SETUP_SCRIPT="./psu-setup.sh"
+	PSU=1
+elif [ "$ARCH" = "p2" ]; then
+	FILE="../current-p2-group.txt"
+	SETUP_SCRIPT="./p2-setup.sh"
+        PSU=0
+else
+        die "unknown architecture $ARCH in current-architecture?"
 fi
 
 DISABLE_FILE="dont_check_for_p2_updates"
@@ -73,10 +79,17 @@ function check_updates_in_optional_file() {
 # compare to structure in import-p2.sh; this must match
 check_updates_in_optional_subdir vq_challenge
 check_updates_in_subdir user/inc
-check_updates_in_subdir user/libautostack
 check_updates_in_subdir user/libsyscall
 check_updates_in_subdir user/libthread
 check_updates_in_optional_file user/config.mk
+if [ "$PSU" = 0 ]; then
+	# allow only cmu implementations
+	check_updates_in_subdir user/libautostack
+else
+	# allow either type of implementation
+	check_updates_in_optional_subdir user/libautostack
+	check_updates_in_optional_subdir user/libatomic
+fi
 
 # Check for studence updating code in this import-destination directory.
 
