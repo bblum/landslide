@@ -57,7 +57,10 @@ function ignore_dr_function {
 
 IGNORE_THRLIB_FUNCTIONS=
 function thrlib_function {
-	IGNORE_THRLIB_FUNCTIONS="${IGNORE_THRLIB_FUNCTIONS}\\\\\n\t{ 0x`get_user_func $1`, 0x`get_user_func_end $1` },"
+	THRLIB_FN="`get_user_func $1`"
+	if [ ! -z "$THRLIB_FN" ]; then
+		IGNORE_THRLIB_FUNCTIONS="${IGNORE_THRLIB_FUNCTIONS}\\\\\n\t{ 0x$THRLIB_FN, 0x`get_user_func_end $1` },"
+	fi
 }
 
 DATA_RACE_INFO=
