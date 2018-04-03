@@ -25,9 +25,6 @@ DEF_TEST_NAME("htm1:");
 mutex_t lock;
 static int count = 0;
 
-#define NTHREADS 4
-#define ITERS 2
-
 void txn()
 {
 	int status;
@@ -43,9 +40,7 @@ void txn()
 
 void *child(void *dummy)
 {
-	for (int j = 0; j < ITERS; j++) {
-		txn();
-	}
+	txn();
 	return NULL;
 }
 
@@ -57,17 +52,12 @@ int main(void)
 	ERR(mutex_init(&lock));
 	misbehave(BGND_BRWN >> FGND_CYAN); // for landslide
 
-	int tid [NTHREADS-1];
-	for (int i = 0; i < NTHREADS - 1; i++) {
-		tid[i] = thr_create(child, NULL);
-		ERR(tid[i]);
-	}
+	int tid = thr_create(child, NULL);
+	ERR(tid);
 
-	child(NULL);
-	for (int i = 0; i < NTHREADS - 1; i++) {
-		ERR(thr_join(tid[i], NULL));
-	}
-	assert(count == NTHREADS * ITERS);
+	txn();
+	ERR(thr_join(tid, NULL));
+	assert(count == 2);
 
 
 	return 0;
