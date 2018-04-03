@@ -102,4 +102,16 @@ grep -v "$CONFIG_MK_PATTERN" config-incomplete.mk >> config.mk
 # replace backslash-newlines so grep finds entire list
 cat "$DIR/config.mk" | tr '\n' '@' | sed 's/\\@/ /g' | sed 's/@/\n/g' | grep "$CONFIG_MK_PATTERN" >> config.mk
 
+# Add atomic tests that will only build against PSU's basecode
+
+function add_410_test() {
+	if ! grep "^410TESTS *=.*$1" config.mk >/dev/null; then
+		sed -i "s/\(^410TESTS *=.*\)/\1 $1/" config.mk || die "failed to add 410 test $1"
+	fi
+}
+
+if [ "$PSU" = 1 ]; then
+	add_410_test atomic_fetch_add
+fi
+
 echo "import p2 success; you may now make, hopefully"

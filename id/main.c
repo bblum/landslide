@@ -61,7 +61,8 @@ int main(int argc, char **argv)
 	init_signal_handling();
 	start_time(max_time * 1000000, num_cpus);
 
-	if (!control_experiment && !verif_mode) {
+	if (!control_experiment && !verif_mode &&
+	    !(strstr(test_name, "atomic_") == test_name)) {
 		add_work(new_job(create_pp_set(PRIORITY_NONE), false));
 		add_work(new_job(create_pp_set(PRIORITY_MUTEX_LOCK), true));
 		add_work(new_job(create_pp_set(PRIORITY_MUTEX_UNLOCK), true));

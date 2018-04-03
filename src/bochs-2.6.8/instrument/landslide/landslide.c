@@ -84,6 +84,32 @@ struct ls_state *new_landslide()
  * pebbles system calls
  ******************************************************************************/
 
+static void check_test_case_magics(struct ls_state *ls)
+{
+#ifdef USER_MAGIC_GLOBAL_RESULT
+	unsigned int magic_value  = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_GLOBAL_VALUE);
+	unsigned int magic_result = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_GLOBAL_RESULT);
+	if (magic_value != magic_result) {
+		FOUND_A_BUG(ls, "I expected magic_global_value (%u) == "
+			    "magic_global_expected_result (%u), but they were "
+			    "different. This means your " TEST_CASE "() is not "
+			    "threadsafe!", magic_result, magic_value);
+	}
+#endif
+#ifdef USER_MAGIC_LOCAL_RESULT
+	unsigned int magic_parent = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_LOCAL_PARENT);
+	unsigned int magic_child  = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_LOCAL_CHILD);
+	unsigned int magic_sum    = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_LOCAL_RESULT);
+	if (magic_parent + magic_child != magic_sum) {
+		FOUND_A_BUG(ls, "I expected magic_thread_local_value_parent (%u) + "
+			    "magic_thread_local_value_child (%u) == "
+			    "magic_expected_sum (%u), but the sum is wrong! "
+			    "This means your " TEST_CASE "() is not threadsafe!",
+			    magic_parent, magic_child, magic_sum);
+	}
+#endif
+}
+
 #define CASE_SYSCALL(num, name) \
 	case (num): printf(CHOICE, "%s()\n", (name)); break
 
@@ -127,6 +153,13 @@ static void check_user_syscall(struct ls_state *ls)
 		default:
 			printf(CHOICE, "((unknown 0x%x))\n", number);
 			break;
+	}
+
+	// XXX: gross hack for PSU to check the __landslide_magics at the right
+	// time -- if we check them at test end, the kernel may zero them out
+	if (number == VANISH_INT &&
+	    ls->sched.num_agents == ls->test.start_population + 1) {
+		check_test_case_magics(ls);
 	}
 
 	ls->sched.cur_agent->most_recent_syscall = number;
