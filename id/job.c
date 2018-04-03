@@ -207,13 +207,13 @@ static void *run_job(void *arg)
 		XWRITE(&j->config_dynamic, "%s critical_section\n", without);
 	} else if (strstr(test_name, "atomic_") == test_name) {
 		/* PSU-specific atomic operations tests */
+		XWRITE(&j->config_static, "FILTER_DRS_BY_TID=0\n");
 		// FIXME: This all should be avoided by having an annotation
 		// or two by which you can enable/disable landslide's memory
 		// access tracking and/or data race detection, to focus the
 		// state space within the test case itself instead of here.
 		XWRITE(&j->config_dynamic, "%s thr_init\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_create\n", without);
-		XWRITE(&j->config_static, "thrlib_function thr_create\n");
 		XWRITE(&j->config_static, "thrlib_function thr_create\n");
 		/* atomic_* tests bypass these functions with vanish directly */
 		// XWRITE(&j->config_static, "thrlib_function thr_exit\n");

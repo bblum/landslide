@@ -86,14 +86,16 @@ struct ls_state *new_landslide()
 
 static void check_test_case_magics(struct ls_state *ls)
 {
+	const char *hint = ls->save.stats.total_jumps == 0 ?
+		"Your " TEST_CASE "() has a deterministic bug!" :
+		"Your " TEST_CASE "() is not threadsafe!";
 #ifdef USER_MAGIC_GLOBAL_RESULT
 	unsigned int magic_value  = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_GLOBAL_VALUE);
 	unsigned int magic_result = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_GLOBAL_RESULT);
 	if (magic_value != magic_result) {
 		FOUND_A_BUG(ls, "I expected magic_global_value (%u) == "
 			    "magic_global_expected_result (%u), but they were "
-			    "different. This means your " TEST_CASE "() is not "
-			    "threadsafe!", magic_result, magic_value);
+			    "different. %s", magic_result, magic_value, hint);
 	}
 #endif
 #ifdef USER_MAGIC_LOCAL_RESULT
@@ -103,9 +105,8 @@ static void check_test_case_magics(struct ls_state *ls)
 	if (magic_parent + magic_child != magic_sum) {
 		FOUND_A_BUG(ls, "I expected magic_thread_local_value_parent (%u) + "
 			    "magic_thread_local_value_child (%u) == "
-			    "magic_expected_sum (%u), but the sum is wrong! "
-			    "This means your " TEST_CASE "() is not threadsafe!",
-			    magic_parent, magic_child, magic_sum);
+			    "magic_expected_sum (%u), but the sum is wrong! %s",
+			    magic_parent, magic_child, magic_sum, hint);
 	}
 #endif
 }
