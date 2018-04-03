@@ -8,6 +8,7 @@
  */
 
 /* Includes */
+#include <assert.h>
 #include <syscall.h>
 #include <stdlib.h>
 #include <thread.h>
