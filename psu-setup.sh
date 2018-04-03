@@ -15,7 +15,7 @@ function die() {
 
 # Some quick checks before we get started with side effects
 if [ -z "$1" ]; then
-	die "usage: ./setup.sh ABSOLUTE_PATH_TO_P2_DIRECTORY"
+	die "usage: ./psu-setup.sh /vagrant # replace \"/vagrant\" with directory to your thread library if not in the VM"
 fi
 if [ ! -d "$1" ]; then
 	die "argument '$1' is not a directory"
@@ -65,7 +65,7 @@ ln -s bochsrc-pebbles.txt bochsrc.txt || die "couldn't create bochsrc symlink"
 
 # Import and build student p2.
 
-cd p2-basecode || die "couldn't cd into p2 basecode directory"
+cd p2-basecode || die "couldn't cd into thread library basecode directory"
 
 # update makefile for different userspace library requiremence, if necessary
 # but also supports cmu projecce
@@ -107,7 +107,7 @@ fi
 P2DIR="$PWD"
 msg "Importing your project into '$P2DIR' - look there if something goes wrong..."
 
-./import-p2.sh "$1" || die "could not import your p2"
+./import-p2.sh "$1" || die "could not import your thread library"
 
 make veryclean # i have no idea why i need this but you get some real twilight zone looking builds without it
 make || die "source code import was successful, but build failed (from '$PWD')"
@@ -127,7 +127,7 @@ export LANDSLIDE_CONFIG=config.landslide
 ./build.sh || die "Failed to compile landslide. Please send a tarball of this directory to Ben for assistance."
 
 echo -ne '\033[01;33m'
-echo "Note: Your P2 was imported into '$P2DIR'. If you wish to make changes to it, recommend editing it in '$1' then running this script again."
+echo "Note: Your thread library was imported into '$P2DIR'. If you wish to make changes to it, recommend editing it in '$1' then running this script again."
 echo -ne '\033[01;32m'
 echo "Setup successful. Can now run ./landslide."
 echo -ne '\033[00m'
