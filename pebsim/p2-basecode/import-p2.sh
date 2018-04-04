@@ -112,6 +112,9 @@ function add_410_test() {
 
 if [ "$PSU" = 1 ]; then
 	add_410_test atomic_fetch_add
+	add_410_test atomic_exchange
+	add_410_test atomic_compare_swap
+	add_410_test atomic_fetch_sub
 fi
 
 echo "import p2 success; you may now make, hopefully"
