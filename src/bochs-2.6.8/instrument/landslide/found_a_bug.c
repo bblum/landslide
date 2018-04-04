@@ -51,17 +51,22 @@
 typedef ARRAY_LIST(unsigned int) table_column_map_t;
 
 static void init_table_column_map(table_column_map_t *m, struct save_state *ss,
-				  int current_tid)
+				  int current_tid, bool skip_shell)
 {
 	ARRAY_LIST_INIT(m, 64);
 
 	/* current tid may not show up in history. add as a special case. */
-	ARRAY_LIST_APPEND(m, current_tid);
+	if (!(skip_shell && TID_IS_SHELL(current_tid))) {
+		ARRAY_LIST_APPEND(m, current_tid);
+	}
 	for (const struct hax *h = ss->current; h != NULL; h = h->parent) {
 		/* add it if it's not already present */
 		bool present = false;
 		int i;
 		unsigned int *tidp;
+		if (skip_shell && TID_IS_SHELL(h->stack_trace->tid)) {
+			continue;
+		}
 		ARRAY_LIST_FOREACH(m, i, tidp) {
 			if (*tidp == h->stack_trace->tid) {
 				present = true;
@@ -160,7 +165,7 @@ static unsigned int print_tree_from(const struct hax *h, unsigned int choose_thr
 				    bool bug_found, bool tabular,
 				    struct fab_html_env *env,
 				    table_column_map_t *map,
-				    bool verbose)
+				    bool verbose, bool skip_shell)
 {
 	unsigned int num;
 
@@ -170,7 +175,7 @@ static unsigned int print_tree_from(const struct hax *h, unsigned int choose_thr
 	}
 
 	num = 1 + print_tree_from(h->parent, h->chosen_thread, bug_found,
-				  tabular, env, map, verbose);
+				  tabular, env, map, verbose, skip_shell);
 
 	if (h->is_preemption_point &&
 	    (h->chosen_thread != choose_thread || verbose)) {
@@ -194,7 +199,7 @@ static unsigned int print_tree_from(const struct hax *h, unsigned int choose_thr
 		printf(BUG, COLOUR_DEFAULT "\n");
 		/* print stack trace, either in html or console format */
 		print_stack_to_console(h->stack_trace, bug_found, "\t");
-		if (tabular) {
+		if (tabular && !(skip_shell && TID_IS_SHELL(h->stack_trace->tid))) {
 			html_print_stack_trace_in_table(env, map, h->stack_trace);
 		}
 	}
@@ -295,6 +300,8 @@ void _found_a_bug(struct ls_state *ls, bool bug_found, bool verbose,
 	/* Should we emit a "tabular" preemption trace using html, or
 	 * default to the all-threads-in-one-column plaintext output? */
 	bool tabular = TABULAR_TRACE != 0;
+	/* Don't print the shell if it would confuse p2 studence. */
+	bool skip_shell = testing_userspace();
 
 	if (reason) {
 		lsprintf(BUG, bug_found, COLOUR_BOLD "%s%.*s\n" COLOUR_DEFAULT,
@@ -353,7 +360,7 @@ void _found_a_bug(struct ls_state *ls, bool bug_found, bool verbose,
 		HTML_PRINTF(&env, HTML_NEWLINE);
 
 		/* Figure out how many columns the table will need. */
-		init_table_column_map(&map, &ls->save, stack->tid);
+		init_table_column_map(&map, &ls->save, stack->tid, skip_shell);
 		assert(ARRAY_LIST_SIZE(&map) > 0);
 
 		if (testing_userspace() && count_distinct_user_threads(&map) < 2) {
@@ -390,7 +397,7 @@ void _found_a_bug(struct ls_state *ls, bool bug_found, bool verbose,
 
 	/* Walk current branch from root. */
 	print_tree_from(ls->save.current, ls->save.next_tid, bug_found,
-			tabular, &env, &map, verbose);
+			tabular, &env, &map, verbose, skip_shell);
 
 	lsprintf(BUG, bug_found, COLOUR_BOLD "%sCurrent stack:\n"
 		 COLOUR_DEFAULT, bug_found ? COLOUR_RED : COLOUR_GREEN);
