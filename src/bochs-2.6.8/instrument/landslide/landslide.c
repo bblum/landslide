@@ -109,6 +109,23 @@ static void check_test_case_magics(struct ls_state *ls)
 			    magic_parent, magic_child, magic_sum, hint);
 	}
 #endif
+#ifdef USER_MAGIC_SUM_MINUS_RESULT
+	// this mode is used for cmpxchg test, where the resulting values in
+	// global and the resulting sum of parent+child have two legal outcomes,
+	// but the difference between the two must always equal the start value.
+	unsigned int magic_value  = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_GLOBAL_VALUE);
+	unsigned int magic_parent = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_LOCAL_PARENT);
+	unsigned int magic_child  = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_LOCAL_CHILD);
+	unsigned int magic_minus  = READ_MEMORY(ls->cpu0, (unsigned int)USER_MAGIC_SUM_MINUS_RESULT);
+	if (magic_parent + magic_child - magic_value != magic_minus) {
+		FOUND_A_BUG(ls, "I expected magic_thread_local_value_parent (%u) + "
+			    "magic_thread_local_value_child (%u) - "
+			    "magic_global_value (%u) == "
+			    "magic_expected_sum_minus_result (%u), but the "
+			    "difference is wrong! %s", magic_parent, magic_child,
+			    magic_value, magic_minus, hint);
+	}
+#endif
 }
 
 #define CASE_SYSCALL(num, name) \

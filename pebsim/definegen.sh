@@ -563,11 +563,12 @@ define_user_addr USER_SLEEP sleep
 
 # magics for post-test-lifecycle checking
 # (used in PSU atomic_* tests)
-define_user_sym USER_MAGIC_GLOBAL_VALUE  magic_global_value
-define_user_sym USER_MAGIC_GLOBAL_RESULT magic_global_expected_result
-define_user_sym USER_MAGIC_LOCAL_PARENT  magic_thread_local_value_parent
-define_user_sym USER_MAGIC_LOCAL_CHILD   magic_thread_local_value_child
-define_user_sym USER_MAGIC_LOCAL_RESULT  magic_expected_sum
+define_user_sym USER_MAGIC_GLOBAL_VALUE     magic_global_value
+define_user_sym USER_MAGIC_GLOBAL_RESULT    magic_global_expected_result
+define_user_sym USER_MAGIC_LOCAL_PARENT     magic_thread_local_value_parent
+define_user_sym USER_MAGIC_LOCAL_CHILD      magic_thread_local_value_child
+define_user_sym USER_MAGIC_LOCAL_RESULT     magic_expected_sum
+define_user_sym USER_MAGIC_SUM_MINUS_RESULT magic_expected_sum_minus_result
 
 echo
 
