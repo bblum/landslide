@@ -20,6 +20,9 @@ fi
 if [ ! -d "$1" ]; then
 	die "argument '$1' is not a directory"
 fi
+if [ "`pwd | cut -d/ -f2`" = "vagrant" ]; then
+	die "cannot run from the VM's shared host directory (/vagrant)! please clone the repository in $HOME instead."
+fi
 
 # Get started with side effects.
 
