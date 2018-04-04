@@ -353,12 +353,21 @@ static void undesirable_loop_html(void *env, struct fab_html_env *html_env)
 		HTML_PRINTF(html_env, "<b>NOTE: I have run a loop in %s() an "
 			    "alarming number of times." HTML_NEWLINE,
 			    USER_SYNC_ACTION_STR(ls->sched.cur_agent));
+#ifdef PSU
+		HTML_PRINTF(html_env, "Landslide cannot tell if this is an "
+			    "infinite loop, or a synchronization" HTML_NEWLINE);
+		HTML_PRINTF(html_env, "with another thread. Please check the "
+			    "indicated line of code, and if it's " HTML_NEWLINE);
+		HTML_PRINTF(html_env, "not a bug, add a 'yield()' call within "
+			    "the loop to help Landslide out. " HTML_NEWLINE);
+#else
 		HTML_PRINTF(html_env, "This version of Landslide cannot "
 			    "distinguish between this loop " HTML_NEWLINE);
 		HTML_PRINTF(html_env, "being infinite versus "
 			    "undesirable." HTML_NEWLINE);
 		HTML_PRINTF(html_env, "Please refer to the \"Synchronization "
 			    "(2)\" lecture." HTML_NEWLINE);
+#endif
 		HTML_PRINTF(html_env, HTML_BOX_END HTML_NEWLINE);
 	}
 }

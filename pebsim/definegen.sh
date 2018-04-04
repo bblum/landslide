@@ -213,6 +213,10 @@ if [ ! -z "$PINTOS_KERNEL" ]; then
 	# For Pebbles, many #defines are expected and Landslide will not compile
 	# without them. In Pintos we are not able to provide these whatsoever.
 	echo "#define PINTOS_KERNEL"
+elif [ "`cat current-architecture.txt`" = "psu" ]; then
+	# CMU and PSU both use Pebbles/P2, but for PSU Landslide will change
+	# some of its diagnostic messages.
+	echo "#define PSU"
 fi
 
 ########################

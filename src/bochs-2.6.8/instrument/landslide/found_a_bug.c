@@ -300,8 +300,12 @@ void _found_a_bug(struct ls_state *ls, bool bug_found, bool verbose,
 	/* Should we emit a "tabular" preemption trace using html, or
 	 * default to the all-threads-in-one-column plaintext output? */
 	bool tabular = TABULAR_TRACE != 0;
+#ifdef PSU
 	/* Don't print the shell if it would confuse p2 studence. */
 	bool skip_shell = testing_userspace();
+#else
+	bool skip_shell = false;
+#endif
 
 	if (reason) {
 		lsprintf(BUG, bug_found, COLOUR_BOLD "%s%.*s\n" COLOUR_DEFAULT,
