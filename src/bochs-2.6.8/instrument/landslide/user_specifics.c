@@ -121,7 +121,16 @@ bool user_mm_malloc_entering(cpu_t *cpu, unsigned int eip, unsigned int *size)
 		return false;
 	}
 #else
+#ifdef USER__MALLOC_ENTER
+	if (eip == USER__MALLOC_ENTER) {
+		*size = READ_STACK(cpu, 1);
+		return true;
+	} else {
+		return false;
+	}
+#else
 	return false;
+#endif
 #endif
 }
 
@@ -138,7 +147,19 @@ bool user_mm_malloc_exiting(cpu_t *cpu, unsigned int eip, unsigned int *base)
 #ifdef USER_MM_MALLOC_ENTER
 	STATIC_ASSERT(false && "user malloc enter but not exit defined");
 #endif
+#ifdef USER__MALLOC_EXIT
+	if (eip == USER__MALLOC_EXIT) {
+		*base = GET_CPU_ATTR(cpu, eax);
+		return true;
+	} else {
+		return false;
+	}
+#else
+#ifdef USER__MALLOC_ENTER
+	STATIC_ASSERT(false && "user _malloc enter but not exit defined");
+#endif
 	return false;
+#endif
 #endif
 }
 
@@ -152,7 +173,16 @@ bool user_mm_free_entering(cpu_t *cpu, unsigned int eip, unsigned int *base)
 		return false;
 	}
 #else
+#ifdef USER__FREE_ENTER
+	if (eip == USER__FREE_ENTER) {
+		*base = READ_STACK(cpu, 1);
+		return true;
+	} else {
+		return false;
+	}
+#else
 	return false;
+#endif
 #endif
 }
 
@@ -164,7 +194,14 @@ bool user_mm_free_exiting(unsigned int eip)
 #ifdef USER_MM_FREE_ENTER
 	STATIC_ASSERT(false && "user free enter but not exit defined");
 #endif
+#ifdef USER__FREE_EXIT
+	return (eip == USER__FREE_EXIT);
+#else
+#ifdef USER__FREE_ENTER
+	STATIC_ASSERT(false && "user _free enter but not exit defined");
+#endif
 	return false;
+#endif
 #endif
 }
 
@@ -180,7 +217,17 @@ bool user_mm_realloc_entering(cpu_t *cpu, unsigned int eip,
 		return false;
 	}
 #else
+#ifdef USER__REALLOC_ENTER
+	if (eip == USER__REALLOC_ENTER) {
+		*orig_base = READ_STACK(cpu, 1);
+		*size = READ_STACK(cpu, 2);
+		return true;
+	} else {
+		return false;
+	}
+#else
 	return false;
+#endif
 #endif
 }
 
@@ -197,7 +244,19 @@ bool user_mm_realloc_exiting(cpu_t *cpu, unsigned int eip, unsigned int *base)
 #ifdef USER_MM_REALLOC_ENTER
 	STATIC_ASSERT(false && "user realloc enter but not exit defined");
 #endif
+#ifdef USER__REALLOC_EXIT
+	if (eip == USER__REALLOC_EXIT) {
+		*base = GET_CPU_ATTR(cpu, eax);
+		return true;
+	} else {
+		return false;
+	}
+#else
+#ifdef USER__REALLOC_ENTER
+	STATIC_ASSERT(false && "user _realloc enter but not exit defined");
+#endif
 	return false;
+#endif
 #endif
 }
 
