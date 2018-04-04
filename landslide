@@ -65,6 +65,7 @@ if [ -f "$LOCKFILE" ]; then
 	echo -e "\033[01;31m'git clone' and run one Landslide in each.\033[00m"
 	echo -e "\033[01;31mTo override this message, remove the file '$LOCKFILE'.\033[00m"
 	exit 1
+else
 	touch "$LOCKFILE"
 fi
 
