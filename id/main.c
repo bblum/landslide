@@ -49,7 +49,7 @@ int main(int argc, char **argv)
 			 &use_icb, &preempt_everywhere, &pure_hb,
 			 &txn, &txn_abort_codes, &verif_mode, &pathos, &progress_interval,
 			 trace_dir, BUF_SIZE, &eta_factor, &eta_threshold)) {
-		usage(argv[0]);
+		usage(strcmp(argv[0], "./landslide-id") == 0 ? "./landslide" : argv[0]);
 		exit(ID_EXIT_USAGE);
 	}
 
