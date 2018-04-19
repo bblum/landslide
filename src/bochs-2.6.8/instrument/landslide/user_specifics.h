@@ -25,6 +25,8 @@ bool user_sleep_entering(unsigned int eip);
 /* malloc */
 bool user_mm_init_entering(unsigned int eip);
 bool user_mm_init_exiting(unsigned int eip);
+bool user_mem_sbrk_entering(unsigned int eip);
+bool user_mem_sbrk_exiting(unsigned int eip);
 bool user_mm_malloc_entering(cpu_t *cpu, unsigned int eip, unsigned int *size);
 bool user_mm_malloc_exiting(cpu_t *cpu, unsigned int eip, unsigned int *base);
 bool user_mm_free_entering(cpu_t *cpu, unsigned int eip, unsigned int *base);

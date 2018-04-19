@@ -94,6 +94,7 @@ static void agent_fork(struct sched_state *s, unsigned int tid, bool on_runqueue
 	a->action.user_locked_callocing = false;
 	a->action.user_locked_reallocing = false;
 	a->action.user_locked_freeing = false;
+	a->action.user_mem_sbrking = false;
 	a->action.user_wants_txn = false;
 	a->action.user_txn = false;
 	a->action.schedule_target = false;
@@ -1419,6 +1420,12 @@ static void sched_update_user_state_machine(struct ls_state *ls)
 	} else if (user_locked_realloc_exiting(ls->eip)) {
 		assert(ACTION(s, user_locked_reallocing));
 		ACTION(s, user_locked_reallocing) = false;
+	} else if (user_mem_sbrk_entering(ls->eip)) {
+		assert(!ACTION(s, user_mem_sbrking));
+		ACTION(s, user_mem_sbrking) = true;
+	} else if (user_mem_sbrk_exiting(ls->eip)) {
+		assert(ACTION(s, user_mem_sbrking));
+		ACTION(s, user_mem_sbrking) = false;
 	/* txn */
 	} else if (user_xbegin_entering(ls->eip)) {
 		assert(!ACTION(s, user_txn) && "nested txn not supported");

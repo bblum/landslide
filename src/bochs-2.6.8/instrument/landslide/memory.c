@@ -70,6 +70,7 @@ static void mem_heap_init(struct mem_state *m)
 	m->cr3_tid = 0;
 	m->user_mutex_size = 0;
 	m->during_xchg = false;
+	ARRAY_LIST_INIT(&m->newpageses, 8);
 	m->shm.rb_node = NULL;
 	m->freed.rb_node = NULL;
 	m->data_races.rb_node = NULL;
@@ -849,6 +850,56 @@ static void use_after_free(struct ls_state *ls, unsigned int addr,
 	}
 }
 
+static unsigned int lowest_user_newpage(struct ls_state *ls) {
+	unsigned int i;
+	unsigned int *newpage;
+	unsigned int lowest = (unsigned int)-1;
+	ARRAY_LIST_FOREACH(&ls->user_mem.newpageses, i, newpage) {
+		if (*newpage < lowest) {
+			lowest = *newpage;
+		}
+	}
+	return lowest;
+}
+
+/* used to permit userspace to encroach upon malloc's domain using new_pages */
+void mem_check_syscall_return(struct ls_state *ls, unsigned int syscall_num)
+{
+#ifndef PINTOS_KERNEL
+	if (!check_user_address_space(ls) || ls->user_mem.in_mm_init ||
+	    ls->sched.cur_agent->action.user_mem_sbrking) {
+		return;
+	}
+	if (syscall_num == NEW_PAGES_INT && GET_CPU_ATTR(ls->cpu0, eax) == 0) {
+		unsigned int base = READ_MEMORY(ls->cpu0, GET_CPU_ATTR(ls->cpu0, esi));
+		unsigned int i;
+		unsigned int *newpage;
+		ARRAY_LIST_FOREACH(&ls->user_mem.newpageses, i, newpage) {
+			assert(base != *newpage && "duplicate newpage alloc?");
+		}
+		ARRAY_LIST_APPEND(&ls->user_mem.newpageses, base);
+	} else if (syscall_num == REMOVE_PAGES_INT) {
+		unsigned int base = GET_CPU_ATTR(ls->cpu0, esi);
+		unsigned int i;
+		unsigned int *newpage;
+		bool found = false;
+		ARRAY_LIST_FOREACH(&ls->user_mem.newpageses, i, newpage) {
+			if (base == *newpage) {
+				ARRAY_LIST_REMOVE_SWAP(&ls->user_mem.newpageses, i);
+				found = true;
+				break;
+			}
+		}
+		if (!found) {
+			FOUND_A_BUG(ls, "remove_pages(0x%x), but I'm not sure "
+				    "when that was allocated! Exceedingly "
+				    "suspicious... This may not actually be a "
+				    "bug. Please email Ben for advice.", base);
+		}
+	}
+#endif
+}
+
 /* some system calls, despite making no accesses to user memory, can still
  * affect another user thread's behaviour. essentially they allow user code to
  * use kernel memory as a communication backchannel. hence, if we are doing a
@@ -1043,7 +1094,8 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 	bool do_add_shm = !IN_USER_MALLOC_WRAPPERS(ls->sched.cur_agent);
 
 	if ((in_kernel && kern_address_in_heap(addr)) ||
-	    (!in_kernel && user_address_in_heap(addr))) {
+	    (!in_kernel && user_address_in_heap(addr) &&
+	     addr < lowest_user_newpage(ls))) {
 		const struct chunk *c = find_alloced_chunk(m, addr);
 		if (c == NULL) {
 			use_after_free(ls, addr, write, KERNEL_MEMORY(addr));

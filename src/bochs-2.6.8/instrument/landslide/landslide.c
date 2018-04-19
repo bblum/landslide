@@ -134,6 +134,10 @@ static void check_test_case_magics(struct ls_state *ls)
 static void check_user_syscall(struct ls_state *ls)
 {
 	if (ls->instruction_text[0] != OPCODE_INT) {
+		if (ls->sched.cur_agent->most_recent_syscall != 0) {
+			mem_check_syscall_return(ls,
+				ls->sched.cur_agent->most_recent_syscall);
+		}
 		ls->sched.cur_agent->most_recent_syscall = 0;
 		return;
 	}

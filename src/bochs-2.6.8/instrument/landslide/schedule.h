@@ -78,6 +78,7 @@ struct agent {
 		bool user_locked_callocing;
 		bool user_locked_reallocing;
 		bool user_locked_freeing;
+		bool user_mem_sbrking;
 		bool user_wants_txn;
 		bool user_txn;
 		/* are we trying to schedule this agent? */

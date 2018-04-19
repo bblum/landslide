@@ -111,6 +111,27 @@ bool user_mm_init_exiting(unsigned int eip)
 #endif
 }
 
+bool user_mem_sbrk_entering(unsigned int eip)
+{
+#ifdef USER_MEM_SBRK_ENTER
+	return eip == USER_MEM_SBRK_ENTER;
+#else
+	return false;
+#endif
+}
+
+bool user_mem_sbrk_exiting(unsigned int eip)
+{
+#ifdef USER_MEM_SBRK_EXIT
+	return eip == USER_MEM_SBRK_EXIT;
+#else
+#ifdef USER_MEM_SBRK_ENTER
+	STATIC_ASSERT(false && "user mem_sbrk enter but not exit defined");
+#endif
+	return false;
+#endif
+}
+
 bool user_mm_malloc_entering(cpu_t *cpu, unsigned int eip, unsigned int *size)
 {
 #ifdef USER_MM_MALLOC_ENTER

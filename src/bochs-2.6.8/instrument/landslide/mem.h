@@ -9,6 +9,7 @@
 
 #include <stdbool.h>
 
+#include "array_list.h"
 #include "lockset.h"
 #include "rbtree.h"
 #include "vector_clock.h"
@@ -153,6 +154,9 @@ struct mem_state {
 	 * xchg couldn't possibly unblock another xchg-looping thread. */
 	bool during_xchg; /* wtb option types */
 	unsigned int last_xchg_read;
+	/* tracks new_pages allocs belonging to the thrlib, to avoid erroneously
+	 * reporting invalid heap accesses if the studence allocate near sbrk */
+	ARRAY_LIST(unsigned int) newpageses;
 	/**** shared memory conflict detection ****/
 	/* set of all shared accesses that happened during this transition;
 	 * cleared after each save point - done in save.c */
@@ -175,6 +179,7 @@ void init_malloc_actions(struct malloc_actions *);
 
 void mem_update(struct ls_state *);
 
+void mem_check_syscall_return(struct ls_state *, unsigned int syscall_num);
 void mem_check_shared_access(struct ls_state *, unsigned int phys_addr,
 							 unsigned int virt_addr, bool write);
 bool mem_shm_intersect(struct ls_state *ls,

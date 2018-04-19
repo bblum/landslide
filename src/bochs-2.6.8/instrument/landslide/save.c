@@ -90,6 +90,7 @@ static struct agent *copy_agent(struct agent *a_src)
 	COPY_FIELD(action.user_locked_callocing);
 	COPY_FIELD(action.user_locked_reallocing);
 	COPY_FIELD(action.user_locked_freeing);
+	COPY_FIELD(action.user_mem_sbrking);
 	COPY_FIELD(action.user_wants_txn);
 	COPY_FIELD(action.user_txn);
 	COPY_FIELD(action.schedule_target);

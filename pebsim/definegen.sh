@@ -527,6 +527,7 @@ define_user_addr USER_LOCKED_MALLOC malloc
 define_user_addr USER_LOCKED_FREE free
 define_user_addr USER_LOCKED_CALLOC calloc
 define_user_addr USER_LOCKED_REALLOC realloc
+define_user_addr USER_MEM_SBRK mem_sbrk
 define_user_addr USER_PANIC panic
 
 # user elf regions
