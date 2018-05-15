@@ -40,6 +40,7 @@ int main(int argc, char **argv)
 	bool pure_hb;
 	bool txn;
 	bool txn_abort_codes;
+	bool txn_dont_retry;
 	bool verif_mode;
 	unsigned long progress_interval;
 
@@ -47,7 +48,8 @@ int main(int argc, char **argv)
 			 &verbose, &leave_logs, &control_experiment,
 			 &use_wrapper_log, wrapper_log, BUF_SIZE, &pintos,
 			 &use_icb, &preempt_everywhere, &pure_hb,
-			 &txn, &txn_abort_codes, &verif_mode, &pathos, &progress_interval,
+			 &txn, &txn_abort_codes, &txn_dont_retry,
+			 &verif_mode, &pathos, &progress_interval,
 			 trace_dir, BUF_SIZE, &eta_factor, &eta_threshold)) {
 		usage(strcmp(argv[0], "./landslide-id") == 0 ? "./landslide" : argv[0]);
 		exit(ID_EXIT_USAGE);
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
 
 	DBG("will run for at most %lu seconds\n", max_time);
 
-	set_job_options(test_name, trace_dir, verbose, leave_logs, pintos, use_icb, preempt_everywhere, pure_hb, txn, txn_abort_codes, verif_mode, pathos);
+	set_job_options(test_name, trace_dir, verbose, leave_logs, pintos, use_icb, preempt_everywhere, pure_hb, txn, txn_abort_codes, txn_dont_retry, verif_mode, pathos);
 	init_signal_handling();
 	start_time(max_time * 1000000, num_cpus);
 

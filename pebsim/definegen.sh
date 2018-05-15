@@ -140,6 +140,7 @@ PREEMPT_EVERYWHERE=0
 PURE_HAPPENS_BEFORE=0
 HTM=0
 HTM_ABORT_CODES=0
+HTM_DONT_RETRY=0
 source $CONFIG
 
 source ./symbols.sh
@@ -402,6 +403,9 @@ if [ "$HTM" = "1" ]; then
 	echo "#define HTM_XABORT     0x`get_user_func     _xabort`"
 	if [ "$HTM_ABORT_CODES" = "1" ]; then
 		echo "#define HTM_ABORT_CODES"
+		if [ "$HTM_DONT_RETRY" = "1" ]; then
+			echo "#define HTM_DONT_RETRY"
+		fi
 	fi
 fi
 

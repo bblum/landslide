@@ -835,11 +835,13 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		if ((h->xbegin = xbegin)) {
 			ARRAY_LIST_INIT(&h->xabort_codes_ever, 8);
 			ARRAY_LIST_INIT(&h->xabort_codes_todo, 8);
-			// mario's htm data structures may comment this out,
-			// provided you use -A to insert DPOR conflict aborts,
-			// manually trusting the retry-loop abstraction.
+#ifndef HTM_DONT_RETRY
+			/* e.g. mario's htm data structures may supply -A -S to
+			 * disable this code, since they wrap these in a retry
+			 * loop, leaving DPOR conflicts as the only aborts */
 			unsigned int retry_code = _XABORT_RETRY;
 			add_xabort_code(h, &retry_code);
+#endif
 		}
 
 		timetravel_hax_init(&h->time_machine);

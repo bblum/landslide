@@ -46,13 +46,14 @@ bool preempt_everywhere = false;
 bool pure_hb = false;
 bool transactions = false;
 bool abort_codes = false;
+bool dont_xabort_retry = false;
 bool verif_mode = false;
 
 void set_job_options(char *arg_test_name, char *arg_trace_dir,
 		     bool arg_verbose, bool arg_leave_logs,
 		     bool arg_pintos, bool arg_use_icb, bool arg_preempt_everywhere,
 		     bool arg_pure_hb, bool arg_txn, bool arg_txn_abort_codes,
-		     bool arg_verif_mode,
+		     bool arg_txn_dont_retry, bool arg_verif_mode,
 		     bool arg_pathos)
 {
 	test_name = XSTRDUP(arg_test_name);
@@ -66,6 +67,7 @@ void set_job_options(char *arg_test_name, char *arg_trace_dir,
 	pure_hb = arg_pure_hb;
 	transactions = arg_txn;
 	abort_codes = arg_txn_abort_codes;
+	dont_xabort_retry = arg_txn_dont_retry;
 	verif_mode = arg_verif_mode;
 }
 
@@ -237,6 +239,10 @@ static void *run_job(void *arg)
 		XWRITE(&j->config_static, "FILTER_DRS_BY_TID=0\n");
 		if (abort_codes) {
 			XWRITE(&j->config_static, "HTM_ABORT_CODES=1\n");
+		}
+		if (dont_xabort_retry) {
+			assert(abort_codes);
+			XWRITE(&j->config_static, "HTM_DONT_RETRY=1\n");
 		}
 		// XXX: these 4 tests are forced onto the "worse" state space
 		// for consistency with how the experiments in SIGBOVIK'18 were

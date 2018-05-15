@@ -122,7 +122,8 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		 bool *leave_logs, bool *control_experiment, bool *use_wrapper_log,
 		 char *wrapper_log, unsigned int wrapper_log_len, bool *pintos,
 		 bool *use_icb, bool *preempt_everywhere, bool *pure_hb,
-		 bool *txn, bool *txn_abort_codes, bool *verif_mode,
+		 bool *txn, bool *txn_abort_codes, bool *txn_dont_retry,
+		 bool *verif_mode,
 		 bool *pathos, unsigned long *progress_report_interval,
 		 char *trace_dir, unsigned int trace_dir_len,
 		 unsigned long *eta_factor, unsigned long *eta_thresh)
@@ -172,6 +173,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	DEF_CMDLINE_FLAG('V', true, pure_hb, "Use vector clocks for \"pure\" happens-before data-races");
 	DEF_CMDLINE_FLAG('X', true, txn, "Enable transactional-memory testing options");
 	DEF_CMDLINE_FLAG('A', true, txn_abort_codes, "Support multiple xabort failure codes (warning: exponential)");
+	DEF_CMDLINE_FLAG('S', true, txn_dont_retry, "STM semantics (suppress _XABORT_RETRY failures) (requires -A)");
 	DEF_CMDLINE_FLAG('M', false, verif_mode, "Optimize for faster verification (maximal state space only)");
 #undef DEF_CMDLINE_FLAG
 
@@ -335,11 +337,22 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 			options_valid = false;
 		}
 	} else if (arg_txn_abort_codes) {
-		ERR("-A (txn abort codes) supplied without -X (txn)");
+		ERR("-A (txn abort codes) supplied without -X (txn)\n");
 		options_valid = false;
 	} else if (strstr(test_name, "htm") == test_name) {
-		// TODO: add a similar check for STM
 		ERR("You want to use -X with that HTM test case, right?\n");
+		options_valid = false;
+	}
+	if (arg_txn_dont_retry) {
+		if (!arg_txn_abort_codes) {
+			/* suppressing retry aborts without also enabling the
+			 * other transaction failure reasons would basically
+			 * make transactions never fail.. logical, but silly */
+			ERR("-S (txn dont retry) supplied without -A (txn abort codes)\n");
+			options_valid = false;
+		}
+	} else if (strstr(test_name, "stm") == test_name) {
+		ERR("You want to use -X -A -S with that STM test case, right?\n");
 		options_valid = false;
 	}
 
@@ -384,6 +397,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	*pure_hb = (!arg_pathos && !arg_limited_hb) || arg_pure_hb;
 	*txn = arg_txn;
 	*txn_abort_codes = arg_txn_abort_codes;
+	*txn_dont_retry = arg_txn_dont_retry;
 	*verif_mode = arg_verif_mode;
 
 	return options_valid;
