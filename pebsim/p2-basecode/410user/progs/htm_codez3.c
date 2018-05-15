@@ -1,4 +1,4 @@
-/** @file 410user/progs/htm_codez2.c
+/** @file 410user/progs/htm_codez3.c
  *  @author bblum
  *  @brief tests transactional memory
  *  @public yes
@@ -18,29 +18,40 @@
 #include <test.h>
 #include <htm.h>
 
-DEF_TEST_NAME("htm-codez2:");
+DEF_TEST_NAME("htm-codez3:");
 
 #define ERR REPORT_FAILOUT_ON_ERR
 
+mutex_t lock;
 static int count = 0;
 
-void txn()
+void *txn(void *dummy)
 {
 	int status;
 	if ((status = _xbegin()) == _XBEGIN_STARTED) {
-		count++;
 		_xend();
 	} else {
-		assert(status == _XABORT_RETRY && "this assert should not trip under any combination of options");
-		assert(0 && "this abort should not trip with -X -A -S set; without -S it is expected to trip tho");
+		assert(status != _XABORT_CONFLICT);
+		// assert(0); // if using -S
 	}
+	// this data race should not be considered part of the xbegin above
+	count++;
+	return NULL;
 }
 
 int main(void)
 {
 	report_start(START_CMPLT);
 
-	txn();
+	ERR(thr_init(4096));
+	ERR(mutex_init(&lock));
+	misbehave(BGND_BRWN >> FGND_CYAN); // for landslide
+
+	int tid = thr_create(txn, NULL);
+	ERR(tid);
+
+	txn(NULL);
+	ERR(thr_join(tid, NULL));
 
 	return 0;
 }
