@@ -1450,6 +1450,7 @@ static void check_locksets(struct ls_state *ls,
 			    /* with pure HB, the above check subsumes this one */
 			    && !lockset_intersect(&l0->locks_held, &l1->locks_held)
 			    && (l0->interrupce_enabled || l1->interrupce_enabled)
+			    /* with pure HB, this likewise subsumed */
 			    && !(l0->during_txn && l1->during_txn)
 			    && !ignore_dr_function(l0->eip)
 			    && !ignore_dr_function(l1->eip)) {

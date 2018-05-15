@@ -45,6 +45,9 @@ bool lock_clock_find(struct lock_clocks *lc, unsigned int lock_addr, struct vect
 struct vector_clock *lock_clock_get(struct lock_clocks *lc, unsigned int lock_addr);
 void lock_clock_set(struct lock_clocks *lc, unsigned int lock_addr, struct vector_clock *vc);
 
+/* abstract global lock for HTM */
+#define VC_TXN ((unsigned int)0xfffffffe)
+
 /* FT-acquire, see fasttrack paper */
 #define VC_ACQUIRE(lc, current_clock, lock_addr) do {			\
 		struct vector_clock *__clock;				\
