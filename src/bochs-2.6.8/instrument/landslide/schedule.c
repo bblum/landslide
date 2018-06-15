@@ -117,6 +117,8 @@ static void agent_fork(struct sched_state *s, unsigned int tid, bool on_runqueue
 #endif
 	a->just_delayed_for_vr_exit = false;
 	a->delayed_vr_exit_eip = -1;
+	a->just_delayed_for_xbegin = false;
+	a->delayed_xbegin_eip = -1;
 	a->most_recent_syscall = 0;
 	a->last_call = 0;
 
@@ -1647,9 +1649,11 @@ void sched_update(struct ls_state *ls)
 	                   CURRENT(s, delayed_data_race_eip == ls->eip);
 	bool skip_for_vr = CURRENT(s, just_delayed_for_vr_exit) &&
 	                   CURRENT(s, delayed_vr_exit_eip == ls->eip);
+	bool skip_for_xb = CURRENT(s, just_delayed_for_xbegin) &&
+	                   CURRENT(s, delayed_xbegin_eip == ls->eip);
 	/* Don't assert this. This can happen, and it's fine. */
 	//assert(!(skip_for_dr && skip_for_vr));
-	if (!(skip_for_dr || skip_for_vr)) {
+	if (!(skip_for_dr || skip_for_vr || skip_for_xb)) {
 		if (KERNEL_MEMORY(ls->eip)) {
 			sched_update_kern_state_machine(ls);
 		} else {
@@ -1900,6 +1904,32 @@ void sched_update(struct ls_state *ls)
 				CURRENT(s, just_delayed_for_vr_exit) = true;
 				CURRENT(s, delayed_vr_exit_eip) = ls->eip;
 				ls->eip = delay_instruction(ls->cpu0);
+			} else if (xbegin) {
+				/* Also also insert a dummy during an xbegin,
+				 * to create a separate PP each for thread
+				 * scheduling and for failure injection. (If
+				 * the PPs are glued together it will create
+				 * soundness issues -- see issue #5. */
+				if (CURRENT(s, just_delayed_for_xbegin)) {
+					/* later, transactional pp */
+					lsprintf(DEV, "xbegin PP, 2nd half\n");
+					assert(CURRENT(s, delayed_xbegin_eip) ==
+					       ls->eip);
+					CURRENT(s, delayed_xbegin_eip) = -1;
+					CURRENT(s, just_delayed_for_xbegin) = false;
+				} else {
+					/* earlier, thread scheduling pp */
+					lsprintf(DEV, "xbegin PP, delaying "
+						 "execution of 0x%x\n", ls->eip);
+					CURRENT(s, just_delayed_for_xbegin) = true;
+					CURRENT(s, delayed_xbegin_eip) = ls->eip;
+					ls->eip = delay_instruction(ls->cpu0);
+					/* tell save/explore/etc to just treat
+					 * this as a normal PP */
+					xbegin = false;
+				}
+			} else {
+				assert(!CURRENT(s, just_delayed_for_xbegin));
 			}
 			/* Effect the choice that was made... */
 			if (chosen != s->cur_agent ||

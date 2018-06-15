@@ -121,6 +121,9 @@ struct agent {
 	/* Same as above but used when exiting a VR yield to a new thread. */
 	bool just_delayed_for_vr_exit;
 	unsigned int delayed_vr_exit_eip; /* ...and if so, where was it */
+	/* Same as above but used to split xbegins apart into two PPs. */
+	bool just_delayed_for_xbegin;
+	unsigned int delayed_xbegin_eip;
 	/* used to narrow down data race candidates based on eip */
 	unsigned int most_recent_syscall;
 	unsigned int last_call; /* like a mini (much faster) stack trace */

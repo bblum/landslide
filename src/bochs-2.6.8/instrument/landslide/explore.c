@@ -71,6 +71,14 @@ static const struct hax *pp_parent(const struct hax *h)
 		 * if ancestor has no non-speculative parent. */
 		assert(h->parent != NULL || h->is_preemption_point);
 	} while (!h->is_preemption_point);
+	/* see comment regarding just_delayed_for_xbegin in schedule.c -- xbegin
+	 * PPs always come with a twin preceding them, which should be used
+	 * instead for thread-related preemptions; the xbegin PP itself being
+	 * reserved for failure injections only. */
+	if (h->xbegin) {
+		assert(h->parent->is_preemption_point);
+		h = h->parent;
+	}
 	return h;
 }
 
