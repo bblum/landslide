@@ -56,6 +56,34 @@ static bool is_evil_ancestor(const struct hax *h0, const struct hax *h)
 	return !h0->happens_before[h->depth] && h0->conflicts[h->depth];
 }
 
+/* identifies redundant interleavings that can arise as described in issue #4.
+ * h0 is a descendant transition that we're fixing to reorder around its
+ * ancestor h. however, if in a sequence of transitions preceding h that happens
+ * to be independent with h0, h0's chosen thread is found to have been explored
+ * in a sibling branch to any of those transitions, reordering h0 around h
+ * itself would be equivalent to that sibling branch, and may be pruned. */
+static bool equiv_already_explored(const struct hax *h0, const struct hax *h)
+{
+	for (const struct hax *h2 = h->parent; h2 != NULL && h2->parent != NULL;
+	     h2 = h2->parent) {
+		if (h2->chosen_thread == h0->chosen_thread) {
+			/* transitions by same thread are not independent obv */
+			return false;
+		} else if (is_evil_ancestor(h0, h2)) {
+			/* independent preceding transition chain ends here */
+			return false;
+		} else if (h0->happens_before[h2->depth]) {
+			/* h0 can't be reordered past here so stop looking */
+			return false;
+		} else if (is_child_searched(h2->parent, h0->chosen_thread)) {
+			/* found such an independent sibling branch!! */
+			return true;
+		}
+	}
+	/* no evidence of an equivalent interleaving being tested was found */
+	return false;
+}
+
 /* Finds the nearest parent save point that's actually a preemption point.
  * This is how we skip over speculative data race save points when identifying
  * which "good sibling" transitions to tag (when to preempt to get to them?) */
@@ -378,6 +406,8 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 				}
 				continue;
 			} else if (!is_evil_ancestor(h, ancestor)) {
+				continue;
+			} else if (equiv_already_explored(h, ancestor)) {
 				continue;
 			}
 
