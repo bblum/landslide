@@ -862,6 +862,25 @@ static unsigned int lowest_user_newpage(struct ls_state *ls) {
 	return lowest;
 }
 
+/* normally the thrlib_function command works by direct checking of eip ranges.
+ * however, in the case of system calls, treat it more like within_function.
+ * this allows thread_fork misbehave preemption point without DPOR necessarily
+ * always needing to run the other thread. see thesis section 3.1.4.2. */
+static bool ignore_syscall_from_thrlib_function(struct ls_state *ls) {
+	struct stack_trace *st = stack_trace(ls);
+	const struct stack_frame *f;
+	bool result = false;
+	unsigned int i;
+	ARRAY_LIST_FOREACH(&st->frames, i, f) {
+		if (ignore_thrlib_function(f->eip)) {
+			result = true;
+			break;
+		}
+	}
+	free_stack_trace(st);
+	return result;
+}
+
 /* used to permit userspace to encroach upon malloc's domain using new_pages */
 void mem_check_syscall_return(struct ls_state *ls, unsigned int syscall_num)
 {
@@ -981,8 +1000,15 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 		 * shm heap for the space we're not testing stays empty. */
 		if (testing_userspace()) {
 			int syscall = ls->sched.cur_agent->most_recent_syscall;
+			// FIXME: i want to exclude all KERNEL_MEMORY(addr)
+			// accesses here, but i'm not sure if that will be too
+			// relaxed? the comment above BACKCHANNEL definition
+			// suggests kernel memory may come into play here too,
+			// so i'm leaving such memory accesses to count for
+			// DPOR... as long as thrlib_func doesn't exclude them.
 			if (SYSCALL_IS_USER_BACKCHANNEL(syscall) &&
-			    check_user_address_space(ls)) {
+			    check_user_address_space(ls) &&
+			    !ignore_syscall_from_thrlib_function(ls)) {
 				/* record this access in the user's mem state
 				 * XXX HACK: while this causes it to show up in
 				 * conflicts as desired, it will also show up in

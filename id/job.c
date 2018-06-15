@@ -291,6 +291,9 @@ static void *run_job(void *arg)
 			XWRITE(&j->config_static, "thrlib_function child_swexn_init\n");
 			XWRITE(&j->config_static, "thrlib_function wakeup_thread\n");
 			XWRITE(&j->config_static, "thrlib_function remove_thread\n");
+			XWRITE(&j->config_static, "thrlib_function atomic_fetch_add\n");
+			XWRITE(&j->config_static, "thrlib_function remove_pages_and_vanish\n");
+			XWRITE(&j->config_static, "thrlib_function thr_spawn\n");
 		}
 		/* don't preempt on mutex use arising from the thrlib */
 		XWRITE(&j->config_dynamic, "%s thr_init\n", without);
