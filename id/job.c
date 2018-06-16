@@ -244,7 +244,14 @@ static void *run_job(void *arg)
 			assert(abort_codes);
 			XWRITE(&j->config_static, "HTM_DONT_RETRY=1\n");
 		}
-		// XXX: these 4 tests are forced onto the "worse" state space
+		/* since commit dcae85b (2 ago), it was discovered all the
+		 * sigbovik tests were conducted with an unsound treatment of
+		 * xbegin PPs by DPOR, so it doesn't make sense to freeze in
+		 * time the old state spaces for the 4 tests listed below.
+		 * to truly reproduce those numbers, unsound as they are, you'll
+		 * need to remove the previous 2 commits (0447666 as well). */
+#if 1
+		// these 4 tests are forced onto the "worse" state space
 		// for consistency with how the experiments in SIGBOVIK'18 were
 		// run; these tests were measured before the ignore-thrlib
 		// feature was added and so should be reproduced the same way
@@ -252,6 +259,9 @@ static void *run_job(void *arg)
 		    0 == strcmp(test_name, "htm2") ||
 		    0 == strcmp(test_name, "counter") ||
 		    0 == strcmp(test_name, "swapbug")) {
+#else
+		if (false) {
+#endif
 			// just ignores their DRs while counting as conflicts in DPOR.
 			XWRITE(&j->config_static, "ignore_dr_function thr_create 1\n");
 			XWRITE(&j->config_static, "ignore_dr_function thr_exit 1\n");
@@ -262,8 +272,6 @@ static void *run_job(void *arg)
 			XWRITE(&j->config_static, "ignore_dr_function remove_thread 1\n");
 			XWRITE(&j->config_static, "ignore_dr_function cond_wait 1\n");
 		} else {
-			// XXX see above; this feature was added for the verif
-			// experiment on htmavl/htmsepchain/swap/avl only
 			/* ignore all thrlib's accesses even in DPOR */
 			XWRITE(&j->config_static, "thrlib_function thr_create\n");
 			XWRITE(&j->config_static, "thrlib_function thr_exit\n");
