@@ -250,7 +250,7 @@ static void *run_job(void *arg)
 		 * time the old state spaces for the 4 tests listed below.
 		 * to truly reproduce those numbers, unsound as they are, you'll
 		 * need to remove the previous 2 commits (0447666 as well). */
-#if 1
+#if 0
 		// these 4 tests are forced onto the "worse" state space
 		// for consistency with how the experiments in SIGBOVIK'18 were
 		// run; these tests were measured before the ignore-thrlib
