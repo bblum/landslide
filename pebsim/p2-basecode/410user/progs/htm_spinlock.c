@@ -97,6 +97,7 @@
 /* -------------------------------------------------------------------------- */
 /* -- A simple spinlock implementation with lock elision -------------------- */
 
+// XXX: this should probably be volatile
 typedef struct LOCKABLE spinlock { int v; } spinlock_t;
 
 void
@@ -123,6 +124,7 @@ hle_spinlock_isfree(spinlock_t* lock)
 {
   // FIXME: unnecessary write can cause aborts even w/disjoint critical sections
   return (__sync_bool_compare_and_swap(&lock->v, 0, 0) ? true : false);
+  //return lock->v == 0;
 }
 
 void
@@ -221,6 +223,17 @@ thread(void* arg)
 int
 main(int ac, char **av)
 {
+  // landslide-misbehave + running thread0 in main thread
+  // produces the same state space as
+  // no misbehave + creating N children + main thread joins on children
+  // (thanks to the thrlib_function directive)
+  // but if you create and join N children,
+  // the misbehave adds irrelevant stuff to the state space
+  // (i.e., testing interleavings between the main thread and worker threads)
+  // so i'm just leaving it the way i started with
+  // (the thread0-in-main approach would be faster-per-execution but the
+  // actual set of interleavings in the whole state space is the same)
+  // misbehave(BGND_BRWN >> FGND_CYAN);
   thr_init(8192);
   swexn(0,0,0,0);
   pthread_t threads[NTHREADS];
@@ -234,5 +247,8 @@ main(int ac, char **av)
   for (int i = 0; i < NTHREADS; i++) {
     pthread_join(threads[i], NULL);
   }
+  // this actually has no effect on the state space size,
+  // in the no-join setup described above (even in the child threads)
+  // vanish(); // bypass thr_exit
   return 0;
 }
