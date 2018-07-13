@@ -87,5 +87,6 @@ bool user_xbegin_entering(unsigned int eip);
 bool user_xbegin_exiting(unsigned int eip);
 bool user_xend_entering(unsigned int eip);
 bool user_xabort_entering(cpu_t *cpu, unsigned int eip, unsigned int *xabort_code);
+bool user_xtest_exiting(unsigned int eip);
 
 #endif

@@ -805,6 +805,7 @@ bool user_xabort_entering(cpu_t *cpu, unsigned int eip, unsigned int *code)
 		return false;
 	}
 }
+bool user_xtest_exiting(unsigned int eip)     { return eip == HTM_XTEST_END; }
 
 #else
 
@@ -813,5 +814,6 @@ bool user_xbegin_exiting(unsigned int eip)    { return false; }
 bool user_xend_entering(unsigned int eip)     { return false; }
 bool user_xabort_entering(cpu_t *cpu, unsigned int eip,
 			  unsigned int *code) { return false; }
+bool user_xtest_exiting(unsigned int eip)     { return false; }
 
 #endif

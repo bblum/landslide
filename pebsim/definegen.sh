@@ -401,6 +401,7 @@ if [ "$HTM" = "1" ]; then
 	echo "#define HTM_XBEGIN_END 0x`get_user_func_end _xbegin`"
 	echo "#define HTM_XEND       0x`get_user_func     _xend`"
 	echo "#define HTM_XABORT     0x`get_user_func     _xabort`"
+	echo "#define HTM_XTEST_END  0x`get_user_func_end _xtest`"
 	if [ "$HTM_ABORT_CODES" = "1" ]; then
 		echo "#define HTM_ABORT_CODES"
 		if [ "$HTM_DONT_RETRY" = "1" ]; then

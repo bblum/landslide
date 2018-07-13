@@ -17,5 +17,6 @@
 int _xbegin(void);
 void _xend(void);
 __attribute__((noreturn)) void _xabort(int code);
+int _xtest(void);
 
 #endif /* HTM_H */

@@ -1466,6 +1466,8 @@ static void sched_update_user_state_machine(struct ls_state *ls)
 				  _XABORT_EXPLICIT | ((xabort_code & 0xFF) << 24));
 		check_user_yield_activity(&ls->user_sync, s->cur_agent);
 		ls->end_branch_early = true;
+	} else if (user_xtest_exiting(ls->eip)) {
+		SET_CPU_ATTR(ls->cpu0, eax, ACTION(s, user_txn) ? 1 : 0);
 	/* misc */
 	} else if (user_make_runnable_entering(ls->eip)) {
 		/* Catch "while (make_runnable(tid) < 0)" loops. */
