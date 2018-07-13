@@ -614,6 +614,8 @@ static void add_xabort_code(struct hax *h, unsigned int *code)
 void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code)
 {
 #ifdef HTM_ABORT_CODES
+	// FIXME: this should have stronger assertions regarding being called
+	// from within a transaction to ensure the code doesn't just get lost
 	for (; h2 != NULL; h2 = h2->parent) {
 		if (h2->chosen_thread == tid) {
 			if (h2->xbegin) {

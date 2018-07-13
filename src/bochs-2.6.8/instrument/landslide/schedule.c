@@ -1013,6 +1013,8 @@ static void sched_update_kern_state_machine(struct ls_state *ls)
 	} else if (ACTION(s, user_txn)) {
 		/* syscalls will always abort transactions */
 		check_user_yield_activity(&ls->user_sync, s->cur_agent);
+		abort_transaction(CURRENT(s, tid), ls->save.current,
+				  _XABORT_CAPACITY);
 		ls->end_branch_early = true;
 	} else {
 		sched_check_lmm_init(ls);
