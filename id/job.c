@@ -309,7 +309,8 @@ static void *run_job(void *arg)
 		XWRITE(&j->config_dynamic, "%s thr_exit\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_join\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_bottom\n", without);
-		if (0 == strcmp(test_name, "htm_spinlock")) {
+		if (0 == strcmp(test_name, "htm_spinlock") ||
+		    0 == strcmp(test_name, "htm_mutex")) {
 			/* like paradise lost, see the test case */
 			XWRITE(&j->config_static, "ignore_dr_function critical_section 1\n");
 		}
