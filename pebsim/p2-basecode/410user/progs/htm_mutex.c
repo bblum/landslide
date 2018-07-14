@@ -1,6 +1,5 @@
 #include <thread.h>
 #include <syscall.h>
-#include <stdbool.h>
 #include <assert.h>
 #include "htm.h"
 
@@ -8,12 +7,12 @@
 #define NITERS 1
 //#define ASYMMETRIC_ITERS
 
-typedef struct htm_mutex { mutex_t m; volatile bool held; } htm_mutex_t;
+typedef struct htm_mutex { mutex_t m; volatile int held; } htm_mutex_t;
 
 void htm_mutex_init(htm_mutex_t *hm)
 {
 	mutex_init(&hm->m);
-	hm->held = false;
+	hm->held = 0;
 }
 
 // must be tested with landslide -X -A -S
@@ -23,7 +22,7 @@ void htm_mutex_lock(htm_mutex_t *hm)
 	const int conflict_code = 0xff;
 	while (1) {
 		if ((status = _xbegin()) == _XBEGIN_STARTED) {
-			if (hm->held) {
+			if (hm->held == 1) {
 				_xabort(conflict_code);
 				assert(0 && "xabort didn't");
 			}
@@ -35,9 +34,11 @@ void htm_mutex_lock(htm_mutex_t *hm)
 				       "xabort codes... or the user aborted?");
 			}
 			mutex_lock(&hm->m);
-			assert(!hm->held);
-			hm->held = true;
-			__sync_synchronize();
+			// don't assert before the write; oopses the state space
+			// assert(hm->held == 0);
+			// barrier necessary even on x86; see tsx-barrier.c
+			int washeld = __sync_lock_test_and_set(&hm->held, 1);
+			assert(washeld == 0);
 			break;
 		} else {
 			assert(0 && "this test requires landslide -S"
@@ -49,11 +50,12 @@ void htm_mutex_lock(htm_mutex_t *hm)
 void htm_mutex_unlock(htm_mutex_t *hm)
 {
 	if (_xtest()) {
-		assert(!hm->held);
+		assert(hm->held == 0);
 		_xend();
 	} else {
-		assert(hm->held);
-		hm->held = false;
+		assert(hm->held == 1);
+		// this is just a normal write on x86 but just for style
+		__sync_lock_release(&hm->held);
 		mutex_unlock(&hm->m);
 	}
 }
