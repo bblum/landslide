@@ -771,7 +771,7 @@ static void sched_update_kern_state_machine(struct ls_state *ls)
 				s->just_finished_reschedule = true;
 			}
 			/* If the schedule target was in a timer interrupt when we
-			 * decided to schedule him, then now is when the operation
+			 * decided to schedule it, then now is when the operation
 			 * finishes landing. (otherwise, see below)
 			 * FIXME: should this be inside the above if statement? */
 			if (ACTION(s, schedule_target)) {
