@@ -19,6 +19,7 @@
 #include "simulator.h"
 #include "stack.h"
 #include "tree.h"
+#include "tsx.h"
 #include "user_specifics.h"
 #include "variable_queue.h"
 #include "x86.h"
@@ -400,6 +401,7 @@ void sched_init(struct sched_state *s)
 	s->icb_preemption_count = 0;
 	s->any_thread_txn = false;
 	s->delayed_txn_fail = false;
+	ABORT_SET_INIT_INACTIVE(&s->upcoming_aborts);
 }
 
 void print_agent(verbosity v, const struct agent *a)
@@ -1871,6 +1873,7 @@ void sched_update(struct ls_state *ls)
 
 		if (arbiter_choose(ls, current, voluntary, &chosen, &our_choice)) {
 			int data_race_eip = ADDR_NONE;
+			bool prune_aborts = false;
 			if (data_race) {
 				/* Is this a "fake" preemption point? If so we
 				 * are not to forcibly preempt, only to record
@@ -1921,6 +1924,27 @@ void sched_update(struct ls_state *ls)
 					       ls->eip);
 					CURRENT(s, delayed_xbegin_eip) = ADDR_NONE;
 					CURRENT(s, just_delayed_for_xbegin) = false;
+					/* if we're supposed to only check one
+					 * transactional outcome here (success
+					 * or retry), skip creating a pp */
+					bool check_retry;
+					if (abort_set_pop(&s->upcoming_aborts,
+							  CURRENT(s, tid),
+							  &check_retry)) {
+						lsprintf(DEV, "abort pruning, %d\n",
+							 check_retry);
+						if (check_retry) {
+							/* this instr is xbegin+0,
+							 * not xbegin+1 as req'd,
+							 * so delay it by 1 */
+							s->delayed_txn_fail = true;
+							s->delayed_txn_fail_tid =
+								CURRENT(s, tid);
+							s->delayed_txn_fail_code =
+								_XABORT_RETRY;
+						}
+						prune_aborts = true;
+					}
 				} else {
 					/* earlier, thread scheduling pp */
 					lsprintf(DEV, "xbegin PP, delaying "
@@ -1955,7 +1979,8 @@ void sched_update(struct ls_state *ls)
 			}
 			/* Record the choice that was just made. */
 			if (ls->test.test_ever_caused &&
-			    ls->test.start_population != s->most_agents_ever) {
+			    ls->test.start_population != s->most_agents_ever &&
+			    !prune_aborts) {
 				save_setjmp(&ls->save, ls, chosen->tid,
 					    our_choice, false, !data_race,
 					    data_race_eip, voluntary, xbegin);
@@ -1999,10 +2024,11 @@ void sched_recover(struct ls_state *ls)
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code;
+	struct abort_set aborts;
 
 	assert(ls->just_jumped);
 
-	if (arbiter_pop_choice(&ls->arbiter, &tid, &txn, &xabort_code)) {
+	if (arbiter_pop_choice(&ls->arbiter, &tid, &txn, &xabort_code, &aborts)) {
 		if (tid != CURRENT(s, tid)) {
 			assert(!txn && "can't do both nondeterminims at once");
 			struct agent *a = agent_by_tid_or_null(&s->rq, tid);
@@ -2053,10 +2079,27 @@ void sched_recover(struct ls_state *ls)
 				s->delayed_txn_fail_code = xabort_code;
 			}
 		} else if (txn) {
+			assert(!ABORT_SET_ACTIVE(&aborts) && "it's too much");
 			lsprintf(INFO, "TID %d fails to transact\n", tid);
 			ls->eip = cause_transaction_failure(ls->cpu0, xabort_code);
 		} else {
 			lsprintf(INFO, "Chosen tid %d already running!\n", tid);
+		}
+		if (ABORT_SET_ACTIVE(&aborts)) {
+			if (ABORT_SET_ACTIVE(&s->upcoming_aborts)) {
+				/* FIXME future work figure out how to merge? */
+				lsprintf(DEV, "abort set conflict, old: ");
+				print_abort_set(DEV, &s->upcoming_aborts);
+				printf(DEV, ", new: ");
+				print_abort_set(DEV, &aborts);
+				printf(DEV, "; oops abandoning both!\n");
+				ABORT_SET_INIT_INACTIVE(&s->upcoming_aborts);
+			} else {
+				lsprintf(DEV, "activating abort set: ");
+				print_abort_set(DEV, &aborts);
+				printf(DEV, "\n");
+				s->upcoming_aborts = aborts;
+			}
 		}
 		/* ICB counter logic not necessary here; current thread
 		 * will always be legal w/o "preempting" (per ICB). */

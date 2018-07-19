@@ -13,13 +13,27 @@
 #include "save.h"
 #include "schedule.h"
 #include "tree.h"
+#include "tsx.h"
 #include "user_sync.h"
 #include "variable_queue.h"
+#include "x86.h"
+
+/******************************************************************************
+ * dpor
+ ******************************************************************************/
 
 static bool is_child_searched(const struct hax *h, unsigned int child_tid) {
 	const struct hax_child *child;
+	const struct abort_set *aborts;
 	unsigned int i;
 
+#ifdef HTM_ABORT_SETS
+	ARRAY_LIST_FOREACH(&h->abort_sets_todo, i, aborts) {
+		if (aborts->reordered_subtree_child.tid == child_tid) {
+			return false;
+		}
+	}
+#endif
 	ARRAY_LIST_FOREACH(&h->children, i, child) {
 		if (child->chosen_thread == child_tid && !child->xabort &&
 		    child->all_explored)
@@ -84,6 +98,132 @@ static bool equiv_already_explored(const struct hax *h0, const struct hax *h)
 	return false;
 }
 
+/******************************************************************************
+ * abort set reduction
+ ******************************************************************************/
+
+/* don't want to make ipc message-passing etc at all if feature not enabled */
+#ifdef HTM_ABORT_SETS
+
+static bool check_aborts(const struct hax *h, struct abort_noob *noob)
+{
+	if (h->parent == NULL) {
+		return false;
+	} else if (h->parent->xbegin) {
+		assert(h->chosen_thread == h->parent->chosen_thread);
+		assert(!h->parent->xaborted);
+		/* note how it's surrounded by tid check at the callsite */
+		assert(noob->tid == TID_NONE || noob->tid == h->chosen_thread);
+		/* supporting/ignoring other codes is future work; see tsx.h */
+		assert((!h->xaborted || h->xabort_code == _XABORT_RETRY) &&
+		       "abort set reduction works only w/retry xabort code");
+
+		noob->tid = h->chosen_thread;
+		noob->check_success = !(noob->check_retry = h->xaborted);
+		return true;
+	} else {
+		return false;
+	}
+}
+
+static void finalize_aborts(struct abort_noob *noob, unsigned int tid)
+{
+	if (noob->tid == TID_NONE) {
+		/* conflicting transition was not a transaction, so we want to
+		 * make sure the scheduler does not try to restrict outcomes of
+		 * any transactions that thread may execute in the future (since
+		 * *this* transition conflicted, subsequent transactions'
+		 * behaviour may change depending thereupon) */
+		noob->tid = tid;
+		noob->check_success = true;
+		noob->check_retry   = true;
+	}
+	assert(noob->tid == tid);
+}
+
+static void update_hax_abort_set(struct hax *h, struct abort_set *src)
+{
+	assert(src->reordered_subtree_child.tid != TID_NONE);
+	assert(src->preempted_evil_ancestor.tid != TID_NONE);
+	assert(!h->xbegin); /* should not be tagging tids at xbegin pps */
+	struct abort_set *dest;
+	unsigned int i;
+	bool found_abort_set = false;
+	ARRAY_LIST_FOREACH(mutable_abort_sets_todo(h), i, dest) {
+		assert(dest->reordered_subtree_child.tid != TID_NONE);
+		/* don't merge at subtree root, or you'll oops-merge too much */
+		if (ABORT_NOOBS_EQ(&dest->reordered_subtree_child,
+				   &src->reordered_subtree_child)) {
+			if (src->preempted_evil_ancestor.tid ==
+				   dest->preempted_evil_ancestor.tid) {
+				/* merge existing set with more stuff to test */
+				dest->preempted_evil_ancestor.check_success |=
+					src->preempted_evil_ancestor.check_success;
+				dest->preempted_evil_ancestor.check_retry |=
+					src->preempted_evil_ancestor.check_retry;
+			} else {
+				/* uh oh, a third thread! i'm not sure how to
+				 * "merge" the intention to restrict txnal
+				 * outcomes for multiple conflicting evil
+				 * ancestors at once -- future work; for now,
+				 * just saturate it to not prune anything */
+				dest->preempted_evil_ancestor.tid = TID_NONE;
+			}
+			found_abort_set = true;
+			break;
+		}
+	}
+	if (!found_abort_set) {
+		/* make sure does not exist already oops explored */
+		const struct abort_set *old;
+		ARRAY_LIST_FOREACH(&h->abort_sets_ever, i, old) {
+			if (ABORT_NOOBS_EQ(&old->reordered_subtree_child,
+					   &src->reordered_subtree_child)) {
+				if (old->preempted_evil_ancestor.tid == TID_NONE) {
+					/* was already saturated; don't duplicate */
+					return;
+				} else {
+					/* hafta duplicate work :( saturate now */
+					src->preempted_evil_ancestor.tid = TID_NONE;
+					/* don't break, keep looking for saturated */
+				}
+			}
+		}
+		/* add new one */
+		ARRAY_LIST_APPEND(mutable_abort_sets_ever(h), *src);
+		ARRAY_LIST_APPEND(mutable_abort_sets_todo(h), *src);
+	}
+}
+
+static void update_hax_pop_abort_set(struct hax *h, unsigned int *index)
+{
+	ARRAY_LIST_REMOVE_SWAP(mutable_abort_sets_todo(h), *index);
+}
+
+#endif
+
+static void get_abort_set(const struct hax *h, unsigned int tid,
+			  struct abort_set *dest)
+{
+#ifdef HTM_ABORT_SETS
+	const struct abort_set *src;
+	unsigned int i;
+	ARRAY_LIST_FOREACH(&h->abort_sets_todo, i, src) {
+		if (src->reordered_subtree_child.tid == tid) {
+			*dest = *src;
+			modify_hax(update_hax_pop_abort_set, h, i);
+			return;
+		}
+	}
+#endif
+	/* no abort set for this tid found */
+	ABORT_SET_INIT_INACTIVE(dest);
+}
+
+/******************************************************************************
+ * tagging
+ ******************************************************************************/
+
 /* Finds the nearest parent save point that's actually a preemption point.
  * This is how we skip over speculative data race save points when identifying
  * which "good sibling" transitions to tag (when to preempt to get to them?) */
@@ -123,7 +263,8 @@ static void update_hax_tag_tid(struct hax *h, unsigned int *tid)
 }
 
 static bool tag_good_sibling(const struct hax *h0, const struct hax *ancestor,
-			     unsigned int icb_bound, bool *need_bpor)
+			     unsigned int icb_bound, bool *need_bpor,
+			     struct abort_set *aborts)
 {
 	unsigned int tid = h0->chosen_thread;
 	const struct hax *grandparent = pp_parent(ancestor);
@@ -133,6 +274,7 @@ static bool tag_good_sibling(const struct hax *h0, const struct hax *ancestor,
 	CONST_FOR_EACH_RUNNABLE_AGENT(a, grandparent->oldsched,
 		if (a->tid == tid) {
 			if (BLOCKED(a) || HTM_BLOCKED(grandparent->oldsched, a) ||
+			    ABORT_SET_BLOCKED(&grandparent->oldsched->upcoming_aborts, a->tid) ||
 			    is_child_searched(grandparent, a->tid)) {
 				return false;
 			} else if (ICB_BLOCKED(grandparent->oldsched, icb_bound,
@@ -150,6 +292,17 @@ static bool tag_good_sibling(const struct hax *h0, const struct hax *ancestor,
 			} else {
 				/* normal case; thread can be tagged */
 				modify_hax(update_hax_tag_tid, grandparent, a->tid);
+#ifdef HTM_ABORT_SETS
+				/* probably safe to make this be ACTIVE()? */
+				if (aborts != NULL) {
+					lsprintf(DEV, "with the abort set ");
+					print_abort_set(DEV, aborts);
+					printf(DEV, ", the following tag...\n");
+					/* dont send dat pointer!! */
+					modify_hax(update_hax_abort_set,
+						   grandparent, *aborts);
+				}
+#endif
 				lsprintf(DEV, "from #%d/tid%d, tagged TID %d%s, "
 					 "sibling of #%d/tid%d\n", h0->depth,
 					 h0->chosen_thread, a->tid,
@@ -177,6 +330,7 @@ static void tag_all_siblings(const struct hax *h0, const struct hax *ancestor,
 	const struct agent *a;
 	CONST_FOR_EACH_RUNNABLE_AGENT(a, grandparent->oldsched,
 		if (BLOCKED(a) || HTM_BLOCKED(grandparent->oldsched, a) ||
+		    ABORT_SET_BLOCKED(&grandparent->oldsched->upcoming_aborts, a->tid) ||
 		    is_child_searched(grandparent, a->tid)) {
 			// continue;
 		} else if (ICB_BLOCKED(grandparent->oldsched, icb_bound,
@@ -206,10 +360,14 @@ static void tag_all_siblings(const struct hax *h0, const struct hax *ancestor,
 }
 
 static bool tag_sibling(const struct hax *h0, const struct hax *ancestor,
-			unsigned int icb_bound)
+			unsigned int icb_bound, struct abort_set *aborts)
 {
 	bool need_bpor = false;
-	if (!tag_good_sibling(h0, ancestor, icb_bound, &need_bpor)) {
+	if (!tag_good_sibling(h0, ancestor, icb_bound, &need_bpor, aborts)) {
+		/* FIXME: can't use abort sets when a 3rd thread is involved
+		 * (future work?  should can at least do the ancestor, maybe?)
+		 * is this sound, anyway? (should it make future dpors never
+		 * prune, instead of leave undecided?) */
 		tag_all_siblings(h0, ancestor, icb_bound, &need_bpor);
 	}
 	return need_bpor;
@@ -249,7 +407,7 @@ static void tag_reachable_aunts(const struct hax *h0, const struct hax *ancestor
 	     ancestor2 = ancestor2->parent) {
 		/* May need to tag multiple times for same reason as not
 		 * using "break" in the main dpor loop below. */
-		if (tag_good_sibling(h0, ancestor2, icb_bound, NULL)) {
+		if (tag_good_sibling(h0, ancestor2, icb_bound, NULL, NULL)) {
 			lsprintf(DEV, "BPOR can run #%d/tid%d after reachable "
 				 "aunt #%d/tid%d\n", h0->depth, h0->chosen_thread,
 				 ancestor2->depth, ancestor2->chosen_thread);
@@ -283,17 +441,19 @@ static void update_hax_pop_xabort_code(struct hax *h, int *index)
 }
 
 static bool any_tagged_child(const struct hax *h, unsigned int *new_tid, bool *txn,
-			     unsigned int *xabort_code)
+			     unsigned int *xabort_code, struct abort_set *aborts)
 {
 	const struct agent *a;
 
 	if ((*txn = (h->xbegin && ARRAY_LIST_SIZE(&h->xabort_codes_todo) > 0))) {
-		// TODO: reduction challenge?
+		assert(ARRAY_LIST_SIZE(&h->abort_sets_ever) == 0);
 		/* pop the code from the list so it won't be doubly explored */
 		*xabort_code = *ARRAY_LIST_GET(&h->xabort_codes_todo, 0);
 		modify_hax(update_hax_pop_xabort_code, h, 0);
 		/* injecting a failure in the xbeginning thread, obvs. */
 		*new_tid = h->chosen_thread;
+		/* abort sets are used on thread pps, not xbegin pps */
+		ABORT_SET_INIT_INACTIVE(aborts);
 		return true;
 	}
 
@@ -302,12 +462,17 @@ static bool any_tagged_child(const struct hax *h, unsigned int *new_tid, bool *t
 	CONST_FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
 		if (a->do_explore && !is_child_searched(h, a->tid)) {
 			*new_tid = a->tid;
+			get_abort_set(h, a->tid, aborts);
 			return true;
 		}
 	);
 
 	return false;
 }
+
+/******************************************************************************
+ * misc utilities
+ ******************************************************************************/
 
 static void print_pruned_children(struct save_state *ss, const struct hax *h)
 {
@@ -369,8 +534,12 @@ static void set_all_explored(const struct hax *h)
 	}
 }
 
+/******************************************************************************
+ * main
+ ******************************************************************************/
+
 const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
-			  unsigned int *xabort_code)
+			  unsigned int *xabort_code, struct abort_set *aborts)
 {
 	struct save_state *ss = &ls->save;
 	const struct hax *current = ss->current;
@@ -386,6 +555,17 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 	/* Compare each transition along this branch against each of its
 	 * ancestors. */
 	for (const struct hax *h = current; h != NULL; h = h->parent) {
+		/* remember whether there were any intervening transitions that
+		 * also conflicted with this one; abort sets may only be used
+		 * for reduction if no such transition exists */
+		bool closest_conflict = true;
+		/* then, find the earliest xbegin, if any, so we can make sure
+		 * it returns the same value in the other future subtree */
+		struct abort_set as;
+		ABORT_SET_INIT_INACTIVE(&as);
+#ifdef HTM_ABORT_SETS
+		check_aborts(h, &as.reordered_subtree_child);
+#endif
 		/* In outer loop, we include user threads blocked in a yield
 		 * loop as the "descendant" for comparison, because we want
 		 * to reorder them before conflicting ancestors if needed... */
@@ -406,14 +586,57 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 				}
 				continue;
 			} else if (!is_evil_ancestor(h, ancestor)) {
+#ifdef HTM_ABORT_SETS
+				/* look for independent, intervening transaction
+				 * preemption points by the same child tid */
+				if (h->chosen_thread == ancestor->chosen_thread) {
+					check_aborts(ancestor,
+						     &as.reordered_subtree_child);
+				}
+#endif
 				continue;
 			} else if (equiv_already_explored(h, ancestor)) {
+				/* not 100% sure on this but safer this way */
+				closest_conflict = false;
 				continue;
 			}
 
+#ifdef HTM_ABORT_SETS
+			/* also is the evil ancestor itself transactional
+			 * (note that if its abort path is split into multiple
+			 * pps, we need to know to reproduce its failure code
+			 * only when we're interleaving around the beginning
+			 * thereof, so we don't need to check back before the
+			 * ancestor for more xbegin pps by its same thread.) */
+			if (closest_conflict) {
+				/* account for non-enabled speculative pps
+				 * (see pp-parent, etc, in tag-sibling */
+				const struct hax *h2 = ancestor;
+				do {
+					assert(h2->chosen_thread ==
+					       ancestor->chosen_thread);
+					check_aborts(h2, &as.preempted_evil_ancestor);
+					h2 = h2->parent;
+				} while (h2 != NULL && !h2->is_preemption_point);
+				/* if either child or ancestor weren't txnal,
+				 * saturate their xabort set to prevent any
+				 * pruning by future dpors at this pp */
+				finalize_aborts(&as.reordered_subtree_child,
+						h->chosen_thread);
+				finalize_aborts(&as.preempted_evil_ancestor,
+						ancestor->chosen_thread);
+			}
+#endif
+
 			/* The ancestor is "evil". Find which siblings need to
 			 * be explored. */
-			bool need_bpor = tag_sibling(h, ancestor, ls->icb_bound);
+			/* An initialized yet empty abort set is 'strongest'
+			 * (i.e., the top element, 'explore everything'); a null
+			 * abort set is weakest (so that far-conflict tagging
+			 * does not oops-override any existing constrained abort
+			 * set to explore too much).. i THINK this is sound? */
+			bool need_bpor = tag_sibling(h, ancestor, ls->icb_bound,
+				closest_conflict ? &as : NULL);
 #ifdef ICB
 			if (need_bpor) {
 				tag_reachable_aunts(h, ancestor, ls->icb_bound);
@@ -430,6 +653,8 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 			 * always do not satisfy. So continue. (See MS
 			 * thesis section 5.4.3 / figure 5.4.) */
 			/* break; */
+			/* instead, just remember (for abort sets) */
+			closest_conflict = false;
 		}
 	}
 
@@ -438,7 +663,7 @@ const struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn,
 	 * outside of the current branch of the tree. A trail of "all_explored"
 	 * flags gets left behind. */
 	for (const struct hax *h = current->parent; h != NULL; h = h->parent) {
-		if (any_tagged_child(h, new_tid, txn, xabort_code)) {
+		if (any_tagged_child(h, new_tid, txn, xabort_code, aborts)) {
 			assert(h->is_preemption_point);
 			lsprintf(BRANCH, "from #%d/tid%d, chose tid %d%s, "
 				 "child of #%d/tid%d\n", current->depth,

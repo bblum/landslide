@@ -19,6 +19,7 @@ struct mem_state;
 struct sched_state;
 struct stack_trace;
 struct test_state;
+struct abort_set;
 
 struct hax_child {
 	int chosen_thread;
@@ -88,6 +89,15 @@ struct hax {
 	bool xbegin;
 	ARRAY_LIST(const unsigned int) xabort_codes_ever; /* append-only */
 	ARRAY_LIST(const unsigned int) xabort_codes_todo; /* serves as workqueue */
+	/* Is this is a pre-xbegin preemption point which we wanna reschedule
+	 * for later and constrain what codes are injected? And/or are we trying
+	 * to reschedule an xbegin transition at this preemption point and
+	 * constrain that likewise? (Note this should never be set at xbegin
+	 * PPs themselves, only at pre-xbegin PPs, or even normal ones.)
+	 * If the arbiter ever tries to have sched inject an xbegin result
+	 * not on this list, it will prune the entire resulting subtree. */
+	ARRAY_LIST(const struct abort_set) abort_sets_ever;
+	ARRAY_LIST(const struct abort_set) abort_sets_todo;
 
 	/* Note: a list of available tids to run next is implicit in the copied
 	 * sched! Also, the "tags" that POR uses to denote to-be-explored
@@ -139,6 +149,11 @@ static inline mutable_xabort_codes_t *mutable_xabort_codes_todo(struct hax *h)
 	{ return (mutable_xabort_codes_t *)&h->xabort_codes_todo; }
 static inline mutable_xabort_codes_t *mutable_xabort_codes_ever(struct hax *h)
 	{ return (mutable_xabort_codes_t *)&h->xabort_codes_ever; }
+typedef ARRAY_LIST(struct abort_set) mutable_abort_sets_t;
+static inline mutable_abort_sets_t *mutable_abort_sets_ever(struct hax *h)
+	{ return (mutable_abort_sets_t *)&h->abort_sets_ever; }
+static inline mutable_abort_sets_t *mutable_abort_sets_todo(struct hax *h)
+	{ return (mutable_abort_sets_t *)&h->abort_sets_todo; }
 typedef Q_NEW_HEAD(struct, struct hax) mutable_hax_children_t;
 static inline void set_happens_before(struct hax *h, unsigned int i, bool val)
 	{ *(bool *)&(h->happens_before[i]) = val; }

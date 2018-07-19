@@ -19,6 +19,7 @@
 #include "pp.h"
 #include "rand.h"
 #include "schedule.h"
+#include "tsx.h"
 #include "user_specifics.h"
 #include "user_sync.h"
 #include "x86.h"
@@ -28,16 +29,17 @@ void arbiter_init(struct arbiter_state *r)
 	Q_INIT_HEAD(&r->choices);
 }
 
-void arbiter_append_choice(struct arbiter_state *r, unsigned int tid, bool txn, unsigned int xabort_code)
+void arbiter_append_choice(struct arbiter_state *r, unsigned int tid, bool txn, unsigned int xabort_code, struct abort_set *aborts)
 {
 	struct choice *c = MM_XMALLOC(1, struct choice);
 	c->tid = tid;
 	c->txn = txn;
 	c->xabort_code = xabort_code;
+	c->aborts = *aborts;
 	Q_INSERT_FRONT(&r->choices, c, nobe);
 }
 
-bool arbiter_pop_choice(struct arbiter_state *r, unsigned int *tid, bool *txn, unsigned int *xabort_code)
+bool arbiter_pop_choice(struct arbiter_state *r, unsigned int *tid, bool *txn, unsigned int *xabort_code, struct abort_set *aborts)
 {
 	struct choice *c = Q_GET_TAIL(&r->choices);
 	if (c) {
@@ -46,6 +48,7 @@ bool arbiter_pop_choice(struct arbiter_state *r, unsigned int *tid, bool *txn, u
 		*tid = c->tid;
 		*txn = c->txn;
 		*xabort_code = c->xabort_code;
+		*aborts = c->aborts;
 		MM_FREE(c);
 		return true;
 	} else {
@@ -328,6 +331,7 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 	FOR_EACH_RUNNABLE_AGENT(a, &ls->sched,
 		if (!BLOCKED(a) && !IS_IDLE(ls, a) &&
 		    !HTM_BLOCKED(&ls->sched, a) &&
+		    !ABORT_SET_BLOCKED(&ls->sched.upcoming_aborts, a->tid) &&
 		    !ICB_BLOCKED(&ls->sched, ls->icb_bound, voluntary, a)) {
 			print_agent(DEV, a);
 			printf(DEV, " ");
@@ -385,6 +389,7 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 	FOR_EACH_RUNNABLE_AGENT(a, &ls->sched,
 		if (!BLOCKED(a) && !IS_IDLE(ls, a) &&
 		    !HTM_BLOCKED(&ls->sched, a) &&
+		    !ABORT_SET_BLOCKED(&ls->sched.upcoming_aborts, a->tid) &&
 		    !ICB_BLOCKED(&ls->sched, ls->icb_bound, voluntary, a) &&
 		    ++i == count) {
 			printf(DEV, "- Figured I'd look at TID %d next.\n",

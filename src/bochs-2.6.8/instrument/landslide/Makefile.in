@@ -93,6 +93,7 @@ BX_INCLUDES = instrument.h \
   test.h \
   timetravel.h \
   tree.h \
+  tsx.h \
   user_specifics.h \
   user_sync.h \
   variable_queue.h \

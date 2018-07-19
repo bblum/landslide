@@ -16,6 +16,7 @@
 #include "simulator.h"
 #include "timetravel.h"
 #include "tree.h"
+#include "tsx.h"
 
 #ifdef BOCHS
 
@@ -45,6 +46,7 @@ struct timetravel_message {
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code;
+	struct abort_set aborts;
 	struct save_statistics save_stats;
 	unsigned int icb_bound;
 	bool icb_need_increment_bound;
@@ -130,7 +132,8 @@ void __modify_haxes(void (*cb)(struct hax *h_rw, void *), const struct hax *h_ro
  * which case the output pointers will be set to what thread to run instead,
  * whereupon this must be re-called to refresh the save for another jump. */
 bool timetravel_set(struct ls_state *ls, struct hax *h,
-		    unsigned int *tid, bool *txn, unsigned int *xabort_code)
+		    unsigned int *tid, bool *txn, unsigned int *xabort_code,
+		    struct abort_set *aborts)
 {
 	struct timetravel_hax *th = &h->time_machine;
 	int pipefd[2];
@@ -209,6 +212,7 @@ bool timetravel_set(struct ls_state *ls, struct hax *h,
 			*tid = tm.tid;
 			*txn = tm.txn;
 			*xabort_code = tm.xabort_code;
+			*aborts = tm.aborts;
 			return true;
 		} else if (tm.tag == TIMETRAVEL_MODIFY_HAX) {
 			/* check sanity of the hax we're asked to modify */
@@ -235,12 +239,18 @@ bool timetravel_set(struct ls_state *ls, struct hax *h,
 }
 
 void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,
-		     unsigned int tid, bool txn, unsigned int xabort_code)
+		     unsigned int tid, bool txn, unsigned int xabort_code,
+		     struct abort_set *aborts)
 {
 	assert(th->active);
 	assert(th->parent);
 	assert(active_world_line && "not to be called from a timetravel child!");
 	lsprintf(CHOICE, "tt'ing to tid %d txn %d code %d\n", tid, txn, xabort_code);
+	if (ABORT_SET_ACTIVE(aborts)) {
+		lsprintf(CHOICE, "tt'ing abort set: ");
+		print_abort_set(CHOICE, aborts);
+		printf(CHOICE, "\n");
+	}
 
 	struct timetravel_message tm;
 	tm.tag         = TIMETRAVEL_RUN;
@@ -249,6 +259,7 @@ void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,
 	tm.tid         = tid;
 	tm.txn         = txn;
 	tm.xabort_code = xabort_code;
+	tm.aborts      = *aborts;
 	/* anything else that needs to "glow green" */
 	memcpy(&tm.save_stats, &ls->save.stats, sizeof(struct save_statistics));
 	tm.icb_bound = ls->icb_bound;

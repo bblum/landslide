@@ -12,6 +12,7 @@
 #include "lockset.h"
 #include "mem.h"
 #include "stack.h"
+#include "tsx.h"
 #include "user_sync.h"
 #include "variable_queue.h"
 #include "vector_clock.h"
@@ -228,6 +229,7 @@ struct sched_state {
 	bool delayed_txn_fail;
 	unsigned int delayed_txn_fail_tid;
 	unsigned int delayed_txn_fail_code;
+	struct abort_set upcoming_aborts;
 	/* Did the guest finish initialising its own state */
 	bool guest_init_done;
 	/* It does take many instructions for us to switch, after all. This is
