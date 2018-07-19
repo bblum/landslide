@@ -9,11 +9,7 @@
 
 /* Includes */
 #include <assert.h>
-#include <syscall.h>
-#include <stdlib.h>
 #include <thread.h>
-#include <mutex.h>
-#include <cond.h>
 #include "410_tests.h"
 #include <report.h>
 #include <test.h>
@@ -49,15 +45,13 @@ int main(void)
 	report_start(START_CMPLT);
 
 	ERR(thr_init(4096));
-	misbehave(BGND_BRWN >> FGND_CYAN); // for landslide
 
 	int tid = thr_create(child, NULL);
+	thr_yield(-1);
 	int value = __sync_fetch_and_add(&count, 1);
 	assert(value == 0 && "causality violation");
 
-	child(NULL);
 	ERR(thr_join(tid, NULL));
-
 
 	return 0;
 }
