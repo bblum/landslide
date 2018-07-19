@@ -25,6 +25,7 @@
 #include "test.h"
 #include "timetravel.h"
 #include "tree.h"
+#include "tsx.h"
 #include "user_sync.h"
 #include "vector_clock.h"
 #include "x86.h"
@@ -221,6 +222,7 @@ static void copy_sched(struct sched_state *dest, const struct sched_state *src)
 	dest->any_thread_txn = src->any_thread_txn;
 	dest->delayed_txn_fail = src->delayed_txn_fail;
 	dest->delayed_txn_fail_tid = src->delayed_txn_fail_tid;
+	dest->upcoming_aborts = src->upcoming_aborts;
 }
 
 static void copy_test(struct test_state *dest, const struct test_state *src)
@@ -483,6 +485,8 @@ static void free_hax(struct hax *h)
 		ARRAY_LIST_FREE(mutable_xabort_codes_todo(h));
 		ARRAY_LIST_FREE(mutable_xabort_codes_ever(h));
 	}
+	ARRAY_LIST_FREE(mutable_abort_sets_ever(h));
+	ARRAY_LIST_FREE(mutable_abort_sets_todo(h));
 }
 
 /* Reverse that which is not glowing green. */
@@ -732,10 +736,15 @@ static void add_hax_child(struct hax *h, int tid, bool xabort, unsigned int xabo
 {
 	const struct hax_child *other;
 	unsigned int i;
+	/* with abort sets, duplicate children differentiated only by those sets
+	 * can get added here; tracking them (e.g. to ensure no duplicates with
+	 * even identical abort sets get added) would be too much of a pain */
+#ifndef HTM_ABORT_SETS
 	ARRAY_LIST_FOREACH(&h->children, i, other) {
 		assert(other->chosen_thread != tid || other->xabort != xabort ||
 		       (other->xabort && xabort && other->xabort_code != xabort_code));
 	}
+#endif
 	struct hax_child child;
 	child.chosen_thread = tid;
 	child.all_explored  = false;
@@ -761,7 +770,8 @@ static void add_hax_child_xabort(struct hax *h, unsigned int *xabort_code)
 void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		 int new_tid, bool our_choice, bool end_of_test,
 		 bool is_preemption_point, unsigned int data_race_eip,
-		 bool voluntary, bool xbegin)
+		 bool voluntary, bool xbegin,
+		 bool prune_aborts, bool check_retry)
 {
 	struct hax *h;
 
@@ -844,10 +854,22 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			/* e.g. mario's htm data structures may supply -A -S to
 			 * disable this code, since they wrap these in a retry
 			 * loop, leaving DPOR conflicts as the only aborts */
-			unsigned int retry_code = _XABORT_RETRY;
-			add_xabort_code(h, &retry_code);
+			if (prune_aborts) {
+				/* suppress the other xbegin outcome */
+				if (check_retry) {
+					ARRAY_LIST_APPEND(
+						mutable_xabort_codes_ever(h),
+						_XABORT_RETRY);
+				}
+			} else {
+				/* test success first, abort later, as normal */
+				unsigned int retry_code = _XABORT_RETRY;
+				add_xabort_code(h, &retry_code);
+			}
 #endif
 		}
+		ARRAY_LIST_INIT(&h->abort_sets_ever, 8);
+		ARRAY_LIST_INIT(&h->abort_sets_todo, 8);
 
 		timetravel_hax_init(&h->time_machine);
 
@@ -919,8 +941,16 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 
 	ss->current  = h;
 	ss->next_tid = new_tid;
-	ss->next_xabort = false;
-	ss->next_xabort_code = _XBEGIN_STARTED;
+	if (check_retry) {
+		/* using abort set reduction, we skipped the success path */
+		assert(prune_aborts && "you can't just prune for no reason!");
+		ss->next_xabort = true;
+		ss->next_xabort_code = _XABORT_RETRY;
+	} else {
+		/* normal xbegin success path (regardless of abort sets) */
+		ss->next_xabort = false;
+		ss->next_xabort_code = _XBEGIN_STARTED;
+	}
 	if (h->chosen_thread == TID_NONE) {
 		lsprintf(CHOICE, MODULE_COLOUR "#%d: Starting test with TID %d.\n"
 			 COLOUR_DEFAULT, h->depth, ss->next_tid);
@@ -949,11 +979,12 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code;
+	struct abort_set aborts;
 	bool was_jumped_to = false;
 	/* In bochs, if timetravel-set indicates we're a jumped-to child and
 	 * should switch our choice, we also need to refresh the time machine
 	 * so it can be jumped to again. Do this "until" we're the parent. */
-	while (timetravel_set(ls, h, &tid, &txn, &xabort_code)) {
+	while (timetravel_set(ls, h, &tid, &txn, &xabort_code, &aborts)) {
 		lsprintf(DEV, "#%d/tid%d: child process, suggested to run "
 			 "tid%d/txn%d/code%d; refreshing save point\n",
 			 h->depth, h->chosen_thread, tid, txn, xabort_code);
@@ -962,7 +993,8 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 	if (was_jumped_to) {
 #ifdef BOCHS
 		if (tid != TID_NONE) {
-			arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code);
+			arbiter_append_choice(&ls->arbiter, tid, txn,
+					      xabort_code, &aborts);
 		}
 		restore_ls(ls, h);
 #else
@@ -972,7 +1004,8 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 }
 
 void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *h,
-		  unsigned int tid, bool txn, unsigned int xabort_code)
+		  unsigned int tid, bool txn, unsigned int xabort_code,
+		  struct abort_set *aborts)
 {
 	const struct hax *rabbit = ss->current;
 
@@ -1018,12 +1051,12 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *
 	 * properties of my wayward son; so prepare state for the new branch.
 	 * In bochs, it will not return; rather timetravel_set returns twice.
 	 * These ifndefs just skip whatever the next process will never see. */
-	arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code);
+	arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code, aborts);
 	restore_ls(ls, h);
 #endif
 
 	ss->stats.total_jumps++;
-	timetravel_jump(ls, &h->time_machine, tid, txn, xabort_code);
+	timetravel_jump(ls, &h->time_machine, tid, txn, xabort_code, aborts);
 #ifdef BOCHS
 	assert(0 && "returned from time leap somehow");
 #endif

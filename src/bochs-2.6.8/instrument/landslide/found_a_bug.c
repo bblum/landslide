@@ -23,6 +23,7 @@
 #include "simulator.h"
 #include "stack.h"
 #include "tree.h"
+#include "tsx.h"
 
 /* The default print macros would print big red "[BUG!]"s even if we're just
  * dumping decision info. Redefine them to be flexible around this point. */
@@ -255,12 +256,13 @@ static long double compute_state_space_size(struct ls_state *ls,
 		// will call setjmp on its own. Avoid double call in that case.
 		if (!voluntary || ls->sched.voluntary_resched_stack != NULL) {
 			save_setjmp(&ls->save, ls, TID_NONE, true, true, true,
-				    ADDR_NONE, voluntary, false);
+				    ADDR_NONE, voluntary, false, false, false);
 		}
 		unsigned int _tid;
 		bool _txn;
 		unsigned int _xabort_code;
-		explore(ls, &_tid, &_txn, &_xabort_code);
+		struct abort_set _aborts;
+		explore(ls, &_tid, &_txn, &_xabort_code, &_aborts);
 		*needed_compute = true;
 		return estimate_proportion(ls->save.root, ls->save.current);
 	} else {

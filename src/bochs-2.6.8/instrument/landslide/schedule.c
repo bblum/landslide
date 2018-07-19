@@ -19,6 +19,7 @@
 #include "simulator.h"
 #include "stack.h"
 #include "tree.h"
+#include "tsx.h"
 #include "user_specifics.h"
 #include "variable_queue.h"
 #include "x86.h"
@@ -401,6 +402,7 @@ void sched_init(struct sched_state *s)
 	s->icb_preemption_count = 0;
 	s->any_thread_txn = false;
 	s->delayed_txn_fail = false;
+	ABORT_SET_INIT_INACTIVE(&s->upcoming_aborts);
 }
 
 void print_agent(verbosity v, const struct agent *a)
@@ -1872,6 +1874,8 @@ void sched_update(struct ls_state *ls)
 
 		if (arbiter_choose(ls, current, voluntary, &chosen, &our_choice)) {
 			int data_race_eip = ADDR_NONE;
+			bool prune_aborts = false;
+			bool check_retry = false;
 			if (data_race) {
 				/* Is this a "fake" preemption point? If so we
 				 * are not to forcibly preempt, only to record
@@ -1922,6 +1926,29 @@ void sched_update(struct ls_state *ls)
 					       ls->eip);
 					CURRENT(s, delayed_xbegin_eip) = ADDR_NONE;
 					CURRENT(s, just_delayed_for_xbegin) = false;
+					/* if we're supposed to check only one
+					 * txnal outcome here (success or retry)
+					 * then prevent the other branch */
+					if (abort_set_pop(&s->upcoming_aborts,
+							  CURRENT(s, tid),
+							  &check_retry)) {
+						lsprintf(DEV, "abort pruning, %d\n",
+							 check_retry);
+						if (check_retry) {
+							/* this instr is xbegin+0,
+							 * not xbegin+1 as req'd,
+							 * so delay it by 1 */
+							s->delayed_txn_fail = true;
+							s->delayed_txn_fail_tid =
+								CURRENT(s, tid);
+							s->delayed_txn_fail_code =
+								_XABORT_RETRY;
+						}
+						/* create a pp (so future abort
+						 * set calculation works), but
+						 * prohibit it from branching */
+						prune_aborts = true;
+					}
 				} else {
 					/* earlier, thread scheduling pp */
 					lsprintf(DEV, "xbegin PP, delaying "
@@ -1959,7 +1986,8 @@ void sched_update(struct ls_state *ls)
 			    ls->test.start_population != s->most_agents_ever) {
 				save_setjmp(&ls->save, ls, chosen->tid,
 					    our_choice, false, !data_race,
-					    data_race_eip, voluntary, xbegin);
+					    data_race_eip, voluntary, xbegin,
+					    prune_aborts, check_retry);
 			}
 		} else {
 			lsprintf(DEV, "no agent was chosen at eip 0x%x\n",
@@ -1994,16 +2022,38 @@ void sched_update(struct ls_state *ls)
 	 * switch, so we should watch out if a handler doesn't enter the c-s. */
 }
 
+#ifdef HTM_ABORT_SETS
+static void update_hax_abandon_abort_set(struct hax *h, struct abort_set *aborts)
+{
+	struct abort_set *old;
+	int i;
+	ARRAY_LIST_FOREACH(mutable_abort_sets_ever(h), i, old) {
+		if (ABORT_NOOBS_EQ(&old->reordered_subtree_child,
+				   &aborts->reordered_subtree_child) &&
+		    ABORT_NOOBS_EQ(&old->preempted_evil_ancestor,
+				   &aborts->preempted_evil_ancestor)) {
+			old->reordered_subtree_child.check_success = true;
+			old->reordered_subtree_child.check_retry = true;
+			old->preempted_evil_ancestor.check_success = true;
+			old->preempted_evil_ancestor.check_retry = true;
+			return;
+		}
+	}
+	assert(0 && "couldn't find existing abort set to abandon");
+}
+#endif
+
 void sched_recover(struct ls_state *ls)
 {
 	struct sched_state *s = &ls->sched;
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code;
+	struct abort_set aborts;
 
 	assert(ls->just_jumped);
 
-	if (arbiter_pop_choice(&ls->arbiter, &tid, &txn, &xabort_code)) {
+	if (arbiter_pop_choice(&ls->arbiter, &tid, &txn, &xabort_code, &aborts)) {
 		if (tid != CURRENT(s, tid)) {
 			assert(!txn && "can't do both nondeterminims at once");
 			struct agent *a = agent_by_tid_or_null(&s->rq, tid);
@@ -2054,11 +2104,31 @@ void sched_recover(struct ls_state *ls)
 				s->delayed_txn_fail_code = xabort_code;
 			}
 		} else if (txn) {
+			assert(!ABORT_SET_ACTIVE(&aborts) && "it's too much");
 			lsprintf(INFO, "TID %d fails to transact\n", tid);
 			ls->eip = cause_transaction_failure(ls->cpu0, xabort_code);
 		} else {
 			lsprintf(INFO, "Chosen tid %d already running!\n", tid);
 		}
+#ifdef HTM_ABORT_SETS
+		if (ABORT_SET_ACTIVE(&aborts)) {
+			if (ABORT_SET_ACTIVE(&s->upcoming_aborts)) {
+				/* FIXME future work figure out how to merge? */
+				lsprintf(DEV, "abort set conflict, old: ");
+				print_abort_set(DEV, &s->upcoming_aborts);
+				printf(DEV, ", new: ");
+				print_abort_set(DEV, &aborts);
+				printf(DEV, "; abandoning new, sorry\n");
+				modify_hax(update_hax_abandon_abort_set,
+					   ls->save.current, aborts);
+			} else {
+				lsprintf(DEV, "activating abort set: ");
+				print_abort_set(DEV, &aborts);
+				printf(DEV, "\n");
+				s->upcoming_aborts = aborts;
+			}
+		}
+#endif
 		/* in any case (even if tid == current->tid), remember the tid
 		 * dpor wants to run so arbiter can prioritize it later, thereby
 		 * forcing the conflict to get reordered before the preempted

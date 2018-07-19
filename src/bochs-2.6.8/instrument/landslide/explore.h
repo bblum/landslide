@@ -10,7 +10,8 @@
 struct arbiter_state;
 struct hax;
 struct ls_state;
+struct abort_set;
 
-struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn, unsigned int *xabort_code);
+struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn, unsigned int *xabort_code, struct abort_set *aborts);
 
 #endif

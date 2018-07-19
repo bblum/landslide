@@ -7,6 +7,7 @@
 #ifndef __LS_ARBITER_H
 #define __LS_ARBITER_H
 
+#include "tsx.h"
 #include "variable_queue.h"
 
 struct ls_state;
@@ -16,6 +17,7 @@ struct choice {
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code;
+	struct abort_set aborts;
 	Q_NEW_LINK(struct choice) nobe;
 };
 
@@ -28,9 +30,9 @@ struct arbiter_state {
 /* maintenance interface */
 void arbiter_init(struct arbiter_state *);
 void arbiter_append_choice(struct arbiter_state *, unsigned int tid, bool txn,
-			   unsigned int xabort_code);
+			   unsigned int xabort_code, struct abort_set *aborts);
 bool arbiter_pop_choice(struct arbiter_state *, unsigned int *tid, bool *txn,
-			unsigned int *xabort_code);
+			unsigned int *xabort_code, struct abort_set *aborts);
 
 /* scheduling interface */
 bool arbiter_interested(struct ls_state *, bool just_finished_reschedule,

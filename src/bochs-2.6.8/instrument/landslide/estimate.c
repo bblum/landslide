@@ -14,6 +14,7 @@
 #include "messaging.h"
 #include "schedule.h"
 #include "tree.h"
+#include "tsx.h"
 #include "variable_queue.h"
 
 uint64_t update_time(struct timeval *tv)
@@ -74,6 +75,21 @@ static void update_marked_children(struct hax *h, int *unused)
 	CONST_FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
 		if (is_child_marked(h, a)) {
 			h->marked_children++;
+#ifdef HTM_ABORT_SETS
+			/* if there are multiple abort sets for the same subtree
+			 * tid, need to double- (or triple-, or...) count it */
+			const struct abort_set *aborts;
+			unsigned int i;
+			unsigned int num_abort_sets = 0;
+			ARRAY_LIST_FOREACH(&h->abort_sets_ever, i, aborts) {
+				if (aborts->reordered_subtree_child.tid == a->tid) {
+					num_abort_sets++;
+				}
+			}
+			if (num_abort_sets > 0) {
+				h->marked_children += num_abort_sets - 1;
+			}
+#endif
 		}
 	);
 	/* ezpz */

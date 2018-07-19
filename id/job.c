@@ -47,13 +47,15 @@ bool pure_hb = false;
 bool transactions = false;
 bool abort_codes = false;
 bool dont_xabort_retry = false;
+bool retry_sets = false;
 bool verif_mode = false;
 
 void set_job_options(char *arg_test_name, char *arg_trace_dir,
 		     bool arg_verbose, bool arg_leave_logs,
 		     bool arg_pintos, bool arg_use_icb, bool arg_preempt_everywhere,
 		     bool arg_pure_hb, bool arg_txn, bool arg_txn_abort_codes,
-		     bool arg_txn_dont_retry, bool arg_verif_mode,
+		     bool arg_txn_dont_retry, bool arg_txn_retry_sets,
+		     bool arg_verif_mode,
 		     bool arg_pathos)
 {
 	test_name = XSTRDUP(arg_test_name);
@@ -68,6 +70,7 @@ void set_job_options(char *arg_test_name, char *arg_trace_dir,
 	transactions = arg_txn;
 	abort_codes = arg_txn_abort_codes;
 	dont_xabort_retry = arg_txn_dont_retry;
+	retry_sets = arg_txn_retry_sets;
 	verif_mode = arg_verif_mode;
 }
 
@@ -243,6 +246,11 @@ static void *run_job(void *arg)
 		if (dont_xabort_retry) {
 			assert(abort_codes);
 			XWRITE(&j->config_static, "HTM_DONT_RETRY=1\n");
+		}
+		if (retry_sets) {
+			assert(!abort_codes);
+			assert(!dont_xabort_retry);
+			XWRITE(&j->config_static, "HTM_ABORT_SETS=1\n");
 		}
 		/* since commit dcae85b (2 ago), it was discovered all the
 		 * sigbovik tests were conducted with an unsound treatment of

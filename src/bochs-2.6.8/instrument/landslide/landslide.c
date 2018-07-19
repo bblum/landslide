@@ -26,6 +26,7 @@
 #include "simulator.h"
 #include "test.h"
 #include "tree.h"
+#include "tsx.h"
 #include "user_specifics.h"
 #include "x86.h"
 
@@ -598,7 +599,8 @@ static bool time_travel(struct ls_state *ls)
 	unsigned int tid;
 	bool txn;
 	unsigned int xabort_code = _XBEGIN_STARTED; /* illegal value */
-	struct hax *h = explore(ls, &tid, &txn, &xabort_code);
+	struct abort_set aborts;
+	struct hax *h = explore(ls, &tid, &txn, &xabort_code, &aborts);
 
 	lsprintf(BRANCH, COLOUR_BOLD COLOUR_GREEN "End of branch #%" PRIu64
 		 ".\n" COLOUR_DEFAULT, ls->save.stats.total_jumps + 1);
@@ -610,7 +612,7 @@ static bool time_travel(struct ls_state *ls)
 	// TODO: revamp for boxes
 	if (h != NULL) {
 		assert(!h->all_explored);
-		save_longjmp(&ls->save, ls, h, tid, txn, xabort_code);
+		save_longjmp(&ls->save, ls, h, tid, txn, xabort_code, &aborts);
 		return true;
 	} else if (ls->icb_need_increment_bound) {
 		lsprintf(ALWAYS, COLOUR_BOLD COLOUR_YELLOW "ICB bound %u "
@@ -639,7 +641,8 @@ static void check_test_state(struct ls_state *ls)
 				DUMP_DECISION_INFO(ls);
 			} else if (test_ended_safely(ls)) {
 				save_setjmp(&ls->save, ls, TID_NONE, true, true,
-					    false, ADDR_NONE, false, false);
+					    false, ADDR_NONE, false, false,
+					    false, false);
 				if (!time_travel(ls)) {
 					found_no_bug(ls);
 				}
