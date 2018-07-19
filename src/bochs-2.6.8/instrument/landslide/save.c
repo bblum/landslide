@@ -682,12 +682,11 @@ static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
 			set_conflicts(h, old->depth,
 				      mem_shm_intersect(ls, h, old, in_kernel));
 			if (h->conflicts[old->depth]) {
-				// TODO: reduction challenge: does it suffice
-				// TODO: to only tag one of these txns?
 				abort_transaction(h->chosen_thread, h->parent,
 						  _XABORT_CONFLICT);
-				abort_transaction(old->chosen_thread, old->parent,
-						  _XABORT_CONFLICT);
+				/* no!!!!!!! (see htm_causality.c) */
+				//abort_transaction(old->chosen_thread, old->parent,
+				//		  _XABORT_CONFLICT);
 			}
 		}
 	}
