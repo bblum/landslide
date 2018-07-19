@@ -79,7 +79,8 @@ static void run_command(const char *file, const char *cmd, const struct timetrav
 }
 
 bool timetravel_set(struct ls_state *ls, struct timetravel_hax *th,
-		    unsigned int *tid, bool *txn, unsigned int *xabort_code)
+		    unsigned int *tid, bool *txn, unsigned int *xabort_code,
+		    struct abort_set *aborts)
 {
 	run_command(ls->timetravel.file, CMD_BOOKMARK, th);
 	/* unlike in bochs, set() doesn't return twice; see save.c */
@@ -87,7 +88,8 @@ bool timetravel_set(struct ls_state *ls, struct timetravel_hax *th,
 }
 
 void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,
-		     unsigned int tid, bool txn, unsigned int xabort_code)
+		     unsigned int tid, bool txn, unsigned int xabort_code,
+		     struct abort_set *aborts)
 {
 	run_command(ls->timetravel.file, CMD_SKIPTO, th);
 }

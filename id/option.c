@@ -123,7 +123,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		 char *wrapper_log, unsigned int wrapper_log_len, bool *pintos,
 		 bool *use_icb, bool *preempt_everywhere, bool *pure_hb,
 		 bool *txn, bool *txn_abort_codes, bool *txn_dont_retry,
-		 bool *verif_mode,
+		 bool *txn_retry_sets, bool *verif_mode,
 		 bool *pathos, unsigned long *progress_report_interval,
 		 char *trace_dir, unsigned int trace_dir_len,
 		 unsigned long *eta_factor, unsigned long *eta_thresh)
@@ -174,6 +174,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	DEF_CMDLINE_FLAG('X', true, txn, "Enable transactional-memory testing options");
 	DEF_CMDLINE_FLAG('A', true, txn_abort_codes, "Support multiple xabort failure codes (warning: exponential)");
 	DEF_CMDLINE_FLAG('S', true, txn_dont_retry, "STM semantics (suppress _XABORT_RETRY failures) (requires -A)");
+	DEF_CMDLINE_FLAG('R', true, txn_retry_sets, "Retry set reduction (incompatible with -A/-S)");
 	DEF_CMDLINE_FLAG('M', false, verif_mode, "Optimize for faster verification (maximal state space only)");
 #undef DEF_CMDLINE_FLAG
 
@@ -339,6 +340,9 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	} else if (arg_txn_abort_codes) {
 		ERR("-A (txn abort codes) supplied without -X (txn)\n");
 		options_valid = false;
+	} else if (arg_txn_retry_sets) {
+		ERR("-R (txn retry sets) supplied without -X (txn)\n");
+		options_valid = false;
 	} else if (strstr(test_name, "htm") == test_name) {
 		ERR("You want to use -X with that HTM test case, right?\n");
 		options_valid = false;
@@ -354,6 +358,15 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	} else if (strstr(test_name, "stm") == test_name) {
 		ERR("You want to use -X -A -S with that STM test case, right?\n");
 		options_valid = false;
+	}
+	if (arg_txn_retry_sets && arg_txn_abort_codes) {
+		ERR("-R (txn retry sets) incompatible with -A (txn abort codes)\n");
+		options_valid = false;
+	}
+	if (arg_txn_retry_sets && arg_icb) {
+		WARN("-R (txn retry sets) is not known to be sound "
+		     "in conjunction with -I (ICB)!\n");
+		WARN("Proceed at your own risk...\n");
 	}
 
 	if (strstr(test_name, "cyclone") == test_name ||
@@ -398,6 +411,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	*txn = arg_txn;
 	*txn_abort_codes = arg_txn_abort_codes;
 	*txn_dont_retry = arg_txn_dont_retry;
+	*txn_retry_sets = arg_txn_retry_sets;
 	*verif_mode = arg_verif_mode;
 
 	return options_valid;

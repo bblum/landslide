@@ -9,7 +9,10 @@
 
 #include <stdbool.h>
 
+#include "student_specifics.h" /* for ABORT_SETS */
+
 struct hax;
+struct abort_set;
 
 #ifdef BOCHS
 
@@ -38,8 +41,12 @@ template <typename T> inline void modify_hax(void (*cb)(struct hax *h_rw, T *),
 					     const struct hax *h_ro, T arg)
 {
 	assert(h_ro != NULL);
-	/* prevent sending pointers which might be invalid in another process */
+#ifndef HTM_ABORT_SETS
+	/* prevent sending pointers which might be invalid in another process;
+	 * abort sets unfortunately needs to send a struct of 4 ints through
+	 * (see explore.c), which is legal, but is-fundamental can't check */
 	STATIC_ASSERT(std::is_fundamental<T>::value && "no pointers allowed!");
+#endif
 	__modify_haxes((void (*)(struct hax *, void *))cb, h_ro, &arg, sizeof(arg));
 	/* also update the version in our local memory, of course */
 	cb((struct hax *)h_ro, &arg);
@@ -57,9 +64,11 @@ struct timetravel_hax { };
 #endif
 
 bool timetravel_set(struct ls_state *ls, struct hax *h,
-		    unsigned int *tid, bool *txn, unsigned int *xabort_code);
+		    unsigned int *tid, bool *txn, unsigned int *xabort_code,
+		    struct abort_set *aborts);
 void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *tt,
-		     unsigned int tid, bool txn, unsigned int xabort_code);
+		     unsigned int tid, bool txn, unsigned int xabort_code,
+		     struct abort_set *aborts);
 void timetravel_delete(struct ls_state *ls, const struct timetravel_hax *tt);
 
 #endif /* __LS_TIMETRAVEL_H */
