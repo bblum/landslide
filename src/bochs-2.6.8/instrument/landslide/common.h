@@ -41,6 +41,10 @@
 
 #define BUF_SIZE 256 /* default length for internal print buffers */
 
+/* "optional" types for integers */
+#define TID_NONE ((unsigned int)-1)
+#define ADDR_NONE ((unsigned int)-1)
+
 /* Verbosity levels */
 #define ALWAYS 0 /* yeah, uh */
 #define BUG    ALWAYS /* stuff that must get printed to be ever useful */

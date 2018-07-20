@@ -350,7 +350,7 @@ static bool check_infinite_loop(struct ls_state *ls, char *message, unsigned int
 	/* we're right on top of the PP; if it's a DR PP, avoid emitting a bogus
 	 * stack-address value as current eip (see dr eip logic in save.c). */
 	bool during_dr_delay = ls->save.current->eip == ls->eip &&
-	                       ls->save.current->data_race_eip != -1;
+	                       ls->save.current->data_race_eip != ADDR_NONE;
 	if (ls->save.current->depth > depth_thresh && !during_dr_delay) {
 		scnprintf(message, maxlen, "This interleaving has at least %d "
 			  "preemption-points; but past branches on average were "
@@ -453,8 +453,8 @@ static bool ensure_progress(struct ls_state *ls)
 #endif
 			int exn_num = ls->sched.cur_agent->most_recent_syscall;
 			unsigned int pf_eip = ls->sched.cur_agent->last_pf_eip;
-			if (exn_num == 0 || pf_eip != -1) {
-				if (pf_eip == -1) {
+			if (exn_num == 0 || pf_eip != ADDR_NONE) {
+				if (pf_eip == ADDR_NONE) {
 					lsprintf(DEV, COLOUR_BOLD COLOUR_YELLOW
 						 "Warning: MRS = 0 during "
 						 "CAUSE_FAULT. Probably bug or "
@@ -638,8 +638,8 @@ static void check_test_state(struct ls_state *ls)
 			if (DECISION_INFO_ONLY != 0) {
 				DUMP_DECISION_INFO(ls);
 			} else if (test_ended_safely(ls)) {
-				save_setjmp(&ls->save, ls, -1, true, true,
-					    false, -1, false, false);
+				save_setjmp(&ls->save, ls, TID_NONE, true, true,
+					    false, ADDR_NONE, false, false);
 				if (!time_travel(ls)) {
 					found_no_bug(ls);
 				}

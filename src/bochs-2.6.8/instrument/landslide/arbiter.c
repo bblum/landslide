@@ -55,7 +55,7 @@ bool arbiter_pop_choice(struct arbiter_state *r, unsigned int *tid, bool *txn, u
 
 #define ASSERT_ONE_THREAD_PER_PP(ls) do {					\
 		assert((/* root pp not created yet */				\
-		        (ls)->save.next_tid == -1 ||				\
+		        (ls)->save.next_tid == TID_NONE ||			\
 		        /* thread that was chosen is still running */		\
 		        (ls)->save.next_tid == (ls)->sched.cur_agent->tid) &&	\
 		       "One thread per preemption point invariant violated!");	\
@@ -94,7 +94,7 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 			ASSERT_ONE_THREAD_PER_PP(ls);
 		}
 #endif
-		assert(ls->sched.voluntary_resched_tid != -1);
+		assert(ls->sched.voluntary_resched_tid != TID_NONE);
 		*voluntary = true;
 		return true;
 	/* is the kernel idling, e.g. waiting for keyboard input? */
@@ -266,7 +266,7 @@ static bool try_avoid_fp_deadlock(struct ls_state *ls, bool voluntary,
 			/* a thread could be multiple types of maybe-blocked at
 			 * once. skip those for now; prioritizing ICB-blocked
 			 * ones that are definitely otherwise runnable. */
-			if (a->user_blocked_on_addr == -1 &&
+			if (a->user_blocked_on_addr == ADDR_NONE &&
 			    !agent_is_user_yield_blocked(&a->user_yield)) {
 				lsprintf(DEV, "I thought TID %d was ICB-blocked "
 					 "(bound %u), but maybe preempting is "
@@ -287,12 +287,12 @@ static bool try_avoid_fp_deadlock(struct ls_state *ls, bool voluntary,
 	 * this loop. But we need to wake all of them, not knowing which was
 	 * "faking it". If it's truly deadlocked, they'll all block again. */
 	FOR_EACH_RUNNABLE_AGENT(a, &ls->sched,
-		if (a->user_blocked_on_addr != -1) {
+		if (a->user_blocked_on_addr != ADDR_NONE) {
 			assert(!IS_IDLE(ls, a) && "That's weird.");
 			lsprintf(DEV, "I thought TID %d was blocked on 0x%x, "
 				 "but I could be wrong!\n",
 				 a->tid, a->user_blocked_on_addr);
-			a->user_blocked_on_addr = -1;
+			a->user_blocked_on_addr = ADDR_NONE;
 			*result = a;
 			found_one = true;
 		} else if (agent_is_user_yield_blocked(&a->user_yield)) {
@@ -418,8 +418,8 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 			return true;
 		} else {
 			if (voluntary) {
-				save_setjmp(&ls->save, ls, -1, true,
-					    true, true, -1, true, false);
+				save_setjmp(&ls->save, ls, TID_NONE, true,
+					    true, true, ADDR_NONE, true, false);
 			}
 			lsprintf(DEV, "ICB count %u bound %u\n",
 				 ls->sched.icb_preemption_count, ls->icb_bound);

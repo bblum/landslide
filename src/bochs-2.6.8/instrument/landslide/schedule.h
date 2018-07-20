@@ -93,11 +93,11 @@ struct agent {
 	struct malloc_actions user_malloc_flags;
 #endif
 	/* For noob deadlock detection. The pointer might not be set; if it is
-	 * NULL but the tid field is not -1, it should be computed. */
+	 * NULL but the tid field is not TID_NONE, it should be computed. */
 	const struct agent *kern_blocked_on;
 	unsigned int kern_blocked_on_tid;
 	/* action.locking implies addr is valid; also kern_blocked_on set implies
-	 * locking, which implies addr is valid. -1 if nothing. */
+	 * locking, which implies addr is valid. TID_NONE if nothing. */
 	unsigned int kern_blocked_on_addr;
 	unsigned int kern_mutex_unlocking_addr;
 	/* similar for userspace */
@@ -110,7 +110,7 @@ struct agent {
 	// int user_rwlock_unlocking_addr; // not needed
 	/* for helpful debug info on user page faults */
 	unsigned int last_pf_eip;
-	unsigned int last_pf_cr2; /* valid iff eip above != -1 */
+	unsigned int last_pf_cr2; /* valid iff eip above != ADDR_NONE */
 	/* Whether we just inserted a dummy instruction before a suspected data
 	 * race instruction (to delay its access until after the save point). */
 	bool just_delayed_for_data_race;
@@ -149,7 +149,8 @@ static struct agent *mutable_kern_blocked_on_agent(struct agent *a)
 	{ return (struct agent *)a->kern_blocked_on; }
 
 #define BLOCKED(a) \
-	((a)->kern_blocked_on_tid != -1 || (a)->user_blocked_on_addr != -1 || \
+	((a)->kern_blocked_on_tid != TID_NONE || \
+	 (a)->user_blocked_on_addr != TID_NONE || \
 	 agent_is_user_yield_blocked(&(a)->user_yield))
 
 #define INITING_SOMETHING(a) ((a)->action.user_mutex_initing)

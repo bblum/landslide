@@ -1089,7 +1089,7 @@ void mem_check_shared_access(struct ls_state *ls, unsigned int phys_addr,
 		 * never get enabled between two yields (in the semaphores),
 		 * but if interrupts are on, we definitely want to be noisy. */
 		if (!TID_IS_IDLE(ls->sched.cur_agent->tid) &&
-		    ls->save.next_tid != -1 && interrupts_enabled(ls->cpu0)) {
+		    ls->save.next_tid != TID_NONE && interrupts_enabled(ls->cpu0)) {
 			lsprintf(DEV, COLOUR_BOLD COLOUR_YELLOW
 				 "WARNING: ignoring shm by wrong thread(?) "
 				 "(chosen TID %d; current TID %d) to 0x%x @ ",
@@ -1428,7 +1428,7 @@ static void update_hax_set_speculative_pp(struct hax *h, int *unused)
 
 static void check_enable_speculative_pp(const struct hax *h, unsigned int eip)
 {
-	if (h != NULL && h->data_race_eip != -1 && h->data_race_eip == eip) {
+	if (h != NULL && h->data_race_eip != ADDR_NONE && h->data_race_eip == eip) {
 		if (h->is_preemption_point) {
 			lsprintf(DEV, "data race PP #%d/tid%d was already "
 				 "enabled\n", h->depth, h->chosen_thread);

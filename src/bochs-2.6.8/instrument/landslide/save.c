@@ -702,7 +702,7 @@ void save_init(struct save_state *ss)
 {
 	ss->root = NULL;
 	ss->current = NULL;
-	ss->next_tid = -1;
+	ss->next_tid = TID_NONE;
 	ss->next_xabort = false;
 	ss->next_xabort_code = _XBEGIN_STARTED;
 	ss->stats.total_choices = 0;
@@ -788,7 +788,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		if (ss->root == NULL) {
 			/* First/root choice. */
 			assert(ss->current == NULL);
-			assert(end_of_test || ss->next_tid == -1);
+			assert(end_of_test || ss->next_tid == TID_NONE);
 
 			/* No, not necessarily... (only true for pathos) */
 			//assert(is_preemption_point);
@@ -799,7 +799,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		} else {
 			/* Subsequent choice. */
 			assert(ss->current != NULL);
-			assert(end_of_test || ss->next_tid != -1);
+			assert(end_of_test || ss->next_tid != TID_NONE);
 			assert(!ss->current->estimate_computed &&
 			       "last nobe was estimate()d; cannot give it a child");
 
@@ -827,7 +827,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 #else
 		/* root nobe can't be speculative; see explore.c pp_parent() */
 		h->is_preemption_point = is_preemption_point || h->parent == NULL;
-		if (is_preemption_point) { assert(data_race_eip == -1); }
+		if (is_preemption_point) { assert(data_race_eip == ADDR_NONE); }
 #endif
 
 		h->marked_children = 0;
@@ -851,18 +851,18 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 
 		if (voluntary) {
 #ifndef PINTOS_KERNEL
-			assert(h->chosen_thread == -1 || h->chosen_thread ==
+			assert(h->chosen_thread == TID_NONE || h->chosen_thread ==
 			       ls->sched.voluntary_resched_tid);
 #endif
 			assert(ls->sched.voluntary_resched_stack != NULL);
-			assert(data_race_eip == -1);
+			assert(data_race_eip == ADDR_NONE);
 			h->stack_trace = ls->sched.voluntary_resched_stack;
 			ls->sched.voluntary_resched_stack = NULL;
 		} else {
 			struct stack_trace *st = stack_trace(ls);
 			h->stack_trace = st;
 
-			if (data_race_eip != -1) {
+			if (data_race_eip != ADDR_NONE) {
 				/* first frame of stack will be bogus, due to
 				 * the technique for delaying the access (in
 				 * x86.c). fix it up with the proper eip. */
@@ -916,10 +916,10 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 	ss->next_tid = new_tid;
 	ss->next_xabort = false;
 	ss->next_xabort_code = _XBEGIN_STARTED;
-	if (h->chosen_thread == -1) {
+	if (h->chosen_thread == TID_NONE) {
 		lsprintf(CHOICE, MODULE_COLOUR "#%d: Starting test with TID %d.\n"
 			 COLOUR_DEFAULT, h->depth, ss->next_tid);
-	} else if (ss->next_tid == -1) {
+	} else if (ss->next_tid == TID_NONE) {
 		lsprintf(CHOICE, MODULE_COLOUR "#%d: Test ends with TID %d.\n"
 			 COLOUR_DEFAULT, h->depth, h->chosen_thread);
 	} else if (h->chosen_thread != ss->next_tid) {
@@ -956,7 +956,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 	}
 	if (was_jumped_to) {
 #ifdef BOCHS
-		if (tid != -1) {
+		if (tid != TID_NONE) {
 			arbiter_append_choice(&ls->arbiter, tid, txn, xabort_code);
 		}
 		restore_ls(ls, h);
@@ -1055,7 +1055,7 @@ void save_reset_tree(struct save_state *ss, struct ls_state *ls)
 	ss->stats.depth_total = (uint64_t)-ss->current->depth; /* see above */
 
 	/* As before but with some additional changes */
-	save_longjmp(ss, ls, ss->root, -1, false, -1);
+	save_longjmp(ss, ls, ss->root, TID_NONE, false, -1);
 }
 #else
 void save_reset_tree(struct save_state *ss, struct ls_state *ls)

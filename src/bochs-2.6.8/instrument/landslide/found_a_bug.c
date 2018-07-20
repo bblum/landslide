@@ -170,7 +170,7 @@ static unsigned int print_tree_from(const struct hax *h, unsigned int choose_thr
 	unsigned int num;
 
 	if (h == NULL) {
-		assert(choose_thread == -1);
+		assert(choose_thread == TID_NONE);
 		return 0;
 	}
 
@@ -181,12 +181,12 @@ static unsigned int print_tree_from(const struct hax *h, unsigned int choose_thr
 	    (h->chosen_thread != choose_thread || verbose)) {
 		lsprintf(BUG, bug_found,
 			 COLOUR_BOLD COLOUR_YELLOW "%u:\t", num);
-		if (h->chosen_thread == -1) {
+		if (h->chosen_thread == TID_NONE) {
 			printf(BUG, "<none> ");
 		} else {
 			printf(BUG, "TID %d ", h->chosen_thread);
 		}
-		if (choose_thread == -1) {
+		if (choose_thread == TID_NONE) {
 			printf(BUG, "--> <none>;  ");
 		} else {
 			printf(BUG, "--> TID %d;  ", choose_thread);
@@ -254,8 +254,8 @@ static long double compute_state_space_size(struct ls_state *ls,
 		// XXX: Gross hack. If arbiter FAB deadlock on this branch, it
 		// will call setjmp on its own. Avoid double call in that case.
 		if (!voluntary || ls->sched.voluntary_resched_stack != NULL) {
-			save_setjmp(&ls->save, ls, -1, true, true, true,
-				    -1, voluntary, false);
+			save_setjmp(&ls->save, ls, TID_NONE, true, true, true,
+				    ADDR_NONE, voluntary, false);
 		}
 		unsigned int _tid;
 		bool _txn;

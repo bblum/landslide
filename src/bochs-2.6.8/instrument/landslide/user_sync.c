@@ -43,7 +43,7 @@ void learn_malloced_mutex_structure(struct user_sync_state *u, unsigned int lock
 				    unsigned int chunk_addr, unsigned int chunk_size)
 {
 	struct mutex *mp;
-	assert(lock_addr != -1);
+	assert(lock_addr != ADDR_NONE);
 	Q_SEARCH(mp, &u->mutexes, nobe, mp->addr == (unsigned int)lock_addr);
 	if (mp == NULL) {
 		lsprintf(DEV, "created user mutex 0x%x (%u others)\n",
@@ -145,12 +145,11 @@ void check_user_mutex_access(struct ls_state *ls, unsigned int addr)
 	}
 
 	FOR_EACH_RUNNABLE_AGENT(a, &ls->sched,
-		unsigned int lock_addr = (unsigned int)a->user_blocked_on_addr;
-		if (lock_addr != (unsigned int)(-1) &&
-		    lock_contains_addr(u, (unsigned int)lock_addr, addr)) {
+		if (a->user_blocked_on_addr != ADDR_NONE &&
+		    lock_contains_addr(u, a->user_blocked_on_addr, addr)) {
 			lsprintf(DEV, "Rogue write to %x, unblocks tid %d from %x\n",
-				 addr, a->tid, lock_addr);
-			a->user_blocked_on_addr = -1;
+				 addr, a->tid, a->user_blocked_on_addr);
+			a->user_blocked_on_addr = ADDR_NONE;
 		}
 	);
 }
