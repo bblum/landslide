@@ -1522,16 +1522,16 @@ void sched_update(struct ls_state *ls)
 		}
 		s->entering_timer = false;
 	} else {
-		if (kern_timer_entering(ls->eip)) {
-			lsprintf(DEV, "Suppressing unwanted timer tick from " SIM_NAME
-				 " (received at 0x%x).\n", READ_STACK(ls->cpu0, 0));
+		if (kern_timer_entering(ls->eip)
+#ifdef GUEST_SPURIOUS_HANDLER
+		    || ls->eip == GUEST_SPURIOUS_HANDLER
+#endif
+		    ) {
+			lsprintf(DEV, "Suppressing unwanted %s from " SIM_NAME
+				 " (received at 0x%x).\n",
+				 kern_timer_entering(ls->eip) ? "timer tick" : "irq7",
+				 READ_STACK(ls->cpu0, 0));
 			ls->eip = avoid_timer_interrupt_immediately(ls->cpu0);
-			// Print whether it thinks anybody's alive.
-			anybody_alive(ls->cpu0, &ls->test, s, true);
-			// Dump scheduler state, too.
-			lsprintf(DEV, "scheduler state: ");
-			print_qs(DEV, s);
-			printf(DEV, "\n");
 		}
 	}
 

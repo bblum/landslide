@@ -66,6 +66,8 @@ PREEMPT_ENABLE_VALUE=0
 
 PAGE_FAULT_WRAPPER=JeEZAsscFUBi
 
+SPURIOUS_INTERRUPT_WRAPPER=IAIUpRZJwrxi
+
 # a kernel-space function which makes userspace memory accesses that might
 # conflict (wrt DPOR) with other accesses from userspace. IOW, some system
 # calls could be "covert communication channels" that we don't want to miss
