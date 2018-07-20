@@ -15,7 +15,7 @@
  * that directly invokes the timer interrupt INSTEAD of executing the pending
  * instruction; the other way just manipulates the cpu's interrupt pending
  * flags to make it do the interrupt itself. */
-unsigned int cause_timer_interrupt_immediately(conf_object_t *cpu)
+bool cause_timer_interrupt_immediately(conf_object_t *cpu, unsigned int *new_eip)
 {
 	unsigned int esp = GET_CPU_ATTR(cpu, esp);
 	unsigned int eip = GET_CPU_ATTR(cpu, eip);
@@ -84,7 +84,8 @@ unsigned int cause_timer_interrupt_immediately(conf_object_t *cpu)
 #ifdef PINTOS_KERNEL
 	SET_CPU_ATTR(cpu, eflags, GET_CPU_ATTR(cpu, eflags) & ~EFL_IF);
 #endif
-	return handler;
+	*new_eip = handler;
+	return true;
 }
 
 /* i.e., with stallin' */

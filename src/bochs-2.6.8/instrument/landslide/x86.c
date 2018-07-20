@@ -17,8 +17,12 @@
 
 #include "iodev/iodev.h"
 
-unsigned int cause_timer_interrupt_immediately(cpu_t *cpu)
+#include "stack.h"
+bool cause_timer_interrupt_immediately(cpu_t *cpu, unsigned int *new_eip)
 {
+	if (!interrupts_enabled(cpu)) {
+		return false;
+	}
 	assert(interrupts_enabled(cpu));
 	DEV_pic_lower_irq(0);
 	DEV_pic_raise_irq(0);
@@ -28,7 +32,8 @@ unsigned int cause_timer_interrupt_immediately(cpu_t *cpu)
 	assert(!rv); /* not need break out of cpu loop */
 	assert(!cpu->async_event);
 	assert(GET_CPU_ATTR(cpu, eip) == GUEST_TIMER_WRAP_ENTER);
-	return GUEST_TIMER_WRAP_ENTER;
+	*new_eip = GUEST_TIMER_WRAP_ENTER;
+	return true;
 }
 
 void cause_timer_interrupt(cpu_t *cpu, apic_t *apic, pic_t *pic)

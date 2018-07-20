@@ -58,6 +58,8 @@ struct agent {
 		bool vm_user_copy;
 		/* special action flag for blocking on disk I/O in pintos */
 		bool disk_io;
+		/* ugh */
+		bool irq7;
 		/* are they taking or releasing a mutex? */
 		bool kern_mutex_locking;
 		bool kern_mutex_unlocking;

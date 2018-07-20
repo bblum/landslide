@@ -105,7 +105,7 @@
 #define _XABORT_CODE(x)    (((x) >> 24) & 0xFF)
 
 void cause_timer_interrupt(cpu_t *cpu, apic_t *apic, pic_t *pic);
-unsigned int cause_timer_interrupt_immediately(cpu_t *cpu);
+bool cause_timer_interrupt_immediately(cpu_t *cpu, unsigned int *new_eip);
 unsigned int avoid_timer_interrupt_immediately(cpu_t *cpu);
 void cause_keypress(keyboard_t *kbd, char);
 bool interrupts_enabled(cpu_t *cpu);

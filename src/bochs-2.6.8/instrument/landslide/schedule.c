@@ -76,6 +76,7 @@ static void agent_fork(struct sched_state *s, unsigned int tid, bool on_runqueue
 	a->action.lmm_init = false;
 	a->action.vm_user_copy = false;
 	a->action.disk_io = false;
+	a->action.irq7 = false;
 	a->action.kern_mutex_locking = false;
 	a->action.kern_mutex_unlocking = false;
 	a->action.kern_mutex_trylocking = false;
@@ -1012,6 +1013,14 @@ static void sched_update_kern_state_machine(struct ls_state *ls)
 	} else if (kern_exit_disk_io_fn(ls->eip)) {
 		assert(ACTION(s, disk_io) && "(co)recursive disk_io not supported");
 		ACTION(s, disk_io) = false;
+	} else if (ls->eip == 0x0010192c) { // FIXME
+		assert(!ACTION(s, irq7));
+		lsprintf(DEV, "irq7 enter -this shouldnt happen\n"); dump_stack();
+		ACTION(s, irq7) = true;
+	} else if (ls->eip == 0x101974) {
+		assert(ACTION(s, irq7));
+		lsprintf(DEV, "irq7 exit -this shouldnt happen\n"); dump_stack();
+		ACTION(s, irq7) = false;
 	} else if (ACTION(s, user_txn)) {
 		/* syscalls will always abort transactions */
 		check_user_yield_activity(&ls->user_sync, s->cur_agent);
@@ -1524,9 +1533,12 @@ void sched_update(struct ls_state *ls)
 		}
 		s->entering_timer = false;
 	} else {
-		if (kern_timer_entering(ls->eip)) {
+		if (kern_timer_entering(ls->eip) || ls->eip == 0x0010192c) {
 			lsprintf(DEV, "Suppressing unwanted timer tick from " SIM_NAME
 				 " (received at 0x%x).\n", READ_STACK(ls->cpu0, 0));
+			if (ls->eip == 0x0010192c) {
+				lsprintf(DEV, "horribly dodging irq7 instead btw\n");
+			}
 			ls->eip = avoid_timer_interrupt_immediately(ls->cpu0);
 			// Print whether it thinks anybody's alive.
 			anybody_alive(ls->cpu0, &ls->test, s, true);
@@ -1761,11 +1773,17 @@ void sched_update(struct ls_state *ls)
 				ls->eip = delay_instruction(ls->cpu0);
 			} else {
 				/* they'd better not have "escaped" */
-				assert(ACTION(s, cs_free_pass) ||
+				//assert(ACTION(s, cs_free_pass) ||
+				if (!(ACTION(s, cs_free_pass) ||
 				       ACTION(s, context_switch) ||
 				       HANDLING_INTERRUPT(s) ||
+				       ACTION(s, irq7) || ls->eip == 0x101974 ||
 				       !interrupts_enabled(ls->cpu0) ||
-				       !kern_ready_for_timer_interrupt(ls->cpu0));
+				       !kern_ready_for_timer_interrupt(ls->cpu0))) {
+					lsprintf(DEV, "fucked by irq7, i think (%d)\n", ACTION(s, irq7));
+					dump_stack();
+					//assert(0);
+				}
 			}
 		}
 		/* in any case we have no more decisions to make here */
@@ -2041,11 +2059,13 @@ void sched_recover(struct ls_state *ls)
 				 "from tid %d\n", tid, CURRENT(s, tid));
 			set_schedule_target(s, a);
 			/* Hmmmm */
-			if (!kern_timer_entering(ls->eip)) {
-				ls->eip = cause_timer_interrupt_immediately(
-					ls->cpu0);
+			s->entering_timer = kern_timer_entering(ls->eip) ||
+				cause_timer_interrupt_immediately(ls->cpu0, &ls->eip);
+			if (!s->entering_timer) {
+				/* double hmmmm */
+				lsprintf(DEV, "interrupce off; can't preempt\n");
+				dump_stack();
 			}
-			s->entering_timer = true;
 
 			/* Are we switching to someone other than the current
 			 * thread or a voluntary yield target? If so it counts
