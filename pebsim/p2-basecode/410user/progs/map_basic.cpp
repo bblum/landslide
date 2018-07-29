@@ -7,6 +7,8 @@ extern "C" {
 }
 #include <htm/htmmap.hpp>
 
+// NB. To turn this test into "map_basicer", find the map.initialize() call and
+// switch it out for the commented version to make the map not have to regrow
 
 // This is roughly 8 million
 #define ITERS 1 //(1 << 23)

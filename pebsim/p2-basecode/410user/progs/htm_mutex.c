@@ -53,6 +53,8 @@ void htm_mutex_unlock(htm_mutex_t *hm)
 		assert(hm->held == 0);
 		_xend();
 	} else {
+		// i also tested without this assertion to make sure it doesn't
+		// oops the state space (unlike the one above, this one's fine)
 		assert(hm->held == 1);
 		// this is just a normal write on x86 but just for style
 		__sync_lock_release(&hm->held);
