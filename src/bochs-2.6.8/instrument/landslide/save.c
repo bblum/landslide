@@ -215,6 +215,7 @@ static void copy_sched(struct sched_state *dest, const struct sched_state *src)
 	vc_copy(&dest->scheduler_lock_clock, &src->scheduler_lock_clock);
 	dest->scheduler_lock_held = src->scheduler_lock_held;
 #endif
+	ARRAY_LIST_CLONE(&dest->dpor_preferred_tids, &src->dpor_preferred_tids);
 	dest->deadlock_fp_avoidance_count = src->deadlock_fp_avoidance_count;
 	dest->icb_preemption_count = src->icb_preemption_count;
 	dest->any_thread_txn = src->any_thread_txn;
@@ -371,6 +372,7 @@ static void free_sched(struct sched_state *s)
 	lock_clocks_destroy(&s->lock_clocks);
 	vc_destroy(&s->scheduler_lock_clock);
 #endif
+	ARRAY_LIST_FREE(&s->dpor_preferred_tids);
 }
 static void free_test(const struct test_state *t)
 {

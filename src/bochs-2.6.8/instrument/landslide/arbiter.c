@@ -309,6 +309,12 @@ static bool try_avoid_fp_deadlock(struct ls_state *ls, bool voluntary,
 	return found_one;
 }
 
+/* this improves state space reduction (it's basically the other half of
+ * 'sleep sets', that equiv-already-explored covers the other half of).
+ * whenever dpor tells scheduler to switch to a particular tid, that tid should
+ * be treated as higher priority to run than whatever was preempted. */
+#define KEEP_RUNNING_DPORS_CHOSEN_TID
+
 /* Returns true if a thread was chosen. If true, sets 'target' (to either the
  * current thread or any other thread), and sets 'our_choice' to false if
  * somebody else already made this choice for us, true otherwise. */
@@ -318,6 +324,9 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 	struct agent *a;
 	unsigned int count = 0;
 	bool current_is_legal_choice = false;
+	bool dpor_preferred_is_legal_choice = false;
+	unsigned int dpor_preferred_count;
+	unsigned int dpor_preference = 0;
 
 	/* We shouldn't be asked to choose if somebody else already did. */
 	assert(Q_GET_SIZE(&ls->arbiter.choices) == 0);
@@ -335,6 +344,19 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 			if (a == current) {
 				current_is_legal_choice = true;
 			}
+#ifdef KEEP_RUNNING_DPORS_CHOSEN_TID
+			unsigned int i;
+			unsigned int *dpor_preferred_tid;
+			ARRAY_LIST_FOREACH(&ls->sched.dpor_preferred_tids, i,
+					   dpor_preferred_tid) {
+				if (a->tid == *dpor_preferred_tid &&
+				    i >= dpor_preference) {
+					dpor_preferred_is_legal_choice = true;
+					dpor_preferred_count = count;
+					dpor_preference = i;
+				}
+			}
+#endif
 		}
 	);
 
@@ -358,6 +380,13 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 #endif
 	}
 #endif
+	if (dpor_preferred_is_legal_choice &&
+	    // FIXME: i'm not sure if this is right, but seems to make no diff..
+	    !current_is_legal_choice) {
+		/* don't let voluntary context switches accidentally switch to
+		 * the preempted evil ancestor before the child gets to run */
+		count = dpor_preferred_count;
+	}
 
 	if (agent_has_yielded(&current->user_yield) ||
 	    agent_has_xchged(&ls->user_sync)) {

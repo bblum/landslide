@@ -219,6 +219,8 @@ struct sched_state {
 	 * during timer or context switch. but needed for tracking "handoff". */
 	bool scheduler_lock_held;
 #endif
+	/* After time travel, prefer to run these tids for search ordering. */
+	ARRAY_LIST(unsigned int) dpor_preferred_tids;
 	/* Avoid false positive deadlocks caused by ad-hoc yield-blocking. */
 	unsigned int deadlock_fp_avoidance_count;
 	/* ICB */
