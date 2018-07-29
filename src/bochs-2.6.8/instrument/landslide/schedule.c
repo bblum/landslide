@@ -396,6 +396,7 @@ void sched_init(struct sched_state *s)
 	vc_init(&s->scheduler_lock_clock);
 	s->scheduler_lock_held = false;
 #endif
+	ARRAY_LIST_INIT(&s->dpor_preferred_tids, 8);
 	s->deadlock_fp_avoidance_count = 0;
 	s->icb_preemption_count = 0;
 	s->any_thread_txn = false;
@@ -2057,6 +2058,16 @@ void sched_recover(struct ls_state *ls)
 			ls->eip = cause_transaction_failure(ls->cpu0, xabort_code);
 		} else {
 			lsprintf(INFO, "Chosen tid %d already running!\n", tid);
+		}
+		/* in any case (even if tid == current->tid), remember the tid
+		 * dpor wants to run so arbiter can prioritize it later, thereby
+		 * forcing the conflict to get reordered before the preempted
+		 * thread can run first (which would result in an equivalent
+		 * interleaving as before). (skip if this is a txnal pp, which
+		 * aren't about reordering memory conflicts; wouldn't want to
+		 * overwrite an existing dpor preferred thread if exists.) */
+		if (!txn) {
+			ARRAY_LIST_APPEND(&s->dpor_preferred_tids, tid);
 		}
 		/* ICB counter logic not necessary here; current thread
 		 * will always be legal w/o "preempting" (per ICB). */

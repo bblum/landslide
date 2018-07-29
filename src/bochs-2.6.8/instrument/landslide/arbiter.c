@@ -309,6 +309,23 @@ static bool try_avoid_fp_deadlock(struct ls_state *ls, bool voluntary,
 	return found_one;
 }
 
+/* this improves state space reduction (it's basically the other half of
+ * 'sleep sets', that equiv-already-explored covers the other half of).
+ * whenever dpor tells scheduler to switch to a particular tid, that tid should
+ * be treated as higher priority to run than whatever was preempted. */
+#define KEEP_RUNNING_DPORS_CHOSEN_TID
+/* should we remember every thread dpor's chosen to preempt to in this branch's
+ * history, or only the latest one? e.g if dpor put us in a subtree by switching
+ * to thread 5, then into a further subtree of that (by backtracking a shorter
+ * distance) by switching to thread 6, then when thread 6 blocks on something,
+ * should we let the scheduler randomly switch to thread 4, or fall back on a
+ * preference for thread 5?
+ * remembering every priority causes state space reduction in some cases
+ * (htm_fig63(3,1)), but also inflation in other cases (swap(3,1)), and the
+ * inflation is generally worse, so it's disabled by default. i have no evidence
+ * of it affecting SS size with only 2 threads either way though. */
+#define CONSIDER_ONLY_MOST_RECENT_DPOR_PREFERRED_TID
+
 /* Returns true if a thread was chosen. If true, sets 'target' (to either the
  * current thread or any other thread), and sets 'our_choice' to false if
  * somebody else already made this choice for us, true otherwise. */
@@ -318,6 +335,9 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 	struct agent *a;
 	unsigned int count = 0;
 	bool current_is_legal_choice = false;
+	bool dpor_preferred_is_legal_choice = false;
+	unsigned int dpor_preferred_count;
+	unsigned int dpor_preference = 0;
 
 	/* We shouldn't be asked to choose if somebody else already did. */
 	assert(Q_GET_SIZE(&ls->arbiter.choices) == 0);
@@ -335,6 +355,28 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 			if (a == current) {
 				current_is_legal_choice = true;
 			}
+#ifdef KEEP_RUNNING_DPORS_CHOSEN_TID
+			unsigned int i;
+			unsigned int *dpor_preferred_tid;
+			/* consider all tids which dpor has chosen to switch to
+			 * so far in this branch, with preference for latest */
+			ARRAY_LIST_FOREACH(&ls->sched.dpor_preferred_tids, i,
+					   dpor_preferred_tid) {
+#ifdef CONSIDER_ONLY_MOST_RECENT_DPOR_PREFERRED_TID
+				/* actually, consider only the most recent */
+				if (i < ARRAY_LIST_SIZE(
+					&ls->sched.dpor_preferred_tids) - 1) {
+					continue;
+				}
+#endif
+				if (a->tid == *dpor_preferred_tid &&
+				    i >= dpor_preference) {
+					dpor_preferred_is_legal_choice = true;
+					dpor_preferred_count = count;
+					dpor_preference = i;
+				}
+			}
+#endif
 		}
 	);
 
@@ -358,6 +400,13 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 #endif
 	}
 #endif
+	if (dpor_preferred_is_legal_choice &&
+	    // FIXME: i'm not sure if this is right, but seems to make no diff..
+	    !current_is_legal_choice) {
+		/* don't let voluntary context switches accidentally switch to
+		 * the preempted evil ancestor before the child gets to run */
+		count = dpor_preferred_count;
+	}
 
 	if (agent_has_yielded(&current->user_yield) ||
 	    agent_has_xchged(&ls->user_sync)) {
