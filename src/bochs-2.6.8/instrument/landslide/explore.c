@@ -143,15 +143,23 @@ static void finalize_aborts(struct abort_noob *noob, unsigned int tid)
 
 /* compares by reordered subtree child only */
 static struct abort_set *find_abort_set(mutable_abort_sets_t *list,
-					struct abort_set *src)
+					struct abort_set *src,
+					bool subtree_noob_must_match)
 {
 	struct abort_set *dest;
 	unsigned int i;
 	ARRAY_LIST_FOREACH(list, i, dest) {
 		assert(dest->reordered_subtree_child.tid != TID_NONE);
-		if (ABORT_NOOBS_EQ(&dest->reordered_subtree_child,
-				   &src->reordered_subtree_child)) {
-			return dest;
+		if (subtree_noob_must_match) {
+			if (ABORT_NOOBS_EQ(&dest->reordered_subtree_child,
+					   &src->reordered_subtree_child)) {
+				return dest;
+			}
+		} else {
+			if (dest->reordered_subtree_child.tid ==
+			    src->reordered_subtree_child.tid) {
+				return dest;
+			}
 		}
 	}
 	return NULL;
@@ -169,15 +177,16 @@ static void update_hax_abort_set(struct hax *h, struct abort_set *src)
 	assert(src->preempted_evil_ancestor.tid != TID_NONE);
 	assert(!h->xbegin); /* should not be tagging tids at xbegin pps */
 
-	struct abort_set *todo = find_abort_set(mutable_abort_sets_todo(h), src);
+	struct abort_set *todo = find_abort_set(mutable_abort_sets_todo(h), src, true);
 	if (todo != NULL) {
+		/* found matching planned aborts for this thread; merge in
+		 * whatever our new plans are for the preempted thread */
 		if (src->preempted_evil_ancestor.tid ==
 		    todo->preempted_evil_ancestor.tid) {
 			struct abort_set *ever =
-				find_abort_set(mutable_abort_sets_ever(h), src);
+				find_abort_set(mutable_abort_sets_ever(h), src, true);
 			assert(ever != NULL && "missing todo in ever");
-			assert(ABORT_NOOBS_EQ(&ever->preempted_evil_ancestor,
-					      &todo->preempted_evil_ancestor));
+			assert(ABORT_SETS_EQ(ever, todo));
 			/* merge existing set with more stuff to test */
 			merge_abort_noob(&ever->preempted_evil_ancestor,
 					 &src->preempted_evil_ancestor);
@@ -189,6 +198,38 @@ static void update_hax_abort_set(struct hax *h, struct abort_set *src)
 			 * the intention to restrict txnal outcomes for multiple
 			 * conflicting evil ancestors at once -- future work;
 			 * for now, just skip to saturation step, below */
+		}
+	} else if ((todo = find_abort_set(mutable_abort_sets_todo(h),
+					  src, false)) != NULL) {
+		/* found different planned aborts; can maybe merge anyway? */
+		if (todo->preempted_evil_ancestor.tid !=
+		    src->preempted_evil_ancestor.tid) {
+			/* third thread case, as above */
+		} else if(!ABORT_NOOB_ACTIVE(&todo->preempted_evil_ancestor) &&
+			  !ABORT_NOOB_ACTIVE(&src->preempted_evil_ancestor)) {
+			/* special case of {(1,0),(1,1)} + {(0,1),(1,1)} can be
+			 * merged into "just do everything" set; it's possible
+			 * this may have already happened; if so, just a noop */
+			struct abort_set *ever =
+				find_abort_set(mutable_abort_sets_ever(h), src, false);
+			assert(ever != NULL && "missing todo in ever (2)");
+			assert(ABORT_SETS_EQ(ever, todo));
+			assert(!ABORT_SETS_EQ(ever, src));
+			merge_abort_noob(&todo->reordered_subtree_child,
+					 &src->reordered_subtree_child);
+			merge_abort_noob(&ever->reordered_subtree_child,
+					 &src->reordered_subtree_child);
+			/* this should saturate it */
+			assert(!ABORT_SET_ACTIVE(todo));
+			assert(!ABORT_SET_ACTIVE(ever));
+			return;
+		} else {
+			/* unmergeable disjoint sets, for example,
+			 * {(1,0),(0,1)} + {(0,1),(1,0)}, as in fig63.c, or
+			 * {(1,0),(1,0)} + {(0,1),(1,0)}, which is tempting to
+			 * merge into {(1,1),(1,0)}, but then you will get owned
+			 * and hafta duplicate work when {(1,0),(0,1)} comes
+			 * along, so coalescing only to saturation is safe */
 		}
 	}
 

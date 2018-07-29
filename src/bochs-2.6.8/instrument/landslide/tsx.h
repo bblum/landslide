@@ -62,6 +62,11 @@ struct abort_set {
 #define ABORT_NOOBS_EQ(n1,n2) ((n1)->tid == (n2)->tid &&	\
 			       (n1)->check_success == (n2)->check_success && \
 			       (n1)->check_retry == (n2)->check_retry)
+#define ABORT_SETS_EQ(a1,a2)					\
+	(ABORT_NOOBS_EQ(&(a1)->reordered_subtree_child,		\
+			&(a2)->reordered_subtree_child) &&	\
+	 ABORT_NOOBS_EQ(&(a1)->preempted_evil_ancestor,		\
+			&(a2)->preempted_evil_ancestor))
 #define ABORT_SET_ACTIVE(a) ((a) != NULL &&			\
 	(ABORT_NOOB_ACTIVE(&(a)->reordered_subtree_child) ||	\
 	 ABORT_NOOB_ACTIVE(&(a)->preempted_evil_ancestor)))
