@@ -2113,14 +2113,35 @@ void sched_recover(struct ls_state *ls)
 #ifdef HTM_ABORT_SETS
 		if (ABORT_SET_ACTIVE(&aborts)) {
 			if (ABORT_SET_ACTIVE(&s->upcoming_aborts)) {
-				/* FIXME future work figure out how to merge? */
-				lsprintf(DEV, "abort set conflict, old: ");
-				print_abort_set(DEV, &s->upcoming_aborts);
-				printf(DEV, ", new: ");
-				print_abort_set(DEV, &aborts);
-				printf(DEV, "; abandoning new, sorry\n");
-				modify_hax(update_hax_abandon_abort_set,
-					   ls->save.current, aborts);
+				const struct abort_noob *merge_noob =
+					only_active_noob(&s->upcoming_aborts);
+				lsprintf(DEV, "seeming conflict, checking..\n");
+				if (merge_noob != NULL &&
+				    (ABORT_NOOBS_EQ(&aborts.reordered_subtree_child,
+						    merge_noob) ||
+				     ABORT_NOOBS_EQ(&aborts.preempted_evil_ancestor,
+						    merge_noob))) {
+					/* if the old set was half-consumed, and
+					 * the new one contains the remaining
+					 * half, we can safely adopt the new */
+					lsprintf(DEV, "old active abort set ");
+					print_abort_set(DEV, &s->upcoming_aborts);
+					printf(DEV, " is subsumed by the new ");
+					print_abort_set(DEV, &aborts);
+					printf(DEV, "..!\n");
+					s->upcoming_aborts = aborts;
+				} else {
+					/* still both noobs active, or totally
+					 * different threads, so can't merge. */
+					// FIXME: future work, multiple at once?
+					lsprintf(DEV, "abort set conflict, old: ");
+					print_abort_set(DEV, &s->upcoming_aborts);
+					printf(DEV, ", new: ");
+					print_abort_set(DEV, &aborts);
+					printf(DEV, "; abandoning new, sorry\n");
+					modify_hax(update_hax_abandon_abort_set,
+						   ls->save.current, aborts);
+				}
 			} else {
 				lsprintf(DEV, "activating abort set: ");
 				print_abort_set(DEV, &aborts);

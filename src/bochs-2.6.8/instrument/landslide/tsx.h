@@ -109,6 +109,20 @@ static inline bool abort_set_pop(struct abort_set *a, unsigned int tid,
 	}
 }
 
+/* returns the one active abort set if the other is inactive;
+ * if both are active returns null */
+static struct abort_noob *only_active_noob(struct abort_set *a)
+{
+	assert(ABORT_SET_ACTIVE(a));
+	if (!ABORT_NOOB_ACTIVE(&a->preempted_evil_ancestor)) {
+		return &a->reordered_subtree_child;
+	} else if (!ABORT_NOOB_ACTIVE(&a->reordered_subtree_child)) {
+		return &a->preempted_evil_ancestor;
+	} else {
+		return NULL;
+	}
+}
+
 static inline void print_abort_noob(verbosity v, const struct abort_noob *n)
 {
 	if (n->tid == TID_NONE) {
