@@ -187,7 +187,7 @@ UCCPPFLAGS += -mpreferred-stack-boundary=2
 # bblum wuz hear
 UCCPPFLAGS += -Wno-error=address -Wno-error=unused-but-set-variable -fno-exceptions
 UCFLAGS = $(UCCPPFLAGS) --std=gnu99
-UCPPFLAGS = $(UCCPPFLAGS)
+UCPPFLAGS = $(UCCPPFLAGS) --std=c++11
 ULDFLAGS = -static -Ttext 1000000 --fatal-warnings -melf_i386 --entry=_main
 UINCLUDES = -I$(410SDIR) -I$(410UDIR) -I$(410UDIR)/inc \
 						-I$(STUUDIR)/inc \
