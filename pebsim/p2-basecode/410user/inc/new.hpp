@@ -13,6 +13,7 @@ extern "C" {
 void* operator new (size_t size) { return calloc(1, size); }
 
 void operator delete(void *p, unsigned int) { free(p); }
+void operator delete(void *p) { free(p); }
 
 void* operator new[](unsigned int size) { return calloc(1, size); }
 void operator delete[](void*p) { free(p); }
