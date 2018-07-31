@@ -109,6 +109,7 @@ static void agent_fork(struct sched_state *s, unsigned int tid, bool on_runqueue
 	a->user_mutex_locking_addr = ADDR_NONE;
 	a->user_mutex_unlocking_addr = ADDR_NONE;
 	a->user_rwlock_locking_addr = ADDR_NONE;
+	a->user_joined_on_tid = TID_NONE;
 	a->last_pf_eip = ADDR_NONE;
 	a->last_pf_cr2 = 0x15410de0u;
 	a->just_delayed_for_data_race = false;
@@ -1397,8 +1398,22 @@ static void sched_update_user_state_machine(struct ls_state *ls)
 	} else if (user_thr_create_exiting(ls->eip)) {
 		record_user_yield_activity(&ls->user_sync);
 	} else if (user_thr_join_entering(ls->eip)) {
+#ifdef TRUSTED_THR_JOIN
+		/* nb. if not trusted, arbiter won't set the pp necessary to
+		 * clear this down below, so this hasta be inside the ifdefs */
+		assert(CURRENT(s, user_joined_on_tid) == TID_NONE);
+		CURRENT(s, user_joined_on_tid) = READ_STACK(ls->cpu0, 1);
+		lsprintf(DEV, "tid %d join(%d)\n", CURRENT(s, tid),
+			 CURRENT(s, user_joined_on_tid));
+#endif
 		record_user_yield_activity(&ls->user_sync);
 	} else if (user_thr_join_exiting(ls->eip)) {
+#ifdef TRUSTED_THR_JOIN
+		/* ok, well not really, i mean the user can very well join(-1),
+		 * right? also, don't unset it here either; save needs it down
+		 * below for a join-exit pp in case of trusted-thr-join. */
+		// assert(CURRENT(s, user_joined_on_tid) != TID_NONE);
+#endif
 		record_user_yield_activity(&ls->user_sync);
 	} else if (user_thr_exit_entering(ls->eip)) {
 		record_user_yield_activity(&ls->user_sync);
@@ -1828,11 +1843,11 @@ void sched_update(struct ls_state *ls)
 	}
 
 	/* Okay, are we at a choice point? */
-	bool voluntary, need_handle_sleep, data_race, xbegin;
+	bool voluntary, need_handle_sleep, data_race, joined, xbegin;
 	bool just_finished_reschedule = s->just_finished_reschedule;
 	s->just_finished_reschedule = false;
 	if (arbiter_interested(ls, just_finished_reschedule, &voluntary,
-			       &need_handle_sleep, &data_race, &xbegin)) {
+			       &need_handle_sleep, &data_race, &joined, &xbegin)) {
 		struct agent *current = voluntary ? s->last_agent : s->cur_agent;
 		struct agent *chosen;
 		bool our_choice;
@@ -1876,6 +1891,7 @@ void sched_update(struct ls_state *ls)
 			int data_race_eip = ADDR_NONE;
 			bool prune_aborts = false;
 			bool check_retry = false;
+			unsigned int joined_tid = TID_NONE;
 			if (data_race) {
 				/* Is this a "fake" preemption point? If so we
 				 * are not to forcibly preempt, only to record
@@ -1913,6 +1929,10 @@ void sched_update(struct ls_state *ls)
 				CURRENT(s, just_delayed_for_vr_exit) = true;
 				CURRENT(s, delayed_vr_exit_eip) = ls->eip;
 				ls->eip = delay_instruction(ls->cpu0);
+			} else if (joined) {
+				/* might be -1 if the user actually join(-1) */
+				joined_tid = CURRENT(s, user_joined_on_tid);
+				CURRENT(s, user_joined_on_tid) = TID_NONE;
 			} else if (xbegin) {
 				/* Also also insert a dummy during an xbegin,
 				 * to create a separate PP each for thread
@@ -1986,8 +2006,8 @@ void sched_update(struct ls_state *ls)
 			    ls->test.start_population != s->most_agents_ever) {
 				save_setjmp(&ls->save, ls, chosen->tid,
 					    our_choice, false, !data_race,
-					    data_race_eip, voluntary, xbegin,
-					    prune_aborts, check_retry);
+					    data_race_eip, voluntary, joined_tid,
+					    xbegin, prune_aborts, check_retry);
 			}
 		} else {
 			lsprintf(DEV, "no agent was chosen at eip 0x%x\n",

@@ -108,6 +108,7 @@ struct agent {
 	unsigned int user_mutex_locking_addr;
 	unsigned int user_mutex_unlocking_addr;
 	unsigned int user_rwlock_locking_addr;
+	unsigned int user_joined_on_tid;
 	// int user_rwlock_unlocking_addr; // not needed
 	/* for helpful debug info on user page faults */
 	unsigned int last_pf_eip;

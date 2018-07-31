@@ -396,6 +396,10 @@ if [ "$PURE_HAPPENS_BEFORE" = "1" ]; then
 	echo "#define PURE_HAPPENS_BEFORE"
 fi
 
+if [ "$TRUSTED_THR_JOIN" = "1" ]; then
+	echo "#define TRUSTED_THR_JOIN"
+fi
+
 if [ "$HTM" = "1" ]; then
 	echo "#define HTM"
 	echo "#define HTM_XBEGIN     0x`get_user_func     _xbegin`"
