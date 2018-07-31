@@ -108,6 +108,7 @@ static struct agent *copy_agent(struct agent *a_src)
 	COPY_FIELD(user_mutex_locking_addr);
 	COPY_FIELD(user_mutex_unlocking_addr);
 	COPY_FIELD(user_rwlock_locking_addr);
+	COPY_FIELD(user_joined_on_tid);
 	COPY_FIELD(last_pf_eip);
 	COPY_FIELD(last_pf_cr2);
 	COPY_FIELD(just_delayed_for_data_race);
@@ -554,9 +555,9 @@ static bool enabled_by(struct hax *h, const struct hax *old)
 	}
 }
 
-static void compute_happens_before(struct hax *h)
+static void compute_happens_before(struct hax *h, unsigned int joined_tid)
 {
-	int i;
+	unsigned int i;
 
 	/* Between two transitions of a thread X, X_0 before X_1, while there
 	 * may be many transitions Y that for which enabled_by(X_1, Y), only the
@@ -587,6 +588,25 @@ static void compute_happens_before(struct hax *h)
 		set_happens_before(h, enabler->depth, true);
 		inherit_happens_before(h, enabler);
 	}
+
+#ifdef TRUSTED_THR_JOIN
+	if (joined_tid != TID_NONE) {
+		/* because this pp is at the *end* of join; it doesn't actually
+		 * matter if the joinee is still alive or not -- if it is, they
+		 * will be in vanish or close nearby, past the exit signal step
+		 * at least. just find the last thing it did before us. */
+		for (const struct hax *old = h->parent; old != NULL;
+		     old = old->parent) {
+			if (joined_tid == old->chosen_thread) {
+				set_happens_before(h, old->depth, true);
+				inherit_happens_before(h, old);
+				break;
+			}
+			assert(old->parent != NULL &&
+			       "trusted thr join not so trusted...");
+		}
+	}
+#endif
 
 	lsprintf(DEV, "Transitions { ");
 	for (i = 0; i < h->depth; i++) {
@@ -770,7 +790,7 @@ static void add_hax_child_xabort(struct hax *h, unsigned int *xabort_code)
 void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		 int new_tid, bool our_choice, bool end_of_test,
 		 bool is_preemption_point, unsigned int data_race_eip,
-		 bool voluntary, bool xbegin,
+		 bool voluntary, unsigned int joined_tid, bool xbegin,
 		 bool prune_aborts, bool check_retry)
 {
 	struct hax *h;
@@ -931,7 +951,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		h->conflicts      = NULL;
 		h->happens_before = NULL;
 	}
-	compute_happens_before(h);
+	compute_happens_before(h, joined_tid);
 	/* Compute independence relation for both kernel and user mems. Whether
 	 * to actually compute for either is determined by the user/kernel config
 	 * option, which decides whether we will have stored the user/kernel shms

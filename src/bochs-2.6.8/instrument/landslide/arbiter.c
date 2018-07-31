@@ -66,11 +66,12 @@ bool arbiter_pop_choice(struct arbiter_state *r, unsigned int *tid, bool *txn, u
 
 bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 			bool *voluntary, bool *need_handle_sleep, bool *data_race,
-			bool *xbegin)
+			bool *joined, bool *xbegin)
 {
 	*voluntary = false;
 	*need_handle_sleep = false;
 	*data_race = false;
+	*joined = false;
 	*xbegin = false;
 
 	// TODO: more interesting choice points
@@ -163,6 +164,14 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 			// FIXME: can we skip this PP without violating soundness?
 			assert(!ls->sched.cur_agent->action.user_txn && "is this ok??");
 			return true;
+#ifdef TRUSTED_THR_JOIN
+		} else if (user_thr_join_exiting(ls->eip)) {
+			/* don't respect within functions, obv; this pp is for
+			 * happens-before purposes, not scheduling, anyway */
+			ASSERT_ONE_THREAD_PER_PP(ls);
+			*joined = true;
+			return true;
+#endif
 		} else if (user_xbegin_entering(ls->eip) ||
 			   user_xend_entering(ls->eip)) {
 			/* Have to disrespect within functions to properly
@@ -349,6 +358,11 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 				current_is_legal_choice = true;
 			}
 #ifdef KEEP_RUNNING_DPORS_CHOSEN_TID
+			/* i don't remember which test case it was that made me
+			 * keep a stack of preferred tids instead of just the
+			 * latest one, and i think the trusted-join stuff might
+			 * subsume any marginal benefit the stack gives, but,
+			 * the stack still seems right in principle. vOv */
 			unsigned int i;
 			unsigned int *dpor_preferred_tid;
 			ARRAY_LIST_FOREACH(&ls->sched.dpor_preferred_tids, i,
@@ -453,8 +467,8 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 		} else {
 			if (voluntary) {
 				save_setjmp(&ls->save, ls, TID_NONE, true, true,
-					    true, ADDR_NONE, true, false,
-					    false, false);
+					    true, ADDR_NONE, true, TID_NONE,
+					    false, false, false);
 			}
 			lsprintf(DEV, "ICB count %u bound %u\n",
 				 ls->sched.icb_preemption_count, ls->icb_bound);

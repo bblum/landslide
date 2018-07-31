@@ -53,7 +53,7 @@ void save_recover(struct save_state *, struct ls_state *, int new_tid, bool xabo
 void save_setjmp(struct save_state *, struct ls_state *,
 		 int next_tid, bool our_choice, bool end_of_test,
 		 bool is_preemption_point, unsigned int data_race_eip,
-		 bool voluntary, bool xbegin,
+		 bool voluntary, unsigned int joined_tid, bool xbegin,
 		 bool prune_aborts, bool check_retry);
 
 /* If hax is NULL, then longjmps to the root. Otherwise, hax must be between

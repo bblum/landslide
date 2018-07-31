@@ -641,8 +641,8 @@ static void check_test_state(struct ls_state *ls)
 				DUMP_DECISION_INFO(ls);
 			} else if (test_ended_safely(ls)) {
 				save_setjmp(&ls->save, ls, TID_NONE, true, true,
-					    false, ADDR_NONE, false, false,
-					    false, false);
+					    false, ADDR_NONE, false, TID_NONE,
+					    false, false, false);
 				if (!time_travel(ls)) {
 					found_no_bug(ls);
 				}

@@ -281,6 +281,7 @@ static void *run_job(void *arg)
 			XWRITE(&j->config_static, "ignore_dr_function cond_wait 1\n");
 		} else {
 			/* ignore all thrlib's accesses even in DPOR */
+			XWRITE(&j->config_static, "TRUSTED_THR_JOIN=1\n");
 			XWRITE(&j->config_static, "thrlib_function thr_create\n");
 			XWRITE(&j->config_static, "thrlib_function thr_exit\n");
 			XWRITE(&j->config_static, "thrlib_function thr_join\n");
