@@ -862,6 +862,9 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 			struct stack_trace *st = stack_trace(ls);
 			h->stack_trace = st;
 
+			// FIXME: make this happen for xbegin delayed-eip pps
+			// as well (prob requires another argument to setjmp)
+			// i mean, it's not like any studence will need it tho?
 			if (data_race_eip != ADDR_NONE) {
 				/* first frame of stack will be bogus, due to
 				 * the technique for delaying the access (in
