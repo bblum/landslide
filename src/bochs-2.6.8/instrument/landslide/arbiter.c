@@ -326,6 +326,17 @@ static bool try_avoid_fp_deadlock(struct ls_state *ls, bool voluntary,
  * whenever dpor tells scheduler to switch to a particular tid, that tid should
  * be treated as higher priority to run than whatever was preempted. */
 #define KEEP_RUNNING_DPORS_CHOSEN_TID
+/* should we remember every thread dpor's chosen to preempt to in this branch's
+ * history, or only the latest one? e.g if dpor put us in a subtree by switching
+ * to thread 5, then into a further subtree of that (by backtracking a shorter
+ * distance) by switching to thread 6, then when thread 6 blocks on something,
+ * should we let the scheduler randomly switch to thread 4, or fall back on a
+ * preference for thread 5?
+ * remembering every priority causes state space reduction in some cases
+ * (htm_fig63(3,1)), but also inflation in other cases (swap(3,1)), and the
+ * inflation is generally worse, so it's disabled by default. i have no evidence
+ * of it affecting SS size with only 2 threads either way though. */
+#define CONSIDER_ONLY_MOST_RECENT_DPOR_PREFERRED_TID
 
 /* Returns true if a thread was chosen. If true, sets 'target' (to either the
  * current thread or any other thread), and sets 'our_choice' to false if
@@ -358,15 +369,19 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 				current_is_legal_choice = true;
 			}
 #ifdef KEEP_RUNNING_DPORS_CHOSEN_TID
-			/* i don't remember which test case it was that made me
-			 * keep a stack of preferred tids instead of just the
-			 * latest one, and i think the trusted-join stuff might
-			 * subsume any marginal benefit the stack gives, but,
-			 * the stack still seems right in principle. vOv */
 			unsigned int i;
 			unsigned int *dpor_preferred_tid;
+			/* consider all tids which dpor has chosen to switch to
+			 * so far in this branch, with preference for latest */
 			ARRAY_LIST_FOREACH(&ls->sched.dpor_preferred_tids, i,
 					   dpor_preferred_tid) {
+#ifdef CONSIDER_ONLY_MOST_RECENT_DPOR_PREFERRED_TID
+				/* actually, consider only the most recent */
+				if (i < ARRAY_LIST_SIZE(
+					&ls->sched.dpor_preferred_tids) - 1) {
+					continue;
+				}
+#endif
 				if (a->tid == *dpor_preferred_tid &&
 				    i >= dpor_preference) {
 					dpor_preferred_is_legal_choice = true;
