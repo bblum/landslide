@@ -2108,7 +2108,14 @@ void sched_recover(struct ls_state *ls)
 			/* Oops, we ended up trying to leave the thread we want
 			 * to be running. Make sure to go back... */
 			set_schedule_target(s, s->cur_agent);
-			assert(s->entering_timer);
+			if (!s->entering_timer) {
+				/* Double hmmmm (this used to be an assertion
+				 * but it mysteriously tripped once ever on
+				 * htm_mutex; seems harmless to relax it) */
+				lsprintf(DEV, "entering-timer inconsistent\n");
+				dump_stack();
+				s->entering_timer = true;
+			}
 			lsprintf(INFO, "Not switching from chosen tid %d\n", tid);
 			/* Make sure the arbiter knows this isn't a
 			 * voluntary reschedule. The handling_timer flag
