@@ -47,6 +47,13 @@ void create_file(struct file *f, const char *template)
 	strcpy(f->filename, template);
 
 	f->fd = mkostemp(f->filename, O_APPEND | O_CLOEXEC);
+	if (errno == EMFILE) {
+		WARN("Reached file descriptor limit trying to open %s;\n",
+		     f->filename);
+		WARN("Please increase it with 'ulimit -n 4096' (e.g.).\n");
+	} else if (f->fd < 0) {
+		WARN("Failed to open %s: %s\n", f->filename, strerror(errno));
+	}
 	assert(f->fd >= 0 && "failed create file");
 }
 
