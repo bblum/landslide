@@ -276,6 +276,7 @@ static void *run_job(void *arg)
 			XWRITE(&j->config_static, "ignore_dr_function thr_join 1\n");
 			// XXX: assumes sully ref p2 :(
 			XWRITE(&j->config_static, "ignore_dr_function thr_bottom 1\n");
+			XWRITE(&j->config_static, "ignore_dr_function thr_bottom1 1\n");
 			XWRITE(&j->config_static, "ignore_dr_function wakeup_thread 1\n");
 			XWRITE(&j->config_static, "ignore_dr_function remove_thread 1\n");
 			XWRITE(&j->config_static, "ignore_dr_function cond_wait 1\n");
@@ -300,6 +301,7 @@ static void *run_job(void *arg)
 			XWRITE(&j->config_static, "thrlib_function sem_destroy\n");
 			// XXX: assumes sully ref p2 :(
 			XWRITE(&j->config_static, "thrlib_function thr_bottom\n");
+			XWRITE(&j->config_static, "thrlib_function thr_bottom1\n");
 			XWRITE(&j->config_static, "thrlib_function thr_getid\n");
 			XWRITE(&j->config_static, "thrlib_function get_stack\n");
 			XWRITE(&j->config_static, "thrlib_function remove_thread\n");
@@ -317,7 +319,9 @@ static void *run_job(void *arg)
 		XWRITE(&j->config_dynamic, "%s thr_create\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_exit\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_join\n", without);
-		XWRITE(&j->config_dynamic, "%s thr_bottom\n", without);
+		/* no!! (all child thread logic is "within" thr_bottom) */
+		//XWRITE(&j->config_dynamic, "%s thr_bottom\n", without);
+		XWRITE(&j->config_dynamic, "%s thr_bottom1\n", without);
 		if (0 == strcmp(test_name, "htm_spinlock") ||
 		    0 == strcmp(test_name, "htm_mutex")) {
 			/* like paradise lost, see the test case */
