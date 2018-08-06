@@ -164,6 +164,14 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 			// FIXME: can we skip this PP without violating soundness?
 			assert(!ls->sched.cur_agent->action.user_txn && "is this ok??");
 			return true;
+#ifdef USER_MAKE_RUNNABLE_EXIT
+		} else if (ls->eip == USER_MAKE_RUNNABLE_EXIT) {
+			/* i think the reference kernel version i have might
+			 * predate the make runnable misbehave mode, because it
+			 * seems not to be putting yield pps on it.*/
+			ASSERT_ONE_THREAD_PER_PP(ls);
+			return true;
+#endif
 #ifdef TRUSTED_THR_JOIN
 		} else if (user_thr_join_exiting(ls->eip)) {
 			/* don't respect within functions, obv; this pp is for
@@ -171,6 +179,10 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 			ASSERT_ONE_THREAD_PER_PP(ls);
 			*joined = true;
 			return true;
+#ifndef USER_MAKE_RUNNABLE_EXIT
+		} else if (true) {
+			assert(0 && "need mkrun pp for trusted join soundness");
+#endif
 #endif
 		} else if (user_xbegin_entering(ls->eip) ||
 			   user_xend_entering(ls->eip)) {
