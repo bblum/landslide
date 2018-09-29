@@ -74,8 +74,6 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 	*joined = false;
 	*xbegin = false;
 
-	// TODO: more interesting choice points
-
 	/* Attempt to see if a "voluntary" reschedule is just ending - did the
 	 * last thread context switch not because of a timer?
 	 * Also make sure to ignore null switches (timer-driven or not). */
