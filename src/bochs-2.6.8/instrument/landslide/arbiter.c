@@ -307,6 +307,36 @@ static bool try_avoid_fp_deadlock(struct ls_state *ls, bool voluntary,
 		return found_one;
 	}
 
+#ifdef HTM_ABORT_SETS
+	/* check for false positive abort set blocking -- it takes until
+	 * htm2(3,2) 900K+ interleavings to first trip this but it's real!
+	 * this doesn't appear to affect SS size in any non-deadlocking tests,
+	 * but in case it does (fp deadlock avoid for other reasons?) you might
+	 * need to have two "phases" of fp deadlock detection. of course this
+	 * can't go after the following part, because it needs to have higher
+	 * priority than an actual mutex bc otherwise the (actually blocked)
+	 * mutex-blocked thread would just "consume" all the attempts */
+	FOR_EACH_RUNNABLE_AGENT(a, &ls->sched,
+		struct abort_set *aborts = &ls->sched.upcoming_aborts;
+		if (ABORT_SET_BLOCKED(aborts, a->tid)) {
+			lsprintf(BRANCH, "I thought TID %d was abort-set "
+				 "blocked, but I could be wrong!\n", a->tid);
+			/* unblock the to-execute-later tid and let it run,
+			 * giving up on the reduction */
+			aborts->preempted_evil_ancestor.tid = TID_NONE;
+			/* FIXME: not sure if even possible to mark the abort
+			 * set "abandoned" in the original hax it came from?
+			 * bc we might be deep in its subtree, and other parts
+			 * of the subtree still want to apply the reduction. */
+			*result = a;
+			found_one = true;
+		}
+	);
+	if (found_one) {
+		return found_one;
+	}
+#endif
+
 	/* Doesn't matter which thread we choose; take whichever is latest in
 	 * this loop. But we need to wake all of them, not knowing which was
 	 * "faking it". If it's truly deadlocked, they'll all block again. */
