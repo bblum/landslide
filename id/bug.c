@@ -92,7 +92,7 @@ bool found_any_bugs()
 
 	if (!any) {
 		printf(COLOUR_BOLD COLOUR_GREEN
-		       "No bugs were found -- you survived!\n");
+		       "No bugs were found -- you survived!\n" COLOUR_DEFAULT);
 	}
 
 	return any;
