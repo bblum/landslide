@@ -438,10 +438,13 @@ static void cant_swap() /* called with workqueue lock held */
 extern bool verbose;
 #define TOO_MANY_PENDING_JOBS 5
 
+#define PRINT_ELAPSED_TIME_AGAIN_THRESH 15
+
 static void print_all_job_stats()
 {
 	struct human_friendly_time time_since_start;
 	const char *header = "==== PROGRESS REPORT ====";
+	unsigned int num_jobs_printed = 0;
 
 	human_friendly_time(time_elapsed(), &time_since_start);
 	PRINT("%s\n", header);
@@ -456,20 +459,28 @@ static void print_all_job_stats()
 	unsigned int i;
 	ARRAY_LIST_FOREACH(&running_or_done_jobs, i, j) {
 		print_job_stats(*j, false, false);
+		num_jobs_printed++;
 	}
 	if (!summarize_pending) {
 		ARRAY_LIST_FOREACH(&workqueue, i, j) {
 			print_job_stats(*j, true, false);
+			num_jobs_printed++;
 		}
 	}
 	ARRAY_LIST_FOREACH(&blocked_jobs, i, j) {
 		print_job_stats(*j, false, true);
+		num_jobs_printed++;
 	}
 	if (summarize_pending) {
 		PRINT("And %d more pending jobs should time allow.\n",
 		      ARRAY_LIST_SIZE(&workqueue));
 	}
 	print_free_re_malloc_false_positives();
+	if (num_jobs_printed > PRINT_ELAPSED_TIME_AGAIN_THRESH) {
+		PRINT("total time elapsed: ");
+		print_human_friendly_time(&time_since_start);
+		PRINT("\n");
+	}
 	for (unsigned int i = 0; i < strlen(header); i++) {
 		PRINT("=");
 	}
