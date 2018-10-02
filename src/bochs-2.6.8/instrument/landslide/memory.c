@@ -910,10 +910,9 @@ void mem_check_syscall_return(struct ls_state *ls, unsigned int syscall_num)
 			}
 		}
 		if (!found) {
-			FOUND_A_BUG(ls, "remove_pages(0x%x), but I'm not sure "
-				    "when that was allocated! Exceedingly "
-				    "suspicious... This may not actually be a "
-				    "bug. Please email Ben for advice.", base);
+			lsprintf(DEV, "remove_pages(0x%x), but I'm not sure "
+				 "when that was allocated! Probably just "
+				 "freeing main thread's stack?\n", base);
 		}
 	}
 #endif
