@@ -16,6 +16,7 @@ struct ls_state;
 /* stack trace data structures. */
 struct stack_frame {
 	unsigned int eip;
+	unsigned int actual_eip; /* not corrected for noreturn funcs */
 	char *name; /* may be null if symtable lookup failed */
 	char *file; /* may be null, as above */
 	int line;   /* valid iff above fields are not null */

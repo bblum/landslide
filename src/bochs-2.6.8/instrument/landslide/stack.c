@@ -29,6 +29,7 @@
 bool eip_to_frame(unsigned int eip, struct stack_frame *f)
 {
 	f->eip = eip;
+	f->actual_eip = eip;
 	f->name = NULL;
 	f->file = NULL;
 	return symtable_lookup(eip, &f->name, &f->file, &f->line);
@@ -175,6 +176,7 @@ struct stack_trace *copy_stack_trace(const struct stack_trace *src)
 	ARRAY_LIST_FOREACH(&src->frames, i, f_src) {
 		struct stack_frame f_dest;
 		f_dest.eip  = f_src->eip;
+		f_dest.actual_eip  = f_src->actual_eip;
 		f_dest.name = f_src->name == NULL ? NULL : MM_XSTRDUP(f_src->name);
 		f_dest.file = f_src->file == NULL ? NULL : MM_XSTRDUP(f_src->file);
 		f_dest.line = f_src->line;
@@ -207,7 +209,7 @@ static bool splice_pre_vanish_trace(struct ls_state *ls, struct stack_trace *st,
 	struct stack_frame *f;
 	unsigned int i;
 	ARRAY_LIST_FOREACH(mutable_stack_frames(pvt), i, f) {
-		if (f->eip == eip) {
+		if (f->eip == eip || f->actual_eip == eip) {
 			found_eip = true;
 		}
 		if (found_eip) {
@@ -229,12 +231,19 @@ static bool splice_pre_vanish_trace(struct ls_state *ls, struct stack_trace *st,
 static unsigned int check_noreturn_function(cpu_t *cpu, unsigned int eip)
 {
 	unsigned int eip_offset;
-	if (function_eip_offset(eip, &eip_offset) && eip_offset == 0 &&
-	    READ_BYTE(cpu, eip - 5) == OPCODE_CALL) {
-		return eip - 5;
-	} else {
-		return eip;
+	// FIXME: this should really be a more unified approach in which
+	// landslide *always* finds the actual call instruction, or whatever
+	// it was; this is hard to do in general though because of page faults
+	if (function_eip_offset(eip, &eip_offset) && eip_offset == 0) {
+		if (READ_BYTE(cpu, eip - 5) == OPCODE_CALL) {
+			return eip - 5;
+		} else if (READ_BYTE(cpu, eip - 2) == OPCODE_INT &&
+			   (READ_BYTE(cpu, eip - 1) == VANISH_INT ||
+			    READ_BYTE(cpu, eip - 1) == TASK_VANISH_INT)) {
+			return eip - 2;
+		}
 	}
+	return eip;
 }
 
 /******************************************************************************
@@ -242,10 +251,13 @@ static unsigned int check_noreturn_function(cpu_t *cpu, unsigned int eip)
  ******************************************************************************/
 
 /* returns false if symtable lookup failed */
-static bool add_frame(struct stack_trace *st, unsigned int eip)
+static bool add_frame(struct stack_trace *st, unsigned int eip,
+		      unsigned int actual_eip)
 {
 	struct stack_frame f;
 	bool lookup_success = eip_to_frame(eip, &f);
+	/* also remember what it was before correcting for noreturn callsites */
+	f.actual_eip = actual_eip;
 	ARRAY_LIST_APPEND(mutable_stack_frames(st), f);
 	return lookup_success;
 }
@@ -276,12 +288,15 @@ struct stack_trace *stack_trace(struct ls_state *ls)
 	ARRAY_LIST_INIT(&st->frames, FRAME_LIST_INITIAL_SIZE);
 
 	/* Add current frame, even if it's in kernel and we're in user. */
-	add_frame(st, eip);
+	add_frame(st, eip, eip);
 
 	unsigned int stop_ebp = 0;
 	unsigned int ebp = GET_CPU_ATTR(cpu, ebp);
 	unsigned int rabbit = ebp;
 	unsigned int frame_count = 0;
+	/* used for remembering pushed return addrs before correcting for
+	 * noreturn callsites, which may rely in user memory being present */
+	unsigned int actual_eip;
 
 	/* Figure out if the thread is vanishing and we should expect its cr3
 	 * to have been freed (so we can't trace in userspace).
@@ -371,12 +386,12 @@ struct stack_trace *stack_trace(struct ls_state *ls)
 					 opcode == OPCODE_POPA);
 			}
 			if (extra_frame) {
-				eip = READ_MEMORY(cpu, stack_ptr);
+				actual_eip = eip = READ_MEMORY(cpu, stack_ptr);
 				eip = check_noreturn_function(cpu, eip);
 				if (splice_pre_vanish_trace(ls, st, eip)) {
 					return st;
 				} else if (!SUPPRESS_FRAME(eip)) {
-					bool success = add_frame(st, eip);
+					bool success = add_frame(st, eip, actual_eip);
 					if (!success && wrong_cr3)
 						return st;
 				}
@@ -409,7 +424,7 @@ struct stack_trace *stack_trace(struct ls_state *ls)
 		}
 
 		/* Find pushed return address behind the base pointer. */
-		eip = READ_MEMORY(cpu, ebp + WORD_SIZE);
+		actual_eip = eip = READ_MEMORY(cpu, ebp + WORD_SIZE);
 		eip = check_noreturn_function(cpu, eip);
 		if (eip == 0) {
 			break;
@@ -419,7 +434,7 @@ struct stack_trace *stack_trace(struct ls_state *ls)
 		if (splice_pre_vanish_trace(ls, st, eip)) {
 			return st;
 		} else if (!SUPPRESS_FRAME(eip)) {
-			bool success = add_frame(st, eip);
+			bool success = add_frame(st, eip, actual_eip);
 			if (!success && wrong_cr3)
 				return st;
 
