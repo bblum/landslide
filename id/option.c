@@ -49,6 +49,7 @@ struct cmdline_option {
 
 static ARRAY_LIST(struct cmdline_option) cmdline_options;
 static bool ready = false;
+static bool secret_help = false;
 
 void usage(char *execname)
 {
@@ -57,7 +58,7 @@ void usage(char *execname)
 	unsigned int i;
 	struct cmdline_option *optp;
 	ARRAY_LIST_FOREACH(&cmdline_options, i, optp) {
-		if (!optp->is_secret) {
+		if (!optp->is_secret || secret_help) {
 			if (optp->requires_arg) {
 				printf("[-%c %s] ", optp->flag, optp->name);
 			} else {
@@ -68,7 +69,7 @@ void usage(char *execname)
 	printf("\n");
 
 	ARRAY_LIST_FOREACH(&cmdline_options, i, optp) {
-		if (!optp->is_secret) {
+		if (!optp->is_secret || secret_help) {
 			if (optp->requires_arg) {
 				printf("\t-%c %s:\t%s (default %s)\n", optp->flag,
 				       optp->name, optp->description,
@@ -162,6 +163,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 
 	DEF_CMDLINE_FLAG('v', false, verbose, "Verbose output");
 	DEF_CMDLINE_FLAG('h', false, help, "Print this help text and exit");
+	DEF_CMDLINE_FLAG('s', false, secret_help, "Also show 'secret' options for advanced users");
 	DEF_CMDLINE_FLAG('l', false, leave_logs, "Don't delete log files from bug-free state spaces");
 	DEF_CMDLINE_FLAG('C', true, control_experiment, "Control mode, i.e., test only 1 maximal state space");
 	DEF_CMDLINE_FLAG('P', true, pintos, "Pintos (not for 15-410 use)");
@@ -404,6 +406,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	}
 
 	*verbose = arg_verbose;
+	secret_help = arg_secret_help;
 	*leave_logs = arg_leave_logs;
 	*control_experiment = arg_control_experiment;
 	*pintos = arg_pintos;
