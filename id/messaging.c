@@ -266,9 +266,39 @@ static void handle_estimate(struct messaging_state *state, struct job *j,
 	}
 }
 
+/* see definition in work.c */
+extern volatile int hot_status;
+static volatile int remove_id_log = 0;
+extern struct file log_file;
+extern bool logging_active;
+extern bool avoid_recompile;
+#include <immintrin.h>
+
 static bool handle_should_continue(struct job *j)
 {
-	if (bug_already_found(j->config)) {
+	if (hot_status == 0) {
+		/* reached end of 1st branch before a progress report was issued
+		 * so probably on a "hot start"; this may race with the other
+		 * check in work.c's progress reports but that'd be benign */
+		hot_status = 1;
+	}
+	if (hot_status == 2 && avoid_recompile) {
+		WARN("test required recompiling landslide (maybe); "
+		     "please rerun it for a consistent perf measurement\n");
+		WRITE_LOCK(&j->stats_lock);
+		j->cancelled = true;
+		RW_UNLOCK(&j->stats_lock);
+		/* this may race with stuff in io.c and maybe crash, but who
+		 * cares; the file will get removed one way or the other; v0v */
+		if (__sync_lock_test_and_set(&remove_id_log, 1) == 0) {
+			if (!logging_active) {
+				WARN("huh?? quicksand logging inactive why?\n");
+			}
+			logging_active = false;
+			delete_file(&log_file, true);
+		}
+		return false;
+	} else if (bug_already_found(j->config)) {
 		DBG("Aborting -- a subset of our PPs already found a bug.\n");
 		WRITE_LOCK(&j->stats_lock);
 		j->cancelled = true;

@@ -22,6 +22,7 @@
 bool control_experiment;
 unsigned long eta_factor;
 unsigned long eta_threshold;
+bool avoid_recompile;
 
 int main(int argc, char **argv)
 {
@@ -49,6 +50,7 @@ int main(int argc, char **argv)
 			 &verbose, &leave_logs, &control_experiment,
 			 &use_wrapper_log, wrapper_log, BUF_SIZE, &pintos,
 			 &use_icb, &preempt_everywhere, &pure_hb,
+			 &avoid_recompile,
 			 &txn, &txn_abort_codes, &txn_dont_retry,
 			 &txn_retry_sets,
 			 &verif_mode, &pathos, &progress_interval,

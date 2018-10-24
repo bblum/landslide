@@ -440,11 +440,22 @@ extern bool verbose;
 
 #define PRINT_ELAPSED_TIME_AGAIN_THRESH 15
 
+/* used to track whether the 1st landslide "probably" needed to be recompiled
+ * for new instrumentation and/or test options, by checking if the first branch
+ * was completed within the 10sec it takes for a progress report to get emitted;
+ * this is really rather unscientific but it works on my laptop and that's all
+ * i needed for HTM experimence. it's "hot" as in "hot start" vs "cold start".
+ * 0 = unknown as of yet
+ * 1 = hot ok, first br completed before first progress report
+ * 2 = needed compile probably; jobs should abort after their 1st branch */
+volatile int hot_status = 0;
+
 static void print_all_job_stats()
 {
 	struct human_friendly_time time_since_start;
 	const char *header = "==== PROGRESS REPORT ====";
 	unsigned int num_jobs_printed = 0;
+	if (hot_status == 0) { hot_status = 2; }
 
 	human_friendly_time(time_elapsed(), &time_since_start);
 	PRINT("%s\n", header);

@@ -14,6 +14,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		 bool *leave_logs, bool *control_experiment, bool *use_wrapper_log,
 		 char *wrapper_log, unsigned int wrapper_log_len, bool *pintos,
 		 bool *use_icb, bool *preempt_everywhere, bool *pure_hb,
+		 bool *avoid_recompile,
 		 bool *txn, bool *txn_abort_codes, bool *txn_dont_retry,
 		 bool *txn_retry_sets, bool *verif_mode,
 		 bool *pathos, unsigned long *progress_report_interval,

@@ -122,6 +122,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		 bool *leave_logs, bool *control_experiment, bool *use_wrapper_log,
 		 char *wrapper_log, unsigned int wrapper_log_len, bool *pintos,
 		 bool *use_icb, bool *preempt_everywhere, bool *pure_hb,
+		 bool *avoid_recompile,
 		 bool *txn, bool *txn_abort_codes, bool *txn_dont_retry,
 		 bool *txn_retry_sets, bool *verif_mode,
 		 bool *pathos, unsigned long *progress_report_interval,
@@ -171,6 +172,9 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	// PHB is default if testing P2s (new as of s17!).
 	DEF_CMDLINE_FLAG('H', true, limited_hb, "Use \"limited\" happens-before data-race analysis");
 	DEF_CMDLINE_FLAG('V', true, pure_hb, "Use vector clocks for \"pure\" happens-before data-races");
+	// "o" for "hOt"; see work.c/messaging.c >.>
+	DEF_CMDLINE_FLAG('o', true, avoid_recompile, "Try to abort if Landslide needed to recompile itself");
+	// HTM options
 	DEF_CMDLINE_FLAG('X', true, txn, "Enable transactional-memory testing options");
 	DEF_CMDLINE_FLAG('A', true, txn_abort_codes, "Support multiple xabort failure codes (warning: exponential)");
 	DEF_CMDLINE_FLAG('S', true, txn_dont_retry, "STM semantics (suppress _XABORT_RETRY failures) (requires -A)");
@@ -408,6 +412,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	*preempt_everywhere = arg_everywhere;
 	/* purehb is the default for pintos and p2; lhb default for pathos */
 	*pure_hb = (!arg_pathos && !arg_limited_hb) || arg_pure_hb;
+	*avoid_recompile = arg_avoid_recompile;
 	*txn = arg_txn;
 	*txn_abort_codes = arg_txn_abort_codes;
 	*txn_dont_retry = arg_txn_dont_retry;
