@@ -312,8 +312,9 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		options_valid = false;
 	}
 
-	if (arg_icb && !arg_control_experiment) {
+	if (arg_icb && !arg_control_experiment && !arg_verif_mode) {
 		ERR("Iterative Deepening & ICB not supported at same time.\n");
+		WARN("Perhaps either '-C -I' or '-M -I' may suit your needs?\n");
 		options_valid = false;
 	}
 	if (arg_everywhere && !arg_control_experiment) {
