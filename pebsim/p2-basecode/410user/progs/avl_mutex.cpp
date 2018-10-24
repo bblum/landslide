@@ -12,6 +12,17 @@ extern "C" {
 #include <htm/htmavl_mutex.hpp>
 // #include <htmtree.hpp> // provides fgt/treap, locking, not needed
 
+/* one curiosity about this test.... each child thread is just doing literally
+ * one mutex protected critical section per iteration, so you'd think that maybe
+ * each (K,1) test would just have exactly K! interleavings. i looked into this,
+ * and it turns out there are a bunch of dpor memory conflicts on free/re-malloc
+ * arising between the free() of main thread's join(), and insert()'s 'new'.
+ * i tried fixing this by having the refp2 preallocate 16 tcbs, which made the
+ * state space a little smaller, but also mysteriously made others bigger (idk
+ * why; i put the ignore/thrlib functions in correctly). also, there were other
+ * malloc conflicts because insert() allocates the nobe before taking the lock,
+ * which causes more than just the critical section transitions to conflict,
+ * so i'm just leaving it is, and saying it's not landslide's problem. */
 #define ITERS 1
 #define NUM_THREADS 4
 
