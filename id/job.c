@@ -224,6 +224,8 @@ static void *run_job(void *arg)
 		XWRITE(&j->config_dynamic, "%s thr_init\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_create\n", without);
 		XWRITE(&j->config_static, "thrlib_function thr_create\n");
+		XWRITE(&j->config_dynamic, "%s signal_release_read_ok\n", without);
+		XWRITE(&j->config_dynamic, "%s wait_release_read_ok\n", without);
 		// FIXME: i'm not sure if these are too conservative
 		XWRITE(&j->config_dynamic, "%s cond_wait\n", without);
 		XWRITE(&j->config_dynamic, "%s cond_signal\n", without);

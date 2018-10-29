@@ -32,6 +32,10 @@ rwlock_t lock;
 sem_t writer_asleep_sem;
 static int got_here = 0;
 
+/* these 2 ignored by landslide using without_function */
+void signal_release_read_ok() { sem_signal(&writer_asleep_sem); }
+void wait_release_read_ok()   { sem_wait  (&writer_asleep_sem); }
+
 void *reader(void *arg)
 {
 	int writer_tid = (int)arg;
@@ -42,7 +46,7 @@ void *reader(void *arg)
 	/* alert main thread ok to release read lock (this sem ensures the
 	 * writer doesn't exit before we even get here, in which case the above
 	 * yield loop would simply deadlock waiting for a nonexistent thread) */
-	sem_signal(&writer_asleep_sem);
+	signal_release_read_ok();
 	/* try to sneak into rwlock at same time as main thread */
 	rwlock_lock(&lock, RWLOCK_READ);
 	assert(got_here == 1 && "2nd reader cut in line before waiting writer :<");
@@ -86,7 +90,7 @@ int main(void)
 	ERR(writer_tid);
 	ERR(thr_create(reader, (void *)writer_tid));
 	/* wait for writer child to get blocked (as detected by reader child) */
-	sem_wait(&writer_asleep_sem);
+	wait_release_read_ok();
 	rwlock_unlock(&lock);
 
 	vanish();
