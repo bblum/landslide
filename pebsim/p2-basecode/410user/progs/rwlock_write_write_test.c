@@ -78,5 +78,6 @@ int main(void)
 	yield(-1);
 	writer(NULL);
 
+	vanish();
 	return 0;
 }

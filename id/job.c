@@ -211,13 +211,13 @@ static void *run_job(void *arg)
 		/* this may look strange, but see the test case */
 		XWRITE(&j->config_dynamic, "%s critical_section\n", without);
 	} else if (0 == strcmp(test_name, "rwlock_write_write_test")) {
+		XWRITE(&j->config_static, "FILTER_DRS_BY_TID=0\n");
 		XWRITE(&j->config_static, "DR_PPS_RESPECT_WITHIN_FUNCTIONS=1\n");
 		XWRITE(&j->config_dynamic, "%s thr_init\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_create\n", without);
-		XWRITE(&j->config_dynamic, "%s thr_exit\n", without);
+		XWRITE(&j->config_static, "thrlib_function thr_create\n");
 		/* this may look strange, but see the test case */
 		XWRITE(&j->config_dynamic, "%s critical_section\n", without);
-		// TODO: decide whether to use thrlib_function here?
 	} else if (strstr(test_name, "atomic_") == test_name) {
 		/* PSU-specific atomic operations tests */
 		XWRITE(&j->config_static, "FILTER_DRS_BY_TID=0\n");
