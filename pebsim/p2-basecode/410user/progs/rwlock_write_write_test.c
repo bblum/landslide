@@ -37,8 +37,7 @@ int critical_section()
 	mutex_unlock(&little_lock);
 	yield(-1);
 	mutex_lock(&little_lock);
-	assert(num_in_section == 1 &&
-	       "long is the way, and hard, that out of hell leads up to light");
+	assert(num_in_section == 1 && "two writers in rwlock at same time");
 	num_in_section--;
 	num_finished++;
 	int result = num_finished == 2;
