@@ -1,8 +1,9 @@
-/** @file 410user/progs/rwlock_dont_starve_writers.c
- *  @author bblum
- *  @brief tests for a very common way of preventing writer starvation
+/** @file 410user/progs/rwlock_dont_starve_readers.c
+ *  @author szz
+ *  @note based on rwlock_dont_starve_writers by bblum
+ *  @brief tests for a very common way of preventing reader starvation
  *         (NB: there may be valid implementations which fail this test, despite
- *         providing weaker, yet still finite, bounds on writer wait time; this
+ *         providing weaker, yet still finite, bounds on reader wait time; this
  *         test's bug reports should be confirmed by manual inspection)
  *  @public yes
  *  @for p2
@@ -16,41 +17,41 @@
 #include <thread.h>
 #include <mutex.h>
 //#include <cond.h>
-#include <sem.h>
 #include <rwlock.h>
+#include <sem.h>
 #include <assert.h>
 #include "410_tests.h"
 #include <report.h>
 #include <test.h>
 
-DEF_TEST_NAME("rwlock_dont_starve_writers:");
+DEF_TEST_NAME("rwlock_dont_starve_readers:");
 
 #define STACK_SIZE 4096
 
 #define ERR REPORT_FAILOUT_ON_ERR
 
 rwlock_t lock;
-sem_t writer_asleep_sem;
+sem_t reader_asleep_sem;
 static int got_here = 0;
 
 /* these 2 ignored by landslide using without_function */
-void signal_release_ok() { sem_signal(&writer_asleep_sem); }
-void wait_release_ok()   { sem_wait  (&writer_asleep_sem); }
+void signal_release_ok() { sem_signal(&reader_asleep_sem); }
+void wait_release_ok()   { sem_wait  (&reader_asleep_sem); }
 
-void *reader(void *arg)
+void *writer(void *arg)
 {
-	int writer_tid = (int)arg;
+	int reader_tid = (int)arg;
 	ERR(swexn(NULL, NULL, NULL, NULL));
 
-	/* wait for writer to become blocked */
-	while (yield(writer_tid) == 0) { continue; }
-	/* alert main thread ok to release read lock (this sem ensures the
-	 * writer doesn't exit before we even get here, in which case the above
+	/* wait for reader to become blocked */
+	while (yield(reader_tid) == 0) { continue; }
+	/* alert main thread ok to release write lock (this sem ensures the
+	 * reader doesn't exit before we even get here, in which case the above
 	 * yield loop would simply deadlock waiting for a nonexistent thread) */
 	signal_release_ok();
-	/* try to sneak into rwlock at same time as main thread */
-	rwlock_lock(&lock, RWLOCK_READ);
-	assert(got_here == 1 && "2nd reader cut in line before waiting writer :<");
+	/* try to sneak into wrlock before reader thread gets a turn */
+	rwlock_lock(&lock, RWLOCK_WRITE);
+	assert(got_here == 1 && "2nd writer cut in line before waiting reader :<");
 	rwlock_unlock(&lock); /* not strictly necessary */
 	report_end(END_SUCCESS);
 
@@ -58,11 +59,11 @@ void *reader(void *arg)
 	return NULL;
 }
 
-void *writer(void *dummy)
+void *reader(void *dummy)
 {
 	ERR(swexn(NULL, NULL, NULL, NULL));
 
-	rwlock_lock(&lock, RWLOCK_WRITE);
+	rwlock_lock(&lock, RWLOCK_READ);
 	got_here = 1;
 	rwlock_unlock(&lock);
 
@@ -73,7 +74,7 @@ void *writer(void *dummy)
 
 int main(void)
 {
-	int writer_tid;
+	int reader_tid;
 	report_start(START_CMPLT);
 	misbehave(BGND_BRWN >> FGND_CYAN);
 
@@ -84,13 +85,13 @@ int main(void)
 	ERR(swexn(NULL, NULL, NULL, NULL));
 
 	ERR(rwlock_init(&lock));
-	ERR(sem_init(&writer_asleep_sem, 0));
+	ERR(sem_init(&reader_asleep_sem, 0));
 
-	rwlock_lock(&lock, RWLOCK_READ);
-	writer_tid = thr_create(writer, NULL);
-	ERR(writer_tid);
-	ERR(thr_create(reader, (void *)writer_tid));
-	/* wait for writer child to get blocked (as detected by reader child) */
+	rwlock_lock(&lock, RWLOCK_WRITE);
+	reader_tid = thr_create(reader, NULL);
+	ERR(reader_tid);
+	ERR(thr_create(writer, (void *)reader_tid));
+	/* wait for reader child to get blocked (as detected by writer child) */
 	wait_release_ok();
 	rwlock_unlock(&lock);
 

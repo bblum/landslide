@@ -218,14 +218,15 @@ static void *run_job(void *arg)
 		XWRITE(&j->config_static, "thrlib_function thr_create\n");
 		/* this may look strange, but see the test case */
 		XWRITE(&j->config_dynamic, "%s critical_section\n", without);
-	} else if (0 == strcmp(test_name, "rwlock_dont_starve_writers")) {
+	} else if (0 == strcmp(test_name, "rwlock_dont_starve_writers") ||
+		   0 == strcmp(test_name, "rwlock_dont_starve_readers")) {
 		XWRITE(&j->config_static, "FILTER_DRS_BY_TID=0\n");
 		XWRITE(&j->config_static, "DR_PPS_RESPECT_WITHIN_FUNCTIONS=1\n");
 		XWRITE(&j->config_dynamic, "%s thr_init\n", without);
 		XWRITE(&j->config_dynamic, "%s thr_create\n", without);
 		XWRITE(&j->config_static, "thrlib_function thr_create\n");
-		XWRITE(&j->config_dynamic, "%s signal_release_read_ok\n", without);
-		XWRITE(&j->config_dynamic, "%s wait_release_read_ok\n", without);
+		XWRITE(&j->config_dynamic, "%s signal_release_ok\n", without);
+		XWRITE(&j->config_dynamic, "%s wait_release_ok\n", without);
 		// FIXME: i'm not sure if these are too conservative
 		XWRITE(&j->config_dynamic, "%s cond_wait\n", without);
 		XWRITE(&j->config_dynamic, "%s cond_signal\n", without);
