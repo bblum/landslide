@@ -16,6 +16,7 @@
 #include <thread.h>
 #include <mutex.h>
 //#include <cond.h>
+#include <sem.h>
 #include <rwlock.h>
 #include <assert.h>
 #include "410_tests.h"
