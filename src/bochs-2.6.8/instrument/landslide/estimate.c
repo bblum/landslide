@@ -188,6 +188,7 @@ static void _estimate(const struct hax *root, const struct hax *current)
 		 * it. Note that this must happen before dividing out the
 		 * changed number of marked children, because that factor also
 		 * needs to be applied to this delta. */
+		// FIXME: "if child_delta != 0"... for speed optimz?
 		modify_hax(update_hax_proportion, h,
 			   h->proportion + child_proportion_delta);
 		ASSERT_FRACTIONAL(h->proportion);
