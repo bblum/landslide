@@ -122,7 +122,10 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 		   && ((!KERNEL_MEMORY(ls->eip) && user_within_functions(ls)) ||
 		      (KERNEL_MEMORY(ls->eip) && kern_within_functions(ls)))
 #endif
-		   && !ls->sched.cur_agent->action.user_txn) {
+#ifndef HTM_WEAK_ATOMICITY
+		   && !ls->sched.cur_agent->action.user_txn
+#endif
+		   ) {
 		*data_race = true;
 		ASSERT_ONE_THREAD_PER_PP(ls);
 		return true;
@@ -148,8 +151,16 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 			/* User thread is blocked on an "xchg-continue" mutex.
 			 * Analogous to HLT state -- need to preempt it. */
 			ASSERT_ONE_THREAD_PER_PP(ls);
-			// FIXME: should be equivalent to making a syscall in a txn
-			assert(!ls->sched.cur_agent->action.user_txn && "txn must abort");
+#ifndef HTM_WEAK_ATOMICITY
+			/* under strong atomicity, if for whatever reason a txn
+			 * blocks, there's no way it should ever succeed */
+			if (ls->sched.cur_agent->action.user_txn) {
+				abort_transaction(ls->sched.cur_agent->tid,
+						  ls->save.current, _XABORT_CAPACITY);
+				ls->end_branch_early = true;
+				return false;
+			}
+#endif
 			return true;
 #ifndef PINTOS_KERNEL
 		} else if (!check_user_address_space(ls)) {
@@ -159,8 +170,16 @@ bool arbiter_interested(struct ls_state *ls, bool just_finished_reschedule,
 			    user_mutex_unlock_exiting(ls->eip)) &&
 			   user_within_functions(ls)) {
 			ASSERT_ONE_THREAD_PER_PP(ls);
-			// FIXME: can we skip this PP without violating soundness?
-			assert(!ls->sched.cur_agent->action.user_txn && "is this ok??");
+#ifndef HTM_WEAK_ATOMICITY
+			/* by the equivalence proof, it's sound to skip this pp
+			 * because if anything were to conflict with it, it'd be
+			 * the same as if the txn aborted to begin with */
+			if (ls->sched.cur_agent->action.user_txn) {
+				return false;
+			}
+			/* on other hand, under weak memory maybe the user needs
+			 * this mutex to protect against some non-txnal code */
+#endif
 			return true;
 #ifdef USER_MAKE_RUNNABLE_EXIT
 		} else if (ls->eip == USER_MAKE_RUNNABLE_EXIT) {

@@ -1332,6 +1332,21 @@ static void print_data_race(struct ls_state *ls,
 	bool deterministic = ARRAY_SIZE(data_race_info) == 0 &&
 		ls->save.stats.total_jumps == 0;
 
+#ifndef HTM_WEAK_ATOMICITY
+	/* if in normal txn mode (strong atomicity), we can never preempt on
+	 * the half of a data race that occurs within a transaction, even if
+	 * the other is outside, because any interleaving would either be
+	 * equivalent or cause it to fail */
+	bool report_l0 = l0->interrupce_enabled && !l0->during_txn;
+	bool report_l1 = l1->interrupce_enabled && !l1->during_txn;
+#else
+	/* if in weak atomicity mode, non-txn races can preempt inside of txn
+	 * races; only if they are both txn are they safe. */
+	bool report_both = !(l0->during_txn && l1->during_txn);
+	bool report_l0 = l0->interrupce_enabled && report_both;
+	bool report_l1 = l1->interrupce_enabled && report_both;
+#endif
+
 	/* Report to master process. If unconfirmed, it only helps to set a PP
 	 * on the earlier one, so we don't send the later of suspected pairs. */
 //#define DR_FALSE_NEGATIVE_EXPERIMENT
@@ -1339,18 +1354,18 @@ static void print_data_race(struct ls_state *ls,
 	STATIC_ASSERT(EXPLORE_BACKWARDS == 0 && "Hey, no fair!");
 	/* a 1-pass dr analysis would report this on 1st branch w/o "waiting to
 	 * reorder it"; it's not fair to count as a potential false negative */
-	if (l0->interrupce_enabled && !l0->during_txn) {
+	if (report_l0) {
 #else
-	if (confirmed && l0->interrupce_enabled && !l0->during_txn) {
+	if (confirmed && report_l0) {
 #endif
 		message_data_race(&ls->mess, l0->eip, h0->chosen_thread,
 			l0->last_call, l0->most_recent_syscall, confirmed,
 			deterministic, free_re_malloc);
 	}
 #ifdef DR_FALSE_NEGATIVE_EXPERIMENT
-	if (l1->interrupce_enabled && !l1->during_txn) {
+	if (report_l1) {
 #else
-	if ((confirmed || !too_suspicious) && l1->interrupce_enabled && !l1->during_txn) {
+	if ((confirmed || !too_suspicious) && report_l1) {
 #endif
 		message_data_race(&ls->mess, l1->eip, h1->chosen_thread,
 			l1->last_call, l1->most_recent_syscall, confirmed,

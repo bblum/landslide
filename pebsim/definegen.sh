@@ -142,6 +142,7 @@ HTM=0
 HTM_ABORT_CODES=0
 HTM_DONT_RETRY=0
 HTM_ABORT_SETS=0
+HTM_WEAK_ATOMICITY=0
 source $CONFIG
 
 source ./symbols.sh
@@ -415,6 +416,9 @@ if [ "$HTM" = "1" ]; then
 	fi
 	if [ "$HTM_ABORT_SETS" = "1" ]; then
 		echo "#define HTM_ABORT_SETS"
+	fi
+	if [ "$HTM_WEAK_ATOMICITY" = "1" ]; then
+		echo "#define HTM_WEAK_ATOMICITY"
 	fi
 fi
 

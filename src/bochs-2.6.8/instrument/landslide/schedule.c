@@ -1014,12 +1014,19 @@ static void sched_update_kern_state_machine(struct ls_state *ls)
 	} else if (kern_exit_disk_io_fn(ls->eip)) {
 		assert(ACTION(s, disk_io) && "(co)recursive disk_io not supported");
 		ACTION(s, disk_io) = false;
+#ifndef HTM_WEAK_ATOMICITY
 	} else if (ACTION(s, user_txn)) {
-		/* syscalls will always abort transactions */
+		/* strong atomicity: syscalls will always abort transactions
+		 * weak atomicity: allow switching to other threads during txns
+		 * (nb: this also allows system calls in general, as a STM
+		 * system would do; to accurately model HTM with weak atomicity
+		 * you'd need to distinguish timer-driven context switches vs
+		 * intentional system calls, and allow only the former) */
 		check_user_yield_activity(&ls->user_sync, s->cur_agent);
 		abort_transaction(CURRENT(s, tid), ls->save.current,
 				  _XABORT_CAPACITY);
 		ls->end_branch_early = true;
+#endif
 	} else {
 		sched_check_lmm_init(ls);
 	}
@@ -1853,7 +1860,9 @@ void sched_update(struct ls_state *ls)
 		bool our_choice;
 
 		assert(!(data_race && voluntary));
+#ifndef HTM_WEAK_ATOMICITY
 		assert(!ACTION(s, user_txn));
+#endif
 
 		/* Avoid infinite stuckness if we just inserted a DR PP. */
 		if (data_race && CURRENT(s, just_delayed_for_data_race)) {

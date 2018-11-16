@@ -125,7 +125,8 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		 bool *use_icb, bool *preempt_everywhere, bool *pure_hb,
 		 bool *avoid_recompile,
 		 bool *txn, bool *txn_abort_codes, bool *txn_dont_retry,
-		 bool *txn_retry_sets, bool *verif_mode,
+		 bool *txn_retry_sets, bool *txn_weak_atomicity,
+		 bool *verif_mode,
 		 bool *pathos, unsigned long *progress_report_interval,
 		 char *trace_dir, unsigned int trace_dir_len,
 		 unsigned long *eta_factor, unsigned long *eta_thresh)
@@ -181,6 +182,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	DEF_CMDLINE_FLAG('A', true, txn_abort_codes, "Support multiple xabort failure codes (warning: exponential)");
 	DEF_CMDLINE_FLAG('S', true, txn_dont_retry, "STM semantics (suppress _XABORT_RETRY failures) (requires -A)");
 	DEF_CMDLINE_FLAG('R', true, txn_retry_sets, "Retry set reduction (incompatible with -A/-S)");
+	DEF_CMDLINE_FLAG('W', true, txn_weak_atomicity, "Weak atomicity (non-txn can preempt txn) (requires -S)");
 	DEF_CMDLINE_FLAG('M', false, verif_mode, "Optimize for faster verification (maximal state space only)");
 #undef DEF_CMDLINE_FLAG
 
@@ -370,6 +372,10 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 		ERR("-R (txn retry sets) incompatible with -A (txn abort codes)\n");
 		options_valid = false;
 	}
+	if (arg_txn_weak_atomicity && !arg_txn_dont_retry) {
+		ERR("-W (txn weak atomicity) requires -S (txn dont retry)\n");
+		options_valid = false;
+	}
 	if (arg_txn_retry_sets && arg_icb) {
 		WARN("-R (txn retry sets) is not known to be sound "
 		     "in conjunction with -I (ICB)!\n");
@@ -421,6 +427,7 @@ bool get_options(int argc, char **argv, char *test_name, unsigned int test_name_
 	*txn_abort_codes = arg_txn_abort_codes;
 	*txn_dont_retry = arg_txn_dont_retry;
 	*txn_retry_sets = arg_txn_retry_sets;
+	*txn_weak_atomicity = arg_txn_weak_atomicity;
 	*verif_mode = arg_verif_mode;
 
 	return options_valid;

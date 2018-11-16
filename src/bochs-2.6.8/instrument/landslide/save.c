@@ -27,6 +27,7 @@
 #include "tree.h"
 #include "tsx.h"
 #include "user_sync.h"
+#include "user_specifics.h" /* user_xend_entering */
 #include "vector_clock.h"
 #include "x86.h"
 
@@ -644,13 +645,29 @@ void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code
 	// from within a transaction to ensure the code doesn't just get lost
 	for (; h2 != NULL; h2 = h2->parent) {
 		if (h2->chosen_thread == tid) {
+			/* in strong atomicity, txns are uninterruptible, so
+			 * anything within a txn will have its corresponding
+			 * xbegin as the immediately previous pp, and we can
+			 * stop searching for a parent xbegin pp immediately.
+			 * in weak atomicity, may need to look farther back in
+			 * time to find the xbegin of a preempted txn, so stop
+			 * looking only when we hit a xend, which lets us know
+			 * for sure we must've been outside of a txn. */
 			if (h2->xbegin) {
 				modify_hax(add_xabort_code, h2, code);
-			} else {
+				return;
+			} else
+#ifdef HTM_WEAK_ATOMICITY
+				if (user_xend_entering(h2->eip))
+#endif
+					{
+				/* strong atomicity: done either way. if wasn't
+				 * xbegin, wasn't a txn; stop searching.
+				 * weak atomicity: found a txn that ended, don't
+				 * oops-abort it (nb. assumes no nesting) */
 				assert(code != _XABORT_EXPLICIT);
+				return;
 			}
-			/* Done either way. If wasn't xbegin, wasn't a txn. */
-			return;
 		}
 	}
 #endif
