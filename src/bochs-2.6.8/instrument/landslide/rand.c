@@ -5,11 +5,11 @@
 
 void rand_init(struct rand_state *r)
 {
-	assert(0 && "the faint smell of randomness long gone wafts upon the air.");
 }
 
 uint32_t rand32(struct rand_state *r)
 {
+	assert(0 && "the faint smell of randomness long gone wafts upon the air.");
 	return 42;
 }
 
