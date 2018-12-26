@@ -30,7 +30,7 @@ fi
 if ! grep -- "--std=gnu++0x" src/bochs-2.6.8/instrument/landslide/Makefile.in >/dev/null; then
 	# PSU cluster machines don't have a gcc new enough for gnu++11
 	# -N: forwards (don't ask if seems reversed); -f: force (don't ask questions)
-	patch -N -f -p1 < gross-patches/psu-gnu0xx.patch || die "couldn't patch landslide for gnu0xx"
+	patch -N -f -p1 < src/patches/psu-gnu0xx.patch || die "couldn't patch landslide for gnu0xx"
 fi
 
 # set paths appropriately and configure bochs
