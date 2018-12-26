@@ -1,0 +1,113 @@
+--- a/bochs-2.6.8/bx_debug/debug.h	2015-02-19 15:23:08.178055000 -0500
++++ b/bochs-2.6.8/bx_debug/debug.h	2018-12-26 01:13:35.634213536 -0500
+@@ -331,6 +331,7 @@
+ int bx_dbg_show_symbolic(void);
+ void bx_dbg_set_symbol_command(const char *symbol, bx_address val);
+ const char* bx_dbg_symbolic_address(Bit32u context, Bit32u eip, Bit32u base);
++bx_bool bx_dbg_symbolic_address_landslide(Bit32u eip, char **result, Bit32u *offset);
+ int bx_dbg_symbol_command(const char* filename, bx_bool global, Bit32u offset);
+ void bx_dbg_info_symbols_command(const char *Symbol);
+ int bx_dbg_lbreakpoint_symbol_command(const char *Symbol);
+--- a/bochs-2.6.8/bx_debug/symbols.cc	2015-01-03 08:53:52.332274000 -0500
++++ b/bochs-2.6.8/bx_debug/symbols.cc	2018-12-26 01:13:35.635213536 -0500
+@@ -254,6 +254,21 @@
+   return buf;
+ }
+ 
++bx_bool bx_dbg_symbolic_address_landslide(Bit32u eip, char **result, Bit32u *offset)
++{
++  context_t* cntx = context_t::get_context(0);
++  if (cntx == NULL) {
++    return false;
++  }
++  symbol_entry_t* entr = cntx->get_symbol_entry(eip);
++  if (entr == NULL) {
++    return false;
++  }
++  *result = entr->name;
++  *offset = eip - entr->start;
++  return true;
++}
++
+ const char* bx_dbg_disasm_symbolic_address(Bit32u eip, Bit32u base)
+ {
+   static char buf[80];
+--- a/bochs-2.6.8/cpu/cpu.cc	2014-10-15 14:00:04.476191000 -0400
++++ b/bochs-2.6.8/cpu/cpu.cc	2018-12-26 01:13:35.646213535 -0500
+@@ -76,6 +76,7 @@
+ 
+ #if BX_SUPPORT_HANDLERS_CHAINING_SPEEDUPS
+     for(;;) {
++      assert(0 && "landslide not supported in this mode");
+       // want to allow changing of the instruction inside instrumentation callback
+       BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);
+       RIP += i->ilen();
+@@ -99,12 +100,25 @@
+         debug_disasm_instruction(BX_CPU_THIS_PTR prev_rip);
+ #endif
+ 
++      bx_address pre_landslide_rip = RIP;
+       // want to allow changing of the instruction inside instrumentation callback
+       BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);
++      // allow landslide to jump us around by changing rip
++      if (RIP != pre_landslide_rip) {
++        entry = getICacheEntry();
++        i = entry->i;
++        last = i + (entry->tlen);
++      }
+       RIP += i->ilen();
+       BX_CPU_CALL_METHOD(i->execute1, (i)); // might iterate repeat instruction
+       BX_CPU_THIS_PTR prev_rip = RIP; // commit new RIP
++      pre_landslide_rip = RIP;
+       BX_INSTR_AFTER_EXECUTION(BX_CPU_ID, i);
++      if (RIP != pre_landslide_rip) {
++        entry = getICacheEntry();
++        i = entry->i;
++        last = i + (entry->tlen);
++      }
+       BX_CPU_THIS_PTR icount++;
+ 
+       BX_SYNC_TIME_IF_SINGLE_PROCESSOR(0);
+@@ -116,7 +130,7 @@
+ 
+       if (BX_CPU_THIS_PTR async_event) break;
+ 
+-      if (++i == last) {
++      if (RIP == pre_landslide_rip && ++i == last) {
+         entry = getICacheEntry();
+         i = entry->i;
+         last = i + (entry->tlen);
+@@ -152,6 +166,7 @@
+   bxICacheEntry_c *entry = getICacheEntry();
+   bxInstruction_c *i = entry->i;
+ 
++  assert(0 && "landslide not supported with this feature");
+ #if BX_SUPPORT_HANDLERS_CHAINING_SPEEDUPS
+   // want to allow changing of the instruction inside instrumentation callback
+   BX_INSTR_BEFORE_EXECUTION(BX_CPU_ID, i);
+--- a/bochs-2.6.8/iodev/keyboard.h	2014-12-26 15:25:27.098442000 -0500
++++ b/bochs-2.6.8/iodev/keyboard.h	2018-12-26 01:13:35.686213535 -0500
+@@ -21,7 +21,7 @@
+ #ifndef _PCKEY_H
+ #define _PCKEY_H
+ 
+-#define BX_KBD_ELEMENTS 16
++#define BX_KBD_ELEMENTS 256 // bblum wuz here
+ 
+ // these keywords should only be used in keyboard.cc
+ #if BX_USE_KEY_SMF
+--- a/bochs-2.6.8/ltmain.sh	2009-02-08 04:05:52.000000000 -0500
++++ b/bochs-2.6.8/ltmain.sh	2018-12-26 01:13:35.697213535 -0500
+@@ -5678,9 +5678,9 @@
+       IFS="$save_ifs"
+     done
+ 
+-    if test -n "$future_libdirs"; then
+-      $echo "$modename: warning: remember to run \`$progname --finish$future_libdirs'" 1>&2
+-    fi
++    #if test -n "$future_libdirs"; then
++    #  $echo "$modename: warning: remember to run \`$progname --finish$future_libdirs'" 1>&2
++    #fi
+ 
+     if test -n "$current_libdirs"; then
+       # Maybe just do a dry run.

@@ -7,9 +7,17 @@ function die() {
 	exit 1
 }
 
-if [ ! -d "pebsim" -o ! -d "src/bochs-2.6.8/instrument/landslide" ]; then
+if [ ! -d "pebsim" -o ! -d "src/landslide" ]; then
 	die "$0 must be run from the root of the landslide repository."
 fi
+
+# unpack bochs
+
+cd src || die "where's src"
+if [ ! -d "bochs-2.6.8" ]; then
+	./unpack-bochs.sh || die "failed to unpack bochs"
+fi
+cd ../ || die "??"
 
 # set up bochs
 
