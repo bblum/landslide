@@ -53,22 +53,24 @@ Mkfile.old
 dkms.conf
 
 # Bochs build output
-src/bochs-2.6.8/bochs
-src/bochs-2.6.8/bximage
-src/bochs-2.6.8/config.log
-src/bochs-2.6.8/config.status
-src/bochs-2.6.8/build/linux/bochs-dlx
+src/bochs-2.6.8/
 install/
-src/bochs-2.6.8/Makefile
-src/bochs-2.6.8/*/Makefile
-src/bochs-2.6.8/*/*/Makefile
-src/bochs-2.6.8/*/*/*/Makefile
+
+# Landslide setup/config output
+src/landslide/Makefile
+src/landslide/line_numbers.h
+src/landslide/student_specifics.h
+
+# LGPL/GPL symlinks that appear in landslide dir
+src/landslide/Makefile.in
+src/landslide/instrument.cc
+src/landslide/rbtree.c
+src/landslide/rbtree.h
 
 # Etc
 todo.txt
+current-git-commit.txt
 ls-id-options-*.cfg.*
-src/bochs-2.6.8/instrument/landslide/student_specifics.h
-src/bochs-2.6.8/instrument/landslide/line_numbers.h
 id/landslide-id
 id/ls*.log.*
 *landslide-trace-*.html
@@ -93,3 +95,15 @@ pebsim/p2-basecode/*/*.dep
 pebsim/p2-basecode/*/*/*.dep
 pebsim/p2-basecode/user
 pebsim/p2-basecode/temp
+pebsim/p2-basecode/.md5s
+pebsim/p2-basecode/410kern/
+pebsim/p2-basecode/410user/
+pebsim/p2-basecode/LICENSE
+pebsim/p2-basecode/Makefile
+pebsim/p2-basecode/README
+pebsim/p2-basecode/bootfd.img
+pebsim/p2-basecode/doxygen.conf
+pebsim/p2-basecode/kernel
+pebsim/p2-basecode/kernel.strip
+pebsim/p2-basecode/spec/
+pebsim/p2-basecode/vq_challenge/
