@@ -32,6 +32,7 @@ patch -f -p1 -i "$PATCH" || die "failed patch landslide intrusiveness into bochs
 
 ln -s ../../landslide/ ./$BOCHSDIR/instrument/landslide || die "failed symlink in src"
 ln -s ../patches/instrument.cc ./landslide/instrument.cc || die "failed link instrument"
+ln -s ../patches/instrument.h ./landslide/instrument.h || die "failed link instrument"
 ln -s ../patches/Makefile.in ./landslide/Makefile.in || die "failed link makefile"
 ln -s ../rbtree/rbtree.h ./landslide/rbtree.h || die "failed link rbtree h"
 ln -s ../rbtree/rbtree.c ./landslide/rbtree.c || die "failed link rbtree c"
