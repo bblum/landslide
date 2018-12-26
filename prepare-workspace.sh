@@ -11,6 +11,8 @@ if [ ! -d "pebsim" -o ! -d "src/bochs-2.6.8/instrument/landslide" ]; then
 	die "$0 must be run from the root of the landslide repository."
 fi
 
+# set up bochs
+
 INSTALLDIR="$PWD/install"
 CONFIGURE_CMD="./configure --enable-all-optimizations --enable-idle-hack --enable-cpu-level=6 --enable-smp --enable-x86-64 --enable-gameport --enable-disasm --enable-plugins --with-nogui --without-wx --with-x --with-x11 --with-term --enable-debugger --enable-readline --disable-logging --disable-docbook --enable-instrumentation=instrument/landslide --prefix=$INSTALLDIR --exec-prefix=$INSTALLDIR"
 
@@ -31,4 +33,14 @@ if [ "$RV" != 0 ]; then
 	rm -f config.status
 	die "failed ./configure"
 fi
+cd ../../
+
+# set up p2 basecode
+
+cd pebsim/p2-basecode || die "couldn't cd p2 basecode"
+
+if [ ! -d "410user" ]; then
+	./unpack-basecode.sh || "p2 basecode failed to unpack"
+fi
+
 cd ../../
