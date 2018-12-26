@@ -99,8 +99,8 @@ void quit_landslide(unsigned int code)
 	QUIT_BOCHS(code);
 }
 
-/* called by modify_nobe to send changes to the forked processes */
-void __modify_nobes(void (*cb)(struct nobe *h_rw, void *), const struct nobe *h_ro,
+/* called by modify_pp to send changes to the forked processes */
+void __modify_pps(void (*cb)(struct nobe *h_rw, void *), const struct nobe *h_ro,
 		    void *arg, unsigned int arg_size)
 {
 	/* prevent recursive calls of this nobe-modification procedure by child
@@ -135,7 +135,7 @@ bool timetravel_set(struct ls_state *ls, struct nobe *h,
 		    unsigned int *tid, bool *txn, unsigned int *xabort_code,
 		    struct abort_set *aborts)
 {
-	struct timetravel_nobe *th = &h->time_machine;
+	struct timetravel_pp *th = &h->time_machine;
 	int pipefd[2];
 
 	assert(!th->active);
@@ -238,7 +238,7 @@ bool timetravel_set(struct ls_state *ls, struct nobe *h,
 	QUIT_BOCHS(LS_NO_KNOWN_BUG);
 }
 
-void timetravel_jump(struct ls_state *ls, const struct timetravel_nobe *th,
+void timetravel_jump(struct ls_state *ls, const struct timetravel_pp *th,
 		     unsigned int tid, bool txn, unsigned int xabort_code,
 		     struct abort_set *aborts)
 {
@@ -270,7 +270,7 @@ void timetravel_jump(struct ls_state *ls, const struct timetravel_nobe *th,
 	QUIT_BOCHS(LS_NO_KNOWN_BUG);
 }
 
-void timetravel_delete(struct ls_state *ls, const struct timetravel_nobe *th)
+void timetravel_delete(struct ls_state *ls, const struct timetravel_pp *th)
 {
 	assert(th->active);
 	assert(th->parent);

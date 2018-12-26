@@ -461,7 +461,7 @@ static void free_arbiter_choices(struct arbiter_state *a)
 	}
 }
 
-static void free_nobe(struct nobe *h)
+static void free_pp(struct nobe *h)
 {
 	free_sched(mutable_oldsched(h));
 	MM_FREE(mutable_oldsched(h));
@@ -654,7 +654,7 @@ void abort_transaction(unsigned int tid, const struct nobe *h2, unsigned int cod
 			 * looking only when we hit a xend, which lets us know
 			 * for sure we must've been outside of a txn. */
 			if (h2->xbegin) {
-				modify_nobe(add_xabort_code, h2, code);
+				modify_pp(add_xabort_code, h2, code);
 				return;
 			} else
 #ifdef HTM_WEAK_ATOMICITY
@@ -769,7 +769,7 @@ void save_recover(struct save_state *ss, struct ls_state *ls, int new_tid, bool 
 	lsprintf(INFO, "explorer chose tid %d; ready for action\n", new_tid);
 }
 
-static void add_nobe_child(struct nobe *h, int tid, bool xabort, unsigned int xabort_code)
+static void add_pp_child(struct nobe *h, int tid, bool xabort, unsigned int xabort_code)
 {
 	const struct nobe_child *other;
 	unsigned int i;
@@ -790,12 +790,12 @@ static void add_nobe_child(struct nobe *h, int tid, bool xabort, unsigned int xa
 	ARRAY_LIST_APPEND(mutable_children(h), child);
 }
 
-static void add_nobe_child_preempt(struct nobe *h, int *chosen_thread)
-	{ add_nobe_child(h, *chosen_thread, false, _XBEGIN_STARTED); }
+static void add_pp_child_preempt(struct nobe *h, int *chosen_thread)
+	{ add_pp_child(h, *chosen_thread, false, _XBEGIN_STARTED); }
 
 /* chosen thread will be the same as nobes chosen thread */
-static void add_nobe_child_xabort(struct nobe *h, unsigned int *xabort_code)
-	{ add_nobe_child(h, h->chosen_thread, true, *xabort_code); }
+static void add_pp_child_xabort(struct nobe *h, unsigned int *xabort_code)
+	{ add_pp_child(h, h->chosen_thread, true, *xabort_code); }
 
 /* In the typical case, this signifies that we have reached a new decision
  * point. We:
@@ -854,10 +854,10 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 
 			if (h->xaborted) {
 				assert(ss->current->chosen_thread == h->chosen_thread);
-				modify_nobe(add_nobe_child_xabort, ss->current,
+				modify_pp(add_pp_child_xabort, ss->current,
 					   ss->next_xabort_code);
 			} else {
-				modify_nobe(add_nobe_child_preempt, ss->current,
+				modify_pp(add_pp_child_preempt, ss->current,
 					   h->chosen_thread);
 			}
 
@@ -908,7 +908,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		ARRAY_LIST_INIT(&h->abort_sets_ever, 8);
 		ARRAY_LIST_INIT(&h->abort_sets_todo, 8);
 
-		timetravel_nobe_init(&h->time_machine);
+		timetravel_pp_init(&h->time_machine);
 
 		if (voluntary) {
 #ifndef PINTOS_KERNEL
@@ -1063,7 +1063,7 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct nobe 
 		/* This nobe will soon be in the future. Reclaim memory.
 		 * (Bochs, ofc, will reclaim the memory upon process exit.) */
 		struct nobe *old_current = (struct nobe *)ss->current;
-		free_nobe(old_current);
+		free_pp(old_current);
 #endif
 		ss->current = ss->current->parent;
 		/* allow for empty children iff ICB just reset the tree */
@@ -1121,7 +1121,7 @@ static void reset_root(struct nobe *root, int *unused)
 void save_reset_tree(struct save_state *ss, struct ls_state *ls)
 {
 	/* Do this before longjmp so the change gets copied into ls->sched. */
-	modify_nobe(reset_root, ss->root, 0);
+	modify_pp(reset_root, ss->root, 0);
 
 	ss->stats.total_choices = 1;
 	ss->stats.total_triggers = 0;

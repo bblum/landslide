@@ -58,7 +58,7 @@ struct nobe {
 	 *  - data_races
 	 */
 
-	struct timetravel_nobe time_machine;
+	struct timetravel_pp time_machine;
 
 	/**** Tree link data. ****/
 
@@ -154,7 +154,7 @@ static inline mutable_abort_sets_t *mutable_abort_sets_ever(struct nobe *h)
 	{ return (mutable_abort_sets_t *)&h->abort_sets_ever; }
 static inline mutable_abort_sets_t *mutable_abort_sets_todo(struct nobe *h)
 	{ return (mutable_abort_sets_t *)&h->abort_sets_todo; }
-typedef Q_NEW_HEAD(struct, struct nobe) mutable_nobe_children_t;
+typedef Q_NEW_HEAD(struct, struct nobe) mutable_pp_children_t;
 static inline void set_happens_before(struct nobe *h, unsigned int i, bool val)
 	{ *(bool *)&(h->happens_before[i]) = val; }
 static inline void set_conflicts(struct nobe *h, unsigned int i, bool val)

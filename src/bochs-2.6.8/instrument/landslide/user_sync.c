@@ -213,7 +213,7 @@ static void update_blocked_transition(const struct nobe *h0, const struct nobe *
 				 h2->depth, h2->chosen_thread,
 				 xchg_blocked ? "XCB" : "YLB",
 				 ylc, h->depth, h->chosen_thread);
-			modify_nobe(update_nobe_yield_block_tid, h2, a2->tid);
+			modify_pp(update_pp_yield_block_tid, h2, a2->tid);
 			/* Before we knew this thread was yield-blocked, we
 			 * might have tagged it during DPOR. Undo that. */
 			if (a2->do_explore) {

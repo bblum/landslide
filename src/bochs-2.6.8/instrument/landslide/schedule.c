@@ -2052,7 +2052,7 @@ void sched_update(struct ls_state *ls)
 }
 
 #ifdef HTM_ABORT_SETS
-static void update_nobe_abandon_abort_set(struct nobe *h, struct abort_set *aborts)
+static void update_pp_abandon_abort_set(struct nobe *h, struct abort_set *aborts)
 {
 	struct abort_set *old;
 	int i;
@@ -2175,7 +2175,7 @@ void sched_recover(struct ls_state *ls)
 					printf(DEV, ", new: ");
 					print_abort_set(DEV, &aborts);
 					printf(DEV, "; abandoning new, sorry\n");
-					modify_nobe(update_nobe_abandon_abort_set,
+					modify_pp(update_pp_abandon_abort_set,
 						   ls->save.current, aborts);
 				}
 			} else {

@@ -1437,7 +1437,7 @@ static bool check_data_race(struct mem_state *m, unsigned int eip0, unsigned int
 	return false;
 }
 
-static void update_nobe_set_speculative_pp(struct nobe *h, int *unused)
+static void update_pp_set_speculative_pp(struct nobe *h, int *unused)
 	{ h->is_preemption_point = true; }
 
 static void check_enable_speculative_pp(const struct nobe *h, unsigned int eip)
@@ -1449,7 +1449,7 @@ static void check_enable_speculative_pp(const struct nobe *h, unsigned int eip)
 		} else {
 			lsprintf(DEV, "data race enables PP #%d/tid%d\n",
 				 h->depth, h->chosen_thread);
-			modify_nobe(update_nobe_set_speculative_pp, h, 0);
+			modify_pp(update_pp_set_speculative_pp, h, 0);
 		}
 	}
 }

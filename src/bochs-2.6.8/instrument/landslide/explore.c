@@ -171,7 +171,7 @@ static void merge_abort_noob(struct abort_noob *dest, const struct abort_noob *s
 	dest->check_retry   |= src->check_retry;
 }
 
-static void update_nobe_abort_set(struct nobe *h, struct abort_set *src)
+static void update_pp_abort_set(struct nobe *h, struct abort_set *src)
 {
 	assert(src->reordered_subtree_child.tid != TID_NONE);
 	assert(src->preempted_evil_ancestor.tid != TID_NONE);
@@ -273,7 +273,7 @@ static void update_nobe_abort_set(struct nobe *h, struct abort_set *src)
 	}
 }
 
-static void update_nobe_pop_abort_set(struct nobe *h, unsigned int *index)
+static void update_pp_pop_abort_set(struct nobe *h, unsigned int *index)
 {
 	ARRAY_LIST_REMOVE_SWAP(mutable_abort_sets_todo(h), *index);
 }
@@ -289,7 +289,7 @@ static void get_abort_set(const struct nobe *h, unsigned int tid,
 	ARRAY_LIST_FOREACH(&h->abort_sets_todo, i, src) {
 		if (src->reordered_subtree_child.tid == tid) {
 			*dest = *src;
-			modify_nobe(update_nobe_pop_abort_set, h, i);
+			modify_pp(update_pp_pop_abort_set, h, i);
 			return;
 		}
 	}
@@ -328,7 +328,7 @@ static const struct nobe *pp_parent(const struct nobe *h)
 	return h;
 }
 
-static void update_nobe_tag_tid(struct nobe *h, unsigned int *tid)
+static void update_pp_tag_tid(struct nobe *h, unsigned int *tid)
 {
 	struct agent *a;
 	FOR_EACH_RUNNABLE_AGENT(a, mutable_oldsched(h),
@@ -369,7 +369,7 @@ static bool tag_good_sibling(const struct nobe *h0, const struct nobe *ancestor,
 				return false;
 			} else {
 				/* normal case; thread can be tagged */
-				modify_nobe(update_nobe_tag_tid, grandparent, a->tid);
+				modify_pp(update_pp_tag_tid, grandparent, a->tid);
 #ifdef HTM_ABORT_SETS
 				/* probably safe to make this be ACTIVE()? */
 				if (aborts != NULL) {
@@ -377,7 +377,7 @@ static bool tag_good_sibling(const struct nobe *h0, const struct nobe *ancestor,
 					print_abort_set(DEV, aborts);
 					printf(DEV, ", the following tag...\n");
 					/* dont send dat pointer!! */
-					modify_nobe(update_nobe_abort_set,
+					modify_pp(update_pp_abort_set,
 						   grandparent, *aborts);
 				}
 #endif
@@ -425,7 +425,7 @@ static void tag_all_siblings(const struct nobe *h0, const struct nobe *ancestor,
 			}
 		} else {
 			/* normal case; sibling can be tagged */
-			modify_nobe(update_nobe_tag_tid, grandparent, a->tid);
+			modify_pp(update_pp_tag_tid, grandparent, a->tid);
 			print_agent(DEV, a);
 			printf(DEV, " ");
 			num_tagged++;
@@ -513,7 +513,7 @@ static void tag_reachable_aunts(const struct nobe *h0, const struct nobe *ancest
 }
 #endif
 
-static void update_nobe_pop_xabort_code(struct nobe *h, int *index)
+static void update_pp_pop_xabort_code(struct nobe *h, int *index)
 {
 	ARRAY_LIST_REMOVE_SWAP(mutable_xabort_codes_todo(h), *index);
 }
@@ -527,7 +527,7 @@ static bool any_tagged_child(const struct nobe *h, unsigned int *new_tid, bool *
 		assert(ARRAY_LIST_SIZE(&h->abort_sets_ever) == 0);
 		/* pop the code from the list so it won't be doubly explored */
 		*xabort_code = *ARRAY_LIST_GET(&h->xabort_codes_todo, 0);
-		modify_nobe(update_nobe_pop_xabort_code, h, 0);
+		modify_pp(update_pp_pop_xabort_code, h, 0);
 		/* injecting a failure in the xbeginning thread, obvs. */
 		*new_tid = h->chosen_thread;
 		/* abort sets are used on thread pps, not xbegin pps */
@@ -571,12 +571,12 @@ static void print_pruned_children(struct save_state *ss, const struct nobe *h)
 		printf(DEV, "\n");
 }
 
-static void update_nobe_set_all_explored(struct nobe *h, int *unused)
+static void update_pp_set_all_explored(struct nobe *h, int *unused)
 {
 	h->all_explored = true;
 }
 
-static void update_nobe_set_child_all_explored(struct nobe *h, int chosen_thread,
+static void update_pp_set_child_all_explored(struct nobe *h, int chosen_thread,
 					      bool xabort, unsigned int xabort_code)
 {
 	struct nobe_child *child;
@@ -592,21 +592,21 @@ static void update_nobe_set_child_all_explored(struct nobe *h, int chosen_thread
 	assert(0 && "child nobe not found to mark all-explored");
 }
 
-static void update_nobe_xabort_all_explored(struct nobe *h, unsigned int *xabort_code)
-	{ update_nobe_set_child_all_explored(h, h->chosen_thread, true, *xabort_code); }
-static void update_nobe_preempt_all_explored(struct nobe *h, int *chosen_thread)
-	{ update_nobe_set_child_all_explored(h, *chosen_thread, false, 0); }
+static void update_pp_xabort_all_explored(struct nobe *h, unsigned int *xabort_code)
+	{ update_pp_set_child_all_explored(h, h->chosen_thread, true, *xabort_code); }
+static void update_pp_preempt_all_explored(struct nobe *h, int *chosen_thread)
+	{ update_pp_set_child_all_explored(h, *chosen_thread, false, 0); }
 
 static void set_all_explored(const struct nobe *h)
 {
-	modify_nobe(update_nobe_set_all_explored, h, 0);
+	modify_pp(update_pp_set_all_explored, h, 0);
 	if (h->parent != NULL) {
 		if (h->xaborted) {
 			assert(h->chosen_thread == h->parent->chosen_thread);
-			modify_nobe(update_nobe_xabort_all_explored,
+			modify_pp(update_pp_xabort_all_explored,
 				   h->parent, h->xabort_code);
 		} else {
-			modify_nobe(update_nobe_preempt_all_explored,
+			modify_pp(update_pp_preempt_all_explored,
 				   h->parent, h->chosen_thread);
 		}
 	}

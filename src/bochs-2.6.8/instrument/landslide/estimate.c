@@ -113,9 +113,9 @@ static void update_marked_children(struct nobe *h, int *unused)
 	} while (0)
 #endif
 
-static void update_nobe_proportion(struct nobe *h, long double *new_proportion)
+static void update_pp_proportion(struct nobe *h, long double *new_proportion)
 	{ h->proportion = *new_proportion; }
-static void update_nobe_subtree_usecs(struct nobe *h, long double *new_usecs)
+static void update_pp_subtree_usecs(struct nobe *h, long double *new_usecs)
 	{ h->subtree_usecs = *new_usecs; }
 
 /* Propagate changed proportion to descendants, including the nobe itself. */
@@ -133,14 +133,14 @@ static void adjust_subtree_proportions(const struct nobe *ancestor,
 		long double new_proportion =
 			(h->proportion * old_marked_children) / new_marked_children;
 		ASSERT_FRACTIONAL(new_proportion);
-		modify_nobe(update_nobe_proportion, h, new_proportion);
+		modify_pp(update_pp_proportion, h, new_proportion);
 	} while (h != ancestor);
 }
 
 static void _estimate(const struct nobe *root, const struct nobe *current)
 {
 	/* The estimated proportion of this branch, which we will accumulate. */
-	long double this_nobe_proportion = 1.0L;
+	long double this_pp_proportion = 1.0L;
 
 	/* The recorded proportion of each ancestor nobe is always equal to the
 	 * sum of the proportions of all its children that we already visited.
@@ -171,9 +171,9 @@ static void _estimate(const struct nobe *root, const struct nobe *current)
 		 * is the product of all its ancestors' proportions; i.e.:
 		 * p = Product_{vi <- all ancestors} 1/Marked(vi) */
 		unsigned int old_marked_children = h->marked_children;
-		modify_nobe(update_marked_children, h, 0);
-		this_nobe_proportion /= h->marked_children;
-		ASSERT_FRACTIONAL(this_nobe_proportion);
+		modify_pp(update_marked_children, h, 0);
+		this_pp_proportion /= h->marked_children;
+		ASSERT_FRACTIONAL(this_pp_proportion);
 
 		if (h->marked_children > 1) { assert(h->is_preemption_point); }
 
@@ -189,7 +189,7 @@ static void _estimate(const struct nobe *root, const struct nobe *current)
 		 * changed number of marked children, because that factor also
 		 * needs to be applied to this delta. */
 		// FIXME: "if child_delta != 0"... for speed optimz?
-		modify_nobe(update_nobe_proportion, h,
+		modify_pp(update_pp_proportion, h,
 			   h->proportion + child_proportion_delta);
 		ASSERT_FRACTIONAL(h->proportion);
 
@@ -267,7 +267,7 @@ static void _estimate(const struct nobe *root, const struct nobe *current)
 		 * expected total subtree size. */
 		new_usecs /= num_explored_children;
 		new_usecs *= h->marked_children;
-		modify_nobe(update_nobe_subtree_usecs, h, new_usecs);
+		modify_pp(update_pp_subtree_usecs, h, new_usecs);
 
 		// FIXME: Can probably clean-up above logic by dealing with
 		// child new subtree here, rather than above, by deciding
@@ -282,17 +282,17 @@ static void _estimate(const struct nobe *root, const struct nobe *current)
 		       h->subtree_usecs);
 	}
 
-	ASSERT_FRACTIONAL(this_nobe_proportion);
+	ASSERT_FRACTIONAL(this_pp_proportion);
 
 	/* Stage 2 -- Add this branch's final proportion value to all parents. */
 	for (const struct nobe *h = current; h != NULL; h = h->parent) {
-		modify_nobe(update_nobe_proportion, h,
-			   h->proportion + this_nobe_proportion);
+		modify_pp(update_pp_proportion, h,
+			   h->proportion + this_pp_proportion);
 	}
 }
 
 /* called from user_sync.c as well */
-void update_nobe_yield_block_tid(struct nobe *h, unsigned int *tid)
+void update_pp_yield_block_tid(struct nobe *h, unsigned int *tid)
 {
 	struct agent *a;
 	FOR_EACH_RUNNABLE_AGENT(a, mutable_oldsched(h),
@@ -304,7 +304,7 @@ void update_nobe_yield_block_tid(struct nobe *h, unsigned int *tid)
 	assert(0 && "couldn't find tid in oldsched to uy-unblock");
 }
 
-static void update_nobe_untag_tid(struct nobe *h, unsigned int *tid)
+static void update_pp_untag_tid(struct nobe *h, unsigned int *tid)
 {
 	struct agent *a;
 	FOR_EACH_RUNNABLE_AGENT(a, mutable_oldsched(h),
@@ -332,7 +332,7 @@ void untag_blocked_branch(const struct nobe *ancestor, const struct nobe *leaf,
 		for (const struct nobe *h = leaf->parent; h != ancestor; h = h->parent) {
 			const struct agent *a;
 			CONST_FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
-				modify_nobe(update_nobe_yield_block_tid, h, a->tid);
+				modify_pp(update_pp_yield_block_tid, h, a->tid);
 				if (a->do_explore && a->tid != last_chosen_thread) {
 					untag_blocked_branch(h, leaf, a, false);
 				}
@@ -346,7 +346,7 @@ void untag_blocked_branch(const struct nobe *ancestor, const struct nobe *leaf,
 	} else {
 		/* The subtree was not explored yet, so we need to readjust the
 		 * ancestor node's estimate downwards. */
-		modify_nobe(update_nobe_untag_tid, ancestor, a->tid);
+		modify_pp(update_pp_untag_tid, ancestor, a->tid);
 
 		/* recompute proportions for ancestor and its children along the
 		 * branch we came from */
@@ -362,7 +362,7 @@ void untag_blocked_branch(const struct nobe *ancestor, const struct nobe *leaf,
 		long double new_usecs =
 			(old_usecs / (ancestor->marked_children + 1))
 			* ancestor->marked_children;
-		modify_nobe(update_nobe_subtree_usecs, ancestor, new_usecs);
+		modify_pp(update_pp_subtree_usecs, ancestor, new_usecs);
 
 		/* find how much proportion and subtree time changed */
 		long double proportion_delta = ancestor->proportion - old_proportion;
@@ -373,26 +373,26 @@ void untag_blocked_branch(const struct nobe *ancestor, const struct nobe *leaf,
 		/* propagate proportion and subtree time to older ancestors */
 		for (const struct nobe *h = ancestor->parent; h != NULL; h = h->parent) {
 			/* proportion is simply added/subtracted from parents */
-			modify_nobe(update_nobe_proportion, h,
+			modify_pp(update_pp_proportion, h,
 				   h->proportion + proportion_delta);
 			/* subtree delta gets factored into the parent's average.
 			 * unlike proportion, subtree delta changes at each level. */
 			subtree_delta *= h->marked_children;
 			subtree_delta /= ARRAY_LIST_SIZE(&h->children);
-			modify_nobe(update_nobe_subtree_usecs, h,
+			modify_pp(update_pp_subtree_usecs, h,
 				   h->subtree_usecs + subtree_delta);
 		}
 	}
 }
 
-static void update_nobe_estimate_computed(struct nobe *h, int *unused)
+static void update_pp_estimate_computed(struct nobe *h, int *unused)
 	{ h->estimate_computed = true; }
 
 long double estimate_time(const struct nobe *root, const struct nobe *current)
 {
 	if (!current->estimate_computed) {
 		_estimate(root, current);
-		modify_nobe(update_nobe_estimate_computed, current, 0);
+		modify_pp(update_pp_estimate_computed, current, 0);
 	}
 	return (long double)root->usecs + root->subtree_usecs;
 }
@@ -401,7 +401,7 @@ long double estimate_proportion(const struct nobe *root, const struct nobe *curr
 {
 	if (!current->estimate_computed) {
 		_estimate(root, current);
-		modify_nobe(update_nobe_estimate_computed, current, 0);
+		modify_pp(update_pp_estimate_computed, current, 0);
 	}
 	return root->proportion;
 }
