@@ -462,6 +462,7 @@ bool arbiter_choose(struct ls_state *ls, struct agent *current, bool voluntary,
 #ifdef ICB
 	STATIC_ASSERT(false && "ICB and CHOOSE_RANDOMLY are incompatible");
 #endif
+	STATIC_ASSERT(false && "TODO: find a bsd random number generator");
 	// with given odds, will make the "forwards" choice.
 	const int numerator   = 19;
 	const int denominator = 20;

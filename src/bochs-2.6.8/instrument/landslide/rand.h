@@ -1,16 +1,14 @@
 /**
  * @file rand.h
- * @brief Random number generation (mersenne twister)
+ * @brief Random number generation
+ * FIXME: find a bsd licensed prng for this;
+ * but it's not like it's used in any non deprecated features though so
  */
 
 #ifndef __LS_RAND_H
 #define __LS_RAND_H
 
-#define RAND_N 624
-
 struct rand_state {
-	unsigned long mt[RAND_N];
-	int mti;
 };
 
 void rand_init(struct rand_state *r);
