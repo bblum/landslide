@@ -10,7 +10,7 @@
 #include "variable_queue.h"
 
 struct agent;
-struct hax;
+struct nobe;
 struct ls_state;
 
 /* a dynamically-allocated part of a mutex. */
@@ -105,8 +105,8 @@ void check_user_mutex_access(struct ls_state *ls, unsigned int addr);
 /* user yield-loop-blocking interface  */
 
 /* dpor-related */
-void update_user_yield_blocked_transitions(const struct hax *h);
-bool is_user_yield_blocked(const struct hax *h);
+void update_user_yield_blocked_transitions(const struct nobe *h);
+bool is_user_yield_blocked(const struct nobe *h);
 /* scheduler-related */
 void check_user_yield_activity(struct user_sync_state *u, struct agent *a);
 void check_user_xchg(struct user_sync_state *u, struct agent *a);

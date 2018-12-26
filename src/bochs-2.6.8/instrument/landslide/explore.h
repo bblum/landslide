@@ -8,10 +8,10 @@
 #define __LS_EXPLORE_H
 
 struct arbiter_state;
-struct hax;
+struct nobe;
 struct ls_state;
 struct abort_set;
 
-struct hax *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn, unsigned int *xabort_code, struct abort_set *aborts);
+struct nobe *explore(struct ls_state *ls, unsigned int *new_tid, bool *txn, unsigned int *xabort_code, struct abort_set *aborts);
 
 #endif

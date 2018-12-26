@@ -600,7 +600,7 @@ static bool time_travel(struct ls_state *ls)
 	bool txn;
 	unsigned int xabort_code = _XBEGIN_STARTED; /* illegal value */
 	struct abort_set aborts;
-	struct hax *h = explore(ls, &tid, &txn, &xabort_code, &aborts);
+	struct nobe *h = explore(ls, &tid, &txn, &xabort_code, &aborts);
 
 	lsprintf(BRANCH, COLOUR_BOLD COLOUR_GREEN "End of branch #%" PRIu64
 		 ".\n" COLOUR_DEFAULT, ls->save.stats.total_jumps + 1);

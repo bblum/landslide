@@ -60,7 +60,7 @@ static void init_table_column_map(table_column_map_t *m, struct save_state *ss,
 	if (!(skip_shell && TID_IS_SHELL(current_tid))) {
 		ARRAY_LIST_APPEND(m, current_tid);
 	}
-	for (const struct hax *h = ss->current; h != NULL; h = h->parent) {
+	for (const struct nobe *h = ss->current; h != NULL; h = h->parent) {
 		/* add it if it's not already present */
 		bool present = false;
 		int i;
@@ -162,7 +162,7 @@ void print_stack_to_console(const struct stack_trace *st, bool bug_found, const 
 }
 
 /* env and map are valid iff tabular is true */
-static unsigned int print_tree_from(const struct hax *h, unsigned int choose_thread,
+static unsigned int print_tree_from(const struct nobe *h, unsigned int choose_thread,
 				    bool bug_found, bool tabular,
 				    struct fab_html_env *env,
 				    table_column_map_t *map,

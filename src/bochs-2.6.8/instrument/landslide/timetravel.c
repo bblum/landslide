@@ -36,9 +36,9 @@ struct timetravel_message {
 	enum timetravel_message_tag tag;
 	unsigned int magic;
 
-	/* used for tag modify hax only */
-	void (*cb)(struct hax *h_rw, void *arg);
-	const struct hax *h_ro;
+	/* used for tag modify nobe only */
+	void (*cb)(struct nobe *h_rw, void *arg);
+	const struct nobe *h_ro;
 	unsigned int h_depth;
 	unsigned int arg_size; /* arg will be sent in a separate message */
 
@@ -99,14 +99,14 @@ void quit_landslide(unsigned int code)
 	QUIT_BOCHS(code);
 }
 
-/* called by modify_hax to send changes to the forked processes */
-void __modify_haxes(void (*cb)(struct hax *h_rw, void *), const struct hax *h_ro,
+/* called by modify_nobe to send changes to the forked processes */
+void __modify_nobes(void (*cb)(struct nobe *h_rw, void *), const struct nobe *h_ro,
 		    void *arg, unsigned int arg_size)
 {
-	/* prevent recursive calls of this hax-modification procedure by child
+	/* prevent recursive calls of this nobe-modification procedure by child
 	 * processes. the actively-landsliding process is alone responsible for
 	 * sending update messages to all dormant timetravel nobes. */
-	assert(active_world_line && "recursive hax tree changes forbidden");
+	assert(active_world_line && "recursive nobe tree changes forbidden");
 	struct timetravel_message tm;
 	tm.tag      = TIMETRAVEL_MODIFY_HAX;
 	tm.magic    = TIMETRAVEL_MAGIC;
@@ -114,28 +114,28 @@ void __modify_haxes(void (*cb)(struct hax *h_rw, void *), const struct hax *h_ro
 	tm.h_ro     = h_ro;
 	tm.h_depth  = h_ro->depth;
 	tm.arg_size = arg_size;
-	/* send message to all processes in between current and target hax; they
-	 * all have a target hax in their local memory that needs modified. */
-	for (const struct hax *ancestor = GET_LANDSLIDE()->save.current;
+	/* send message to all processes in between current and target nobe; they
+	 * all have a target nobe in their local memory that needs modified. */
+	for (const struct nobe *ancestor = GET_LANDSLIDE()->save.current;
 	     ancestor != h_ro->parent; ancestor = ancestor->parent) {
 		assert(ancestor != NULL && "h_ro not an ancestor of current?");
 		assert(ancestor->time_machine.active);
 		assert(ancestor->time_machine.parent);
 		int ret = write(ancestor->time_machine.pipefd, &tm, sizeof(tm));
-		assert(ret == sizeof(tm) && "failed write to modify haxes");
+		assert(ret == sizeof(tm) && "failed write to modify nobes");
 		ret = write(ancestor->time_machine.pipefd, arg, arg_size);
-		assert(ret == arg_size && "failed write arg to modify haxes");
+		assert(ret == arg_size && "failed write arg to modify nobes");
 	}
 }
 
 /* returns false if the parent process; true if the (just-jumped-to) child, in
  * which case the output pointers will be set to what thread to run instead,
  * whereupon this must be re-called to refresh the save for another jump. */
-bool timetravel_set(struct ls_state *ls, struct hax *h,
+bool timetravel_set(struct ls_state *ls, struct nobe *h,
 		    unsigned int *tid, bool *txn, unsigned int *xabort_code,
 		    struct abort_set *aborts)
 {
-	struct timetravel_hax *th = &h->time_machine;
+	struct timetravel_nobe *th = &h->time_machine;
 	int pipefd[2];
 
 	assert(!th->active);
@@ -215,9 +215,9 @@ bool timetravel_set(struct ls_state *ls, struct hax *h,
 			*aborts = tm.aborts;
 			return true;
 		} else if (tm.tag == TIMETRAVEL_MODIFY_HAX) {
-			/* check sanity of the hax we're asked to modify */
-			assert(tm.h_depth <= h->depth && "hax from the future");
-			for (const struct hax *h2 = h; h2 != tm.h_ro;
+			/* check sanity of the nobe we're asked to modify */
+			assert(tm.h_depth <= h->depth && "nobe from the future");
+			for (const struct nobe *h2 = h; h2 != tm.h_ro;
 			     h2 = h2->parent) {
 				assert(h2 != NULL && "h_ro not an ancestor?");
 			}
@@ -225,8 +225,8 @@ bool timetravel_set(struct ls_state *ls, struct hax *h,
 			char arg[tm.arg_size];
 			ret = read(th->pipefd, arg, tm.arg_size);
 			assert(ret == tm.arg_size && "failed read arg");
-			/* update our local version of this hax */
-			tm.cb((struct hax *)tm.h_ro, arg);
+			/* update our local version of this nobe */
+			tm.cb((struct nobe *)tm.h_ro, arg);
 		} else {
 			assert(0 && "bad message tag");
 		}
@@ -238,7 +238,7 @@ bool timetravel_set(struct ls_state *ls, struct hax *h,
 	QUIT_BOCHS(LS_NO_KNOWN_BUG);
 }
 
-void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,
+void timetravel_jump(struct ls_state *ls, const struct timetravel_nobe *th,
 		     unsigned int tid, bool txn, unsigned int xabort_code,
 		     struct abort_set *aborts)
 {
@@ -270,7 +270,7 @@ void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,
 	QUIT_BOCHS(LS_NO_KNOWN_BUG);
 }
 
-void timetravel_delete(struct ls_state *ls, const struct timetravel_hax *th)
+void timetravel_delete(struct ls_state *ls, const struct timetravel_nobe *th)
 {
 	assert(th->active);
 	assert(th->parent);

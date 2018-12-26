@@ -196,7 +196,7 @@ void init_local(void)
 
 	/* Register attributes for the class. */
 	LS_ATTR_REGISTER(conf_class, decision_trace, "i", "Get a decision trace.");
-	LS_ATTR_REGISTER(conf_class, trigger_count, "i", "Count of haxes");
+	LS_ATTR_REGISTER(conf_class, trigger_count, "i", "Count of nobes");
 	LS_ATTR_REGISTER(conf_class, test_case, "s",
 			 "Which test case should we run?");
 	LS_ATTR_REGISTER(conf_class, cmd_file, "s",

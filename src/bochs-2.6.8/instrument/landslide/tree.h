@@ -21,7 +21,7 @@ struct stack_trace;
 struct test_state;
 struct abort_set;
 
-struct hax_child {
+struct nobe_child {
 	int chosen_thread;
 	bool all_explored;
 	/* if xabort, then (h->)child->chosen_thread == h->chosen_thread */
@@ -32,7 +32,7 @@ struct hax_child {
 /* Represents a single preemption point in the decision tree.
  * The data here stored actually reflects the state upon the *completion* of
  * that transition; i.e., when the next preemption has to be made. */
-struct hax {
+struct nobe {
 	/**** Basic info ****/
 
 	unsigned int eip; /* The eip for the *next* preemption point. */
@@ -58,13 +58,13 @@ struct hax {
 	 *  - data_races
 	 */
 
-	struct timetravel_hax time_machine;
+	struct timetravel_nobe time_machine;
 
 	/**** Tree link data. ****/
 
-	const struct hax *parent;
+	const struct nobe *parent;
 	unsigned int depth; /* starts at 0 */
-	ARRAY_LIST(const struct hax_child) children;
+	ARRAY_LIST(const struct nobe_child) children;
 
 	/**** DPOR state ****/
 
@@ -129,9 +129,9 @@ struct hax {
 };
 
 /* c's type system sucks too much to propagate const through data structures,
- * so this lets you modify them in modify-hax callback's. (see timetravel.h) */
+ * so this lets you modify them in modify-nobe callback's. (see timetravel.h) */
 #define MUTABLE_FN(type, fieldname) \
-	static inline type *mutable_##fieldname(struct hax *h)	\
+	static inline type *mutable_##fieldname(struct nobe *h)	\
 		{ return (type *)h->fieldname; }
 MUTABLE_FN(struct sched_state, oldsched)
 MUTABLE_FN(struct test_state, oldtest)
@@ -141,23 +141,23 @@ MUTABLE_FN(struct mem_state, old_user_mem)
 MUTABLE_FN(struct user_sync_state, old_user_sync)
 MUTABLE_FN(bool, conflicts)
 MUTABLE_FN(bool, happens_before)
-typedef ARRAY_LIST(struct hax_child) mutable_children_t;
-static inline mutable_children_t *mutable_children(struct hax *h)
+typedef ARRAY_LIST(struct nobe_child) mutable_children_t;
+static inline mutable_children_t *mutable_children(struct nobe *h)
 	{ return (mutable_children_t *)&h->children; }
 typedef ARRAY_LIST(unsigned int) mutable_xabort_codes_t;
-static inline mutable_xabort_codes_t *mutable_xabort_codes_todo(struct hax *h)
+static inline mutable_xabort_codes_t *mutable_xabort_codes_todo(struct nobe *h)
 	{ return (mutable_xabort_codes_t *)&h->xabort_codes_todo; }
-static inline mutable_xabort_codes_t *mutable_xabort_codes_ever(struct hax *h)
+static inline mutable_xabort_codes_t *mutable_xabort_codes_ever(struct nobe *h)
 	{ return (mutable_xabort_codes_t *)&h->xabort_codes_ever; }
 typedef ARRAY_LIST(struct abort_set) mutable_abort_sets_t;
-static inline mutable_abort_sets_t *mutable_abort_sets_ever(struct hax *h)
+static inline mutable_abort_sets_t *mutable_abort_sets_ever(struct nobe *h)
 	{ return (mutable_abort_sets_t *)&h->abort_sets_ever; }
-static inline mutable_abort_sets_t *mutable_abort_sets_todo(struct hax *h)
+static inline mutable_abort_sets_t *mutable_abort_sets_todo(struct nobe *h)
 	{ return (mutable_abort_sets_t *)&h->abort_sets_todo; }
-typedef Q_NEW_HEAD(struct, struct hax) mutable_hax_children_t;
-static inline void set_happens_before(struct hax *h, unsigned int i, bool val)
+typedef Q_NEW_HEAD(struct, struct nobe) mutable_nobe_children_t;
+static inline void set_happens_before(struct nobe *h, unsigned int i, bool val)
 	{ *(bool *)&(h->happens_before[i]) = val; }
-static inline void set_conflicts(struct hax *h, unsigned int i, bool val)
+static inline void set_conflicts(struct nobe *h, unsigned int i, bool val)
 	{ *(bool *)&(h->conflicts[i]) = val; }
 
 #endif

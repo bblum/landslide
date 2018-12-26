@@ -12,7 +12,7 @@
 #include <sys/time.h>
 
 struct ls_state;
-struct hax;
+struct nobe;
 struct abort_set;
 
 struct save_statistics {
@@ -32,9 +32,9 @@ struct save_statistics {
 struct save_state {
 	/* The root of the decision tree, or NULL if save_setjmp() was never
 	 * called. */
-	const struct hax *root;
+	const struct nobe *root;
 	/* If root is set, this points to the "current" node in the tree */
-	const struct hax *current;
+	const struct nobe *current;
 	int next_tid;
 	bool next_xabort;
 	unsigned int next_xabort_code;
@@ -42,7 +42,7 @@ struct save_state {
 	struct save_statistics stats;
 };
 
-void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code);
+void abort_transaction(unsigned int tid, const struct nobe *h2, unsigned int code);
 
 void save_init(struct save_state *);
 
@@ -56,9 +56,9 @@ void save_setjmp(struct save_state *, struct ls_state *,
 		 bool voluntary, unsigned int joined_tid, bool xbegin,
 		 bool prune_aborts, bool check_retry);
 
-/* If hax is NULL, then longjmps to the root. Otherwise, hax must be between
+/* If nobe is NULL, then longjmps to the root. Otherwise, nobe must be between
  * the current choice point and the root (inclusive). */
-void save_longjmp(struct save_state *, struct ls_state *, const struct hax *,
+void save_longjmp(struct save_state *, struct ls_state *, const struct nobe *,
 		  unsigned int tid, bool txn, unsigned int xabort_code,
 		  struct abort_set *aborts);
 

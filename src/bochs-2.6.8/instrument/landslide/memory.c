@@ -262,7 +262,7 @@ static void print_heap(verbosity v, struct rb_node *nobe, bool rightmost)
 /* Attempt to find a freed chunk among all transitions */
 static const struct chunk *find_freed_chunk(
 	struct ls_state *ls, unsigned int addr, bool in_kernel,
-	const struct hax **before, const struct hax **after)
+	const struct nobe **before, const struct nobe **after)
 {
 	const struct mem_state *m = in_kernel ? &ls->kern_mem : &ls->user_mem;
 
@@ -289,7 +289,7 @@ static const struct chunk *find_freed_chunk(
 	return NULL;
 }
 
-struct freed_chunk_info { const struct chunk *chunk; const struct hax *before, *after; };
+struct freed_chunk_info { const struct chunk *chunk; const struct nobe *before, *after; };
 
 /* html env may be null */
 static void print_freed_chunk_info(void *env, struct fab_html_env *html_env)
@@ -298,8 +298,8 @@ static void print_freed_chunk_info(void *env, struct fab_html_env *html_env)
 	char freed_msg[BUF_SIZE];
 	unsigned int pos = 0;
 	const struct chunk *c    = ((struct freed_chunk_info *)env)->chunk;
-	const struct hax *before = ((struct freed_chunk_info *)env)->before;
-	const struct hax *after  = ((struct freed_chunk_info *)env)->after;
+	const struct nobe *before = ((struct freed_chunk_info *)env)->before;
+	const struct nobe *after  = ((struct freed_chunk_info *)env)->after;
 
 	scnprintf(allocated_msg, BUF_SIZE, "Heap block [0x%x | %d] "
 		  "was allocated at:", c->base, c->len);
@@ -444,8 +444,8 @@ static void mem_enter_free(struct ls_state *ls, bool in_kernel, bool is_palloc, 
 		lsprintf(INFO, "Free() NULL (in %s); ok, I guess...\n",
 			 K_STR(in_kernel));
 	} else if (chunk == NULL) {
-		const struct hax *before;
-		const struct hax *after;
+		const struct nobe *before;
+		const struct nobe *after;
 		const struct chunk *freed_chunk =
 			find_freed_chunk(ls, base, in_kernel, &before, &after);
 		if (freed_chunk != NULL) {
@@ -826,8 +826,8 @@ static void use_after_free(struct ls_state *ls, unsigned int addr,
 	}
 
 	/* Find the chunk and print stack traces for it */
-	const struct hax *before;
-	const struct hax *after;
+	const struct nobe *before;
+	const struct nobe *after;
 	const struct chunk *c = find_freed_chunk(ls, addr, in_kernel, &before, &after);
 
 	if (c == NULL) {
@@ -1259,7 +1259,7 @@ static void check_freed_conflict(struct mem_access *ma0, const struct mem_state 
 }
 
 static void print_data_race(struct ls_state *ls,
-			    const struct hax *h0, const struct hax *h1,
+			    const struct nobe *h0, const struct nobe *h1,
 			    const struct mem_access *ma0, const struct mem_access *ma1,
 			    const struct chunk *c0, const struct chunk *c1,
 			    const struct mem_lockset *l0, const struct mem_lockset *l1,
@@ -1437,10 +1437,10 @@ static bool check_data_race(struct mem_state *m, unsigned int eip0, unsigned int
 	return false;
 }
 
-static void update_hax_set_speculative_pp(struct hax *h, int *unused)
+static void update_nobe_set_speculative_pp(struct nobe *h, int *unused)
 	{ h->is_preemption_point = true; }
 
-static void check_enable_speculative_pp(const struct hax *h, unsigned int eip)
+static void check_enable_speculative_pp(const struct nobe *h, unsigned int eip)
 {
 	if (h != NULL && h->data_race_eip != ADDR_NONE && h->data_race_eip == eip) {
 		if (h->is_preemption_point) {
@@ -1449,13 +1449,13 @@ static void check_enable_speculative_pp(const struct hax *h, unsigned int eip)
 		} else {
 			lsprintf(DEV, "data race enables PP #%d/tid%d\n",
 				 h->depth, h->chosen_thread);
-			modify_hax(update_hax_set_speculative_pp, h, 0);
+			modify_nobe(update_nobe_set_speculative_pp, h, 0);
 		}
 	}
 }
 
 static void check_locksets(struct ls_state *ls,
-			   const struct hax *h0, const struct hax *h1,
+			   const struct nobe *h0, const struct nobe *h1,
 			   const struct mem_access *ma0, const struct mem_access *ma1,
 			   const struct chunk *c0, const struct chunk *c1,
 			   bool in_kernel)
@@ -1509,7 +1509,7 @@ static void check_locksets(struct ls_state *ls,
 
 /* Compute the intersection of two transitions' shm accesses */
 bool mem_shm_intersect(struct ls_state *ls,
-		       const struct hax *h0, const struct hax *h1,
+		       const struct nobe *h0, const struct nobe *h1,
 		       bool in_kernel)
 {
 	const struct mem_state *m0 = in_kernel ? h0->old_kern_mem : h0->old_user_mem;

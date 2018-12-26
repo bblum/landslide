@@ -49,9 +49,9 @@ static void fudge_time(struct timeval *tv, uint64_t time_asleep)
  * estimation algorithm / logic
  ******************************************************************************/
 
-static bool is_child_marked(const struct hax *h, const struct agent *a)
+static bool is_child_marked(const struct nobe *h, const struct agent *a)
 {
-	const struct hax_child *child;
+	const struct nobe_child *child;
 	unsigned int i;
 
 	/* A marked child is one that we have already explored, or one we wish
@@ -67,7 +67,7 @@ static bool is_child_marked(const struct hax *h, const struct agent *a)
 	return false;
 }
 
-static void update_marked_children(struct hax *h, int *unused)
+static void update_marked_children(struct nobe *h, int *unused)
 {
 	unsigned int old_marked_children = h->marked_children;
 	const struct agent *a;
@@ -113,18 +113,18 @@ static void update_marked_children(struct hax *h, int *unused)
 	} while (0)
 #endif
 
-static void update_hax_proportion(struct hax *h, long double *new_proportion)
+static void update_nobe_proportion(struct nobe *h, long double *new_proportion)
 	{ h->proportion = *new_proportion; }
-static void update_hax_subtree_usecs(struct hax *h, long double *new_usecs)
+static void update_nobe_subtree_usecs(struct nobe *h, long double *new_usecs)
 	{ h->subtree_usecs = *new_usecs; }
 
 /* Propagate changed proportion to descendants, including the nobe itself. */
-static void adjust_subtree_proportions(const struct hax *ancestor,
-				       const struct hax *leaf,
+static void adjust_subtree_proportions(const struct nobe *ancestor,
+				       const struct nobe *leaf,
 				       unsigned int old_marked_children,
 				       unsigned int new_marked_children)
 {
-	const struct hax *h = leaf;
+	const struct nobe *h = leaf;
 	do {
 		h = h->parent;
 		assert(h != NULL);
@@ -133,11 +133,11 @@ static void adjust_subtree_proportions(const struct hax *ancestor,
 		long double new_proportion =
 			(h->proportion * old_marked_children) / new_marked_children;
 		ASSERT_FRACTIONAL(new_proportion);
-		modify_hax(update_hax_proportion, h, new_proportion);
+		modify_nobe(update_nobe_proportion, h, new_proportion);
 	} while (h != ancestor);
 }
 
-static void _estimate(const struct hax *root, const struct hax *current)
+static void _estimate(const struct nobe *root, const struct nobe *current)
 {
 	/* The estimated proportion of this branch, which we will accumulate. */
 	long double this_nobe_proportion = 1.0L;
@@ -163,7 +163,7 @@ static void _estimate(const struct hax *root, const struct hax *current)
 	/* Stage 1 -- figure out this branch's proportion to begin with. We
 	 * can also retroactively fix-up the proportions for changed parent
 	 * nobes along the way. (Skip the terminal node itself, obviously.) */
-	for (const struct hax *h = current->parent; h != NULL; h = h->parent) {
+	for (const struct nobe *h = current->parent; h != NULL; h = h->parent) {
 		if (h->parent == NULL) { assert(h == root); }
 		assert(!h->estimate_computed);
 
@@ -171,7 +171,7 @@ static void _estimate(const struct hax *root, const struct hax *current)
 		 * is the product of all its ancestors' proportions; i.e.:
 		 * p = Product_{vi <- all ancestors} 1/Marked(vi) */
 		unsigned int old_marked_children = h->marked_children;
-		modify_hax(update_marked_children, h, 0);
+		modify_nobe(update_marked_children, h, 0);
 		this_nobe_proportion /= h->marked_children;
 		ASSERT_FRACTIONAL(this_nobe_proportion);
 
@@ -189,7 +189,7 @@ static void _estimate(const struct hax *root, const struct hax *current)
 		 * changed number of marked children, because that factor also
 		 * needs to be applied to this delta. */
 		// FIXME: "if child_delta != 0"... for speed optimz?
-		modify_hax(update_hax_proportion, h,
+		modify_nobe(update_nobe_proportion, h,
 			   h->proportion + child_proportion_delta);
 		ASSERT_FRACTIONAL(h->proportion);
 
@@ -267,7 +267,7 @@ static void _estimate(const struct hax *root, const struct hax *current)
 		 * expected total subtree size. */
 		new_usecs /= num_explored_children;
 		new_usecs *= h->marked_children;
-		modify_hax(update_hax_subtree_usecs, h, new_usecs);
+		modify_nobe(update_nobe_subtree_usecs, h, new_usecs);
 
 		// FIXME: Can probably clean-up above logic by dealing with
 		// child new subtree here, rather than above, by deciding
@@ -285,14 +285,14 @@ static void _estimate(const struct hax *root, const struct hax *current)
 	ASSERT_FRACTIONAL(this_nobe_proportion);
 
 	/* Stage 2 -- Add this branch's final proportion value to all parents. */
-	for (const struct hax *h = current; h != NULL; h = h->parent) {
-		modify_hax(update_hax_proportion, h,
+	for (const struct nobe *h = current; h != NULL; h = h->parent) {
+		modify_nobe(update_nobe_proportion, h,
 			   h->proportion + this_nobe_proportion);
 	}
 }
 
 /* called from user_sync.c as well */
-void update_hax_yield_block_tid(struct hax *h, unsigned int *tid)
+void update_nobe_yield_block_tid(struct nobe *h, unsigned int *tid)
 {
 	struct agent *a;
 	FOR_EACH_RUNNABLE_AGENT(a, mutable_oldsched(h),
@@ -304,7 +304,7 @@ void update_hax_yield_block_tid(struct hax *h, unsigned int *tid)
 	assert(0 && "couldn't find tid in oldsched to uy-unblock");
 }
 
-static void update_hax_untag_tid(struct hax *h, unsigned int *tid)
+static void update_nobe_untag_tid(struct nobe *h, unsigned int *tid)
 {
 	struct agent *a;
 	FOR_EACH_RUNNABLE_AGENT(a, mutable_oldsched(h),
@@ -319,7 +319,7 @@ static void update_hax_untag_tid(struct hax *h, unsigned int *tid)
 }
 
 /* FIXME: With KEEP_RUNNING_YIELDING_THREADS, this might be dead functionality. */
-void untag_blocked_branch(const struct hax *ancestor, const struct hax *leaf,
+void untag_blocked_branch(const struct nobe *ancestor, const struct nobe *leaf,
 			  const struct agent *a, bool was_ancestor)
 {
 	assert(a->do_explore);
@@ -329,10 +329,10 @@ void untag_blocked_branch(const struct hax *ancestor, const struct hax *leaf,
 		 * edge, as we've already gone down it, but we can untag any
 		 * other not-yet-explored tagged edges within the subtree. */
 		unsigned int last_chosen_thread = leaf->chosen_thread;
-		for (const struct hax *h = leaf->parent; h != ancestor; h = h->parent) {
+		for (const struct nobe *h = leaf->parent; h != ancestor; h = h->parent) {
 			const struct agent *a;
 			CONST_FOR_EACH_RUNNABLE_AGENT(a, h->oldsched,
-				modify_hax(update_hax_yield_block_tid, h, a->tid);
+				modify_nobe(update_nobe_yield_block_tid, h, a->tid);
 				if (a->do_explore && a->tid != last_chosen_thread) {
 					untag_blocked_branch(h, leaf, a, false);
 				}
@@ -346,7 +346,7 @@ void untag_blocked_branch(const struct hax *ancestor, const struct hax *leaf,
 	} else {
 		/* The subtree was not explored yet, so we need to readjust the
 		 * ancestor node's estimate downwards. */
-		modify_hax(update_hax_untag_tid, ancestor, a->tid);
+		modify_nobe(update_nobe_untag_tid, ancestor, a->tid);
 
 		/* recompute proportions for ancestor and its children along the
 		 * branch we came from */
@@ -362,7 +362,7 @@ void untag_blocked_branch(const struct hax *ancestor, const struct hax *leaf,
 		long double new_usecs =
 			(old_usecs / (ancestor->marked_children + 1))
 			* ancestor->marked_children;
-		modify_hax(update_hax_subtree_usecs, ancestor, new_usecs);
+		modify_nobe(update_nobe_subtree_usecs, ancestor, new_usecs);
 
 		/* find how much proportion and subtree time changed */
 		long double proportion_delta = ancestor->proportion - old_proportion;
@@ -371,37 +371,37 @@ void untag_blocked_branch(const struct hax *ancestor, const struct hax *leaf,
 		assert(subtree_delta <= 0);
 
 		/* propagate proportion and subtree time to older ancestors */
-		for (const struct hax *h = ancestor->parent; h != NULL; h = h->parent) {
+		for (const struct nobe *h = ancestor->parent; h != NULL; h = h->parent) {
 			/* proportion is simply added/subtracted from parents */
-			modify_hax(update_hax_proportion, h,
+			modify_nobe(update_nobe_proportion, h,
 				   h->proportion + proportion_delta);
 			/* subtree delta gets factored into the parent's average.
 			 * unlike proportion, subtree delta changes at each level. */
 			subtree_delta *= h->marked_children;
 			subtree_delta /= ARRAY_LIST_SIZE(&h->children);
-			modify_hax(update_hax_subtree_usecs, h,
+			modify_nobe(update_nobe_subtree_usecs, h,
 				   h->subtree_usecs + subtree_delta);
 		}
 	}
 }
 
-static void update_hax_estimate_computed(struct hax *h, int *unused)
+static void update_nobe_estimate_computed(struct nobe *h, int *unused)
 	{ h->estimate_computed = true; }
 
-long double estimate_time(const struct hax *root, const struct hax *current)
+long double estimate_time(const struct nobe *root, const struct nobe *current)
 {
 	if (!current->estimate_computed) {
 		_estimate(root, current);
-		modify_hax(update_hax_estimate_computed, current, 0);
+		modify_nobe(update_nobe_estimate_computed, current, 0);
 	}
 	return (long double)root->usecs + root->subtree_usecs;
 }
 
-long double estimate_proportion(const struct hax *root, const struct hax *current)
+long double estimate_proportion(const struct nobe *root, const struct nobe *current)
 {
 	if (!current->estimate_computed) {
 		_estimate(root, current);
-		modify_hax(update_hax_estimate_computed, current, 0);
+		modify_nobe(update_nobe_estimate_computed, current, 0);
 	}
 	return root->proportion;
 }

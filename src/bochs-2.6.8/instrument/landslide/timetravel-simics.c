@@ -66,7 +66,7 @@ static void run_command_cb(lang_void *addr)
 	MM_FREE(p);
 }
 
-static void run_command(const char *file, const char *cmd, const struct timetravel_hax *th)
+static void run_command(const char *file, const char *cmd, const struct timetravel_nobe *th)
 {
 	struct cmd_packet *p = MM_XMALLOC(1, struct cmd_packet);
 
@@ -78,7 +78,7 @@ static void run_command(const char *file, const char *cmd, const struct timetrav
 	SIM_run_alone(run_command_cb, (lang_void *)p);
 }
 
-bool timetravel_set(struct ls_state *ls, struct timetravel_hax *th,
+bool timetravel_set(struct ls_state *ls, struct timetravel_nobe *th,
 		    unsigned int *tid, bool *txn, unsigned int *xabort_code,
 		    struct abort_set *aborts)
 {
@@ -87,14 +87,14 @@ bool timetravel_set(struct ls_state *ls, struct timetravel_hax *th,
 	return false;
 }
 
-void timetravel_jump(struct ls_state *ls, const struct timetravel_hax *th,
+void timetravel_jump(struct ls_state *ls, const struct timetravel_nobe *th,
 		     unsigned int tid, bool txn, unsigned int xabort_code,
 		     struct abort_set *aborts)
 {
 	run_command(ls->timetravel.file, CMD_SKIPTO, th);
 }
 
-void timetravel_delete(struct ls_state *ls, const struct timetravel_hax *th)
+void timetravel_delete(struct ls_state *ls, const struct timetravel_nobe *th)
 {
 	run_command(ls->timetravel.file, CMD_DELETE, th);
 }

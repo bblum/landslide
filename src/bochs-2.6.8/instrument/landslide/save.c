@@ -461,7 +461,7 @@ static void free_arbiter_choices(struct arbiter_state *a)
 	}
 }
 
-static void free_hax(struct hax *h)
+static void free_nobe(struct nobe *h)
 {
 	free_sched(mutable_oldsched(h));
 	MM_FREE(mutable_oldsched(h));
@@ -492,7 +492,7 @@ static void free_hax(struct hax *h)
 }
 
 /* Reverse that which is not glowing green. */
-static void restore_ls(struct ls_state *ls, const struct hax *h)
+static void restore_ls(struct ls_state *ls, const struct nobe *h)
 {
 	lsprintf(DEV, "88 MPH: eip 0x%x -> 0x%x; "
 		 "triggers %lu -> %lu (absolute %" PRIu64 "); last choice %d\n",
@@ -524,14 +524,14 @@ static void restore_ls(struct ls_state *ls, const struct hax *h)
  * Independence and happens-before computation
  ******************************************************************************/
 
-static void inherit_happens_before(struct hax *h, const struct hax *old)
+static void inherit_happens_before(struct nobe *h, const struct nobe *old)
 {
 	for (int i = 0; i < old->depth; i++) {
 		set_happens_before(h, i, h->happens_before[i] || old->happens_before[i]);
 	}
 }
 
-static bool enabled_by(struct hax *h, const struct hax *old)
+static bool enabled_by(struct nobe *h, const struct nobe *old)
 {
 	if (old->parent == NULL) {
 		lsprintf(INFO, "#%d/tid%d has no parent\n",
@@ -556,20 +556,20 @@ static bool enabled_by(struct hax *h, const struct hax *old)
 	}
 }
 
-static void compute_happens_before(struct hax *h, unsigned int joined_tid)
+static void compute_happens_before(struct nobe *h, unsigned int joined_tid)
 {
 	unsigned int i;
 
 	/* Between two transitions of a thread X, X_0 before X_1, while there
 	 * may be many transitions Y that for which enabled_by(X_1, Y), only the
 	 * earliest such Y (the one soonest after X_0) is the actual enabler. */
-	const struct hax *enabler = NULL;
+	const struct nobe *enabler = NULL;
 
 	for (i = 0; i < h->depth; i++) {
 		set_happens_before(h, i, false);
 	}
 
-	for (const struct hax *old = h->parent; old != NULL; old = old->parent) {
+	for (const struct nobe *old = h->parent; old != NULL; old = old->parent) {
 		assert(--i == old->depth); /* sanity check */
 		assert(old->depth >= 0 && old->depth < h->depth);
 		if (h->chosen_thread == old->chosen_thread) {
@@ -596,7 +596,7 @@ static void compute_happens_before(struct hax *h, unsigned int joined_tid)
 		 * matter if the joinee is still alive or not -- if it is, they
 		 * will be in vanish or close nearby, past the exit signal step
 		 * at least. just find the last thing it did before us. */
-		for (const struct hax *old = h->parent; old != NULL;
+		for (const struct nobe *old = h->parent; old != NULL;
 		     old = old->parent) {
 			if (joined_tid == old->chosen_thread) {
 				set_happens_before(h, old->depth, true);
@@ -618,7 +618,7 @@ static void compute_happens_before(struct hax *h, unsigned int joined_tid)
 	printf(DEV, "} happen-before #%d/tid%d.\n", h->depth, h->chosen_thread);
 }
 
-static void add_xabort_code(struct hax *h, unsigned int *code)
+static void add_xabort_code(struct nobe *h, unsigned int *code)
 {
 	assert(h->xbegin);
 	unsigned int i;
@@ -638,7 +638,7 @@ static void add_xabort_code(struct hax *h, unsigned int *code)
 
 
 /* h2 should be supplied as the parent PP of the transition which should abort */
-void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code)
+void abort_transaction(unsigned int tid, const struct nobe *h2, unsigned int code)
 {
 #ifdef HTM_ABORT_CODES
 	// FIXME: this should have stronger assertions regarding being called
@@ -654,7 +654,7 @@ void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code
 			 * looking only when we hit a xend, which lets us know
 			 * for sure we must've been outside of a txn. */
 			if (h2->xbegin) {
-				modify_hax(add_xabort_code, h2, code);
+				modify_nobe(add_xabort_code, h2, code);
 				return;
 			} else
 #ifdef HTM_WEAK_ATOMICITY
@@ -677,7 +677,7 @@ void abort_transaction(unsigned int tid, const struct hax *h2, unsigned int code
  * far into the save point we're creating. Then, intersects the memory accesses
  * with those of each ancestor to compute independences and find data races.
  * NB: Looking for data races depends on having computed happens_before first. */
-static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
+static void shimsham_shm(struct ls_state *ls, struct nobe *h, bool in_kernel)
 {
 	/* note: NOT "&h->foo"! gcc does NOT warn for this mistake! ARGH! */
 	struct mem_state *oldmem = in_kernel ? mutable_old_kern_mem(h)
@@ -705,7 +705,7 @@ static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
 	}
 
 	/* compute newly-completed transition's conflicts with previous ones */
-	for (const struct hax *old = h->parent; old != NULL; old = old->parent) {
+	for (const struct nobe *old = h->parent; old != NULL; old = old->parent) {
 		assert(old->depth >= 0 && old->depth < h->depth);
 		if (h->chosen_thread == old->chosen_thread) {
 			lsprintf(INFO, "Same TID %d for #%d and #%d\n",
@@ -721,7 +721,7 @@ static void shimsham_shm(struct ls_state *ls, struct hax *h, bool in_kernel)
 			/* No conflict if reordering is impossible */
 			set_conflicts(h, old->depth, false);
 		} else {
-			/* The haxes are independent if there was no intersection. */
+			/* The nobes are independent if there was no intersection. */
 			set_conflicts(h, old->depth,
 				      mem_shm_intersect(ls, h, old, in_kernel));
 			if (h->conflicts[old->depth]) {
@@ -769,9 +769,9 @@ void save_recover(struct save_state *ss, struct ls_state *ls, int new_tid, bool 
 	lsprintf(INFO, "explorer chose tid %d; ready for action\n", new_tid);
 }
 
-static void add_hax_child(struct hax *h, int tid, bool xabort, unsigned int xabort_code)
+static void add_nobe_child(struct nobe *h, int tid, bool xabort, unsigned int xabort_code)
 {
-	const struct hax_child *other;
+	const struct nobe_child *other;
 	unsigned int i;
 	/* with abort sets, duplicate children differentiated only by those sets
 	 * can get added here; tracking them (e.g. to ensure no duplicates with
@@ -782,7 +782,7 @@ static void add_hax_child(struct hax *h, int tid, bool xabort, unsigned int xabo
 		       (other->xabort && xabort && other->xabort_code != xabort_code));
 	}
 #endif
-	struct hax_child child;
+	struct nobe_child child;
 	child.chosen_thread = tid;
 	child.all_explored  = false;
 	child.xabort        = xabort;
@@ -790,12 +790,12 @@ static void add_hax_child(struct hax *h, int tid, bool xabort, unsigned int xabo
 	ARRAY_LIST_APPEND(mutable_children(h), child);
 }
 
-static void add_hax_child_preempt(struct hax *h, int *chosen_thread)
-	{ add_hax_child(h, *chosen_thread, false, _XBEGIN_STARTED); }
+static void add_nobe_child_preempt(struct nobe *h, int *chosen_thread)
+	{ add_nobe_child(h, *chosen_thread, false, _XBEGIN_STARTED); }
 
-/* chosen thread will be the same as haxs chosen thread */
-static void add_hax_child_xabort(struct hax *h, unsigned int *xabort_code)
-	{ add_hax_child(h, h->chosen_thread, true, *xabort_code); }
+/* chosen thread will be the same as nobes chosen thread */
+static void add_nobe_child_xabort(struct nobe *h, unsigned int *xabort_code)
+	{ add_nobe_child(h, h->chosen_thread, true, *xabort_code); }
 
 /* In the typical case, this signifies that we have reached a new decision
  * point. We:
@@ -810,7 +810,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		 bool voluntary, unsigned int joined_tid, bool xbegin,
 		 bool prune_aborts, bool check_retry)
 {
-	struct hax *h;
+	struct nobe *h;
 
 	lsprintf(INFO, "tid %d to eip 0x%x, where we %s tid %d\n", ss->next_tid,
 		 ls->eip, our_choice ? "choose" : "follow", new_tid);
@@ -821,7 +821,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 	 * at that point we won't have the info to create the node until we go
 	 * one step further. */
 	if (our_choice) {
-		h = MM_XMALLOC(1, struct hax);
+		h = MM_XMALLOC(1, struct nobe);
 
 		h->eip           = ls->eip;
 		h->trigger_count = ls->trigger_count;
@@ -854,10 +854,10 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 
 			if (h->xaborted) {
 				assert(ss->current->chosen_thread == h->chosen_thread);
-				modify_hax(add_hax_child_xabort, ss->current,
+				modify_nobe(add_nobe_child_xabort, ss->current,
 					   ss->next_xabort_code);
 			} else {
-				modify_hax(add_hax_child_preempt, ss->current,
+				modify_nobe(add_nobe_child_preempt, ss->current,
 					   h->chosen_thread);
 			}
 
@@ -908,7 +908,7 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 		ARRAY_LIST_INIT(&h->abort_sets_ever, 8);
 		ARRAY_LIST_INIT(&h->abort_sets_todo, 8);
 
-		timetravel_hax_init(&h->time_machine);
+		timetravel_nobe_init(&h->time_machine);
 
 		if (voluntary) {
 #ifndef PINTOS_KERNEL
@@ -1040,11 +1040,11 @@ void save_setjmp(struct save_state *ss, struct ls_state *ls,
 	}
 }
 
-void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *h,
+void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct nobe *h,
 		  unsigned int tid, bool txn, unsigned int xabort_code,
 		  struct abort_set *aborts)
 {
-	const struct hax *rabbit = ss->current;
+	const struct nobe *rabbit = ss->current;
 
 	assert(ss->root != NULL && "Can't longjmp with no decision tree!");
 	assert(ss->current != NULL);
@@ -1062,8 +1062,8 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *
 #ifndef BOCHS
 		/* This nobe will soon be in the future. Reclaim memory.
 		 * (Bochs, ofc, will reclaim the memory upon process exit.) */
-		struct hax *old_current = (struct hax *)ss->current;
-		free_hax(old_current);
+		struct nobe *old_current = (struct nobe *)ss->current;
+		free_nobe(old_current);
 #endif
 		ss->current = ss->current->parent;
 		/* allow for empty children iff ICB just reset the tree */
@@ -1100,7 +1100,7 @@ void save_longjmp(struct save_state *ss, struct ls_state *ls, const struct hax *
 }
 
 #ifdef ICB
-static void reset_root(struct hax *root, int *unused)
+static void reset_root(struct nobe *root, int *unused)
 {
 	assert(root->parent == NULL);
 	struct agent *a;
@@ -1121,7 +1121,7 @@ static void reset_root(struct hax *root, int *unused)
 void save_reset_tree(struct save_state *ss, struct ls_state *ls)
 {
 	/* Do this before longjmp so the change gets copied into ls->sched. */
-	modify_hax(reset_root, ss->root, 0);
+	modify_nobe(reset_root, ss->root, 0);
 
 	ss->stats.total_choices = 1;
 	ss->stats.total_triggers = 0;

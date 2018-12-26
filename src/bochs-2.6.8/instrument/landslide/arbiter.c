@@ -342,7 +342,7 @@ static bool try_avoid_fp_deadlock(struct ls_state *ls, bool voluntary,
 			 * giving up on the reduction */
 			aborts->preempted_evil_ancestor.tid = TID_NONE;
 			/* FIXME: not sure if even possible to mark the abort
-			 * set "abandoned" in the original hax it came from?
+			 * set "abandoned" in the original nobe it came from?
 			 * bc we might be deep in its subtree, and other parts
 			 * of the subtree still want to apply the reduction. */
 			*result = a;

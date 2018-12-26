@@ -15,7 +15,7 @@
 #include "vector_clock.h"
 #include "variable_queue.h"
 
-struct hax;
+struct nobe;
 struct stack_trace;
 
 /******************************************************************************
@@ -183,7 +183,7 @@ void mem_check_syscall_return(struct ls_state *, unsigned int syscall_num);
 void mem_check_shared_access(struct ls_state *, unsigned int phys_addr,
 							 unsigned int virt_addr, bool write);
 bool mem_shm_intersect(struct ls_state *ls,
-		       const struct hax *h0, const struct hax *h2,
+		       const struct nobe *h0, const struct nobe *h2,
                        bool in_kernel);
 
 bool shm_contains_addr(const struct mem_state *m, unsigned int addr);
